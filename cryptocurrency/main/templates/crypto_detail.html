@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+
+{% block title %}虛擬貨幣價格詳情{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <!-- Header -->
+            <h1 class="text-center mb-4 text-primary"><img src="{{ price.coin.logo_url }}">{{ price.coin.coinname }}</h1>
+            
+            <!-- Card -->
+            <div class="card shadow-sm">
+                <div class="card-header text-white bg-primary">
+                    <h5 class="mb-0 text-center">Current Prices</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2"><strong>USD:</strong> <span class="text-success">{{ price.usd }}</span></p>
+                    <p class="mb-2"><strong>TWD:</strong> <span class="text-success">{{ price.twd }}</span></p>
+                    <p class="mb-2"><strong>EUR:</strong> <span class="text-success">{{ price.eur }}</span></p>
+                    <p class="mb-0"><strong>時間戳:</strong> <span class="text-muted">{{ price.timestamp|date:"Y-m-d H:i:s" }}</span></p>
+                </div>
+            </div>
+            {{ graph|safe }}
+            <!-- Back Button -->
+            <div class="text-center mt-4 mb-5">
+                <a href="{% url 'crypto_list' %}" class="btn btn-primary btn-lg">
+                    <i class="bi bi-arrow-left-circle"></i> 返回列表
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
