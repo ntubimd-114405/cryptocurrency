@@ -1,0 +1,265 @@
+{% extends 'base.html' %}
+
+{% block title %}虛擬貨幣首頁{% endblock %}
+
+{% block content %}
+{% load humanize %}
+<div class="container mt-4">
+    <h1 class="text-center mb-4">虛擬貨幣價格列表</h1>
+    <form method="get" class="mb-4">
+        <div class="input-group">
+            <input type="text" name="query" value="{{ query }}" class="form-control" placeholder="搜尋幣種" />
+            <button type="submit" class="btn btn-primary">搜尋</button>
+        </div>
+    </form>
+
+    {% if error %}
+        <div class="alert alert-danger" role="alert">
+            {{ error }}
+        </div>
+    {% else %}
+    <table class="table table-bordered table-striped table-hover">
+        <thead class="table-dark">
+            <tr>
+                <th style="width: 10%; text-align: center; vertical-align: middle;">
+                    <a href="?sort_by=coin__coinname&sort_order={% if sort_by == 'coin__coinname' and sort_order == 'asc' %}desc{% elif sort_by == 'coin__coinname' and sort_order == 'desc' %}default{% else %}asc{% endif %}&page={{ page_obj.number }}">
+                        幣種名稱
+                        {% if sort_by == 'coin__coinname' %}
+                            {% if sort_order == 'asc' %}
+                                &#8593; <!-- 升序箭頭 -->
+                            {% elif sort_order == 'desc' %}
+                                &#8595; <!-- 降序箭頭 -->
+                            {% endif %}
+                        {% endif %}
+                    </a>
+                </th>
+                <th style="width: 10%; text-align: center; vertical-align: middle;">
+                    <a href="?sort_by=usd&sort_order={% if sort_by == 'usd' and sort_order == 'asc' %}desc{% elif sort_by == 'usd' and sort_order == 'desc' %}default{% else %}asc{% endif %}&page={{ page_obj.number }}">
+                        USD
+                        {% if sort_by == 'usd' %}
+                            {% if sort_order == 'asc' %}
+                                &#8593;
+                            {% elif sort_order == 'desc' %}
+                                &#8595;
+                            {% endif %}
+                        {% endif %}
+                    </a>
+                </th>
+                <th style="width: 10%; text-align: center; vertical-align: middle;">
+                    <a href="?sort_by=twd&sort_order={% if sort_by == 'twd' and sort_order == 'asc' %}desc{% elif sort_by == 'twd' and sort_order == 'desc' %}default{% else %}asc{% endif %}&page={{ page_obj.number }}">
+                        TWD
+                        {% if sort_by == 'twd' %}
+                            {% if sort_order == 'asc' %}
+                                &#8593;
+                            {% elif sort_order == 'desc' %}
+                                &#8595;
+                            {% endif %}
+                        {% endif %}
+                    </a>
+                </th>
+                <th style="width: 10%; text-align: center; vertical-align: middle;">
+                    <a href="?sort_by=jpy&sort_order={% if sort_by == 'jpy' and sort_order == 'asc' %}desc{% elif sort_by == 'jpy' and sort_order == 'desc' %}default{% else %}asc{% endif %}&page={{ page_obj.number }}">
+                        JPY
+                        {% if sort_by == 'jpy' %}
+                            {% if sort_order == 'asc' %}
+                                &#8593;
+                            {% elif sort_order == 'desc' %}
+                                &#8595;
+                            {% endif %}
+                        {% endif %}
+                    </a>
+                </th>
+                <th style="width: 10%; text-align: center; vertical-align: middle;">
+                    <a href="?sort_by=eur&sort_order={% if sort_by == 'eur' and sort_order == 'asc' %}desc{% elif sort_by == 'eur' and sort_order == 'desc' %}default{% else %}asc{% endif %}&page={{ page_obj.number }}">
+                        EUR
+                        {% if sort_by == 'eur' %}
+                            {% if sort_order == 'asc' %}
+                                &#8593;
+                            {% elif sort_order == 'desc' %}
+                                &#8595;
+                            {% endif %}
+                        {% endif %}
+                    </a>
+                </th>
+                <th style="width: 15%; text-align: center; vertical-align: middle;">
+                    <a href="?sort_by=volume_24h&sort_order={% if sort_by == 'volume_24h' and sort_order == 'asc' %}desc{% elif sort_by == 'volume_24h' and sort_order == 'desc' %}default{% else %}asc{% endif %}&page={{ page_obj.number }}">
+                        24小時交易量
+                        {% if sort_by == 'volume_24h' %}
+                            {% if sort_order == 'asc' %}
+                                &#8593;
+                            {% elif sort_order == 'desc' %}
+                                &#8595;
+                            {% endif %}
+                        {% endif %}
+                    </a>
+                </th>
+                <th style="width: 10%; text-align: center; vertical-align: middle;">
+                    <a href="?sort_by=change_24h&sort_order={% if sort_by == 'change_24h' and sort_order == 'asc' %}desc{% elif sort_by == 'change_24h' and sort_order == 'desc' %}default{% else %}asc{% endif %}&page={{ page_obj.number }}">
+                        24小時變動
+                        {% if sort_by == 'change_24h' %}
+                            {% if sort_order == 'asc' %}
+                                &#8593;
+                            {% elif sort_order == 'desc' %}
+                                &#8595;
+                            {% endif %}
+                        {% endif %}
+                    </a>
+                </th>
+                <th style="width: 15%; text-align: center; vertical-align: middle;">
+                    <a href="?sort_by=timestamp&sort_order={% if sort_by == 'timestamp' and sort_order == 'asc' %}desc{% elif sort_by == 'timestamp' and sort_order == 'desc' %}default{% else %}asc{% endif %}&page={{ page_obj.number }}">
+                        時間戳
+                        {% if sort_by == 'timestamp' %}
+                            {% if sort_order == 'asc' %}
+                                &#8593;
+                            {% elif sort_order == 'desc' %}
+                                &#8595;
+                            {% endif %}
+                        {% endif %}
+                    </a>
+                </th>
+                {% if user.is_authenticated %}
+                    <th style="width: 15%; text-align: center; vertical-align: middle;">最愛按鈕</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for price in page_obj.object_list %}
+                <tr>
+                    <td style="text-align: center; vertical-align: middle;">
+                        <a href="{% url 'crypto_detail' price.pk %}">
+                            <img src="{{ price.coin.logo_url }}" alt="logo">{{ price.coin.coinname }}
+                        </a>
+                    </td>
+                    <td style="text-align: center; vertical-align: middle;">{{ price.usd|floatformat:2|intcomma }}</td>
+                    <td style="text-align: center; vertical-align: middle;">{{ price.twd|floatformat:2|intcomma }}</td>
+                    <td style="text-align: center; vertical-align: middle;">{{ price.jpy|floatformat:2|intcomma }}</td>
+                    <td style="text-align: center; vertical-align: middle;">{{ price.eur|floatformat:2|intcomma }}</td>
+                    <td style="text-align: center; vertical-align: middle;">{{ price.volume_24h|floatformat:2|intcomma }}</td>
+                    <td style="text-align: center; vertical-align: middle;">
+                        {% if price.change_24h > 0 %}
+                            <span style="color: red;">{{ price.change_24h|floatformat:2 }}%</span>
+                        {% elif price.change_24h < 0 %}
+                            <span style="color: green;">{{ price.change_24h|floatformat:2 }}%</span>
+                        {% else %}
+                            <span style="color: black;">{{ price.change_24h|floatformat:2 }}%</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: center; vertical-align: middle;">{{ price.timestamp }}</td>
+                    {% if user.is_authenticated %}
+                        <td style="text-align: center; vertical-align: middle;">
+                            {% if price.coin.id in favorite_coin_ids %}
+                                <!-- 如果加密貨幣已在最愛清單中，顯示移除最愛 -->
+                                <form action="{% url 'remove_from_favorites' price.coin.id %}" method="POST">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-danger">移除最愛</button>
+                                </form>
+                            {% else %}
+                                <!-- 如果加密貨幣不在最愛清單中，顯示加入最愛 -->
+                                <form action="{% url 'add_to_favorites' price.coin.id %}" method="POST">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-primary">加入最愛</button>
+                                </form>
+                            {% endif %}
+                        </td>
+                    {% endif %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    
+    
+<!-- 分頁導航 -->
+<nav aria-label="Page navigation example">
+    <ul class="pagination justify-content-center">
+        <!-- 第一頁與上一頁 -->
+        {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1&sort_by={{ sort_by }}&sort_order={{ sort_order }}" aria-label="First">
+                    <span aria-hidden="true">&laquo;&laquo;</span> <!-- 第一頁 -->
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}&sort_by={{ sort_by }}&sort_order={{ sort_order }}" aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span> <!-- 上一頁 -->
+                </a>
+            </li>
+        {% else %}
+            <li class="page-item disabled">
+                <span class="page-link" aria-hidden="true">&laquo;&laquo;</span> <!-- 第一頁 (禁用) -->
+            </li>
+            <li class="page-item disabled">
+                <span class="page-link" aria-hidden="true">&laquo;</span> <!-- 上一頁 (禁用) -->
+            </li>
+        {% endif %}
+
+        <!-- 顯示 "..." 提示 (顯示前頁有隱藏頁碼的提示) -->
+        {% if page_obj.number > 4 %}
+            <li class="page-item">
+                <span class="page-link">...</span> <!-- 這裡的 "..." 不再是按鈕 -->
+            </li>
+        {% endif %}
+
+        <!-- 顯示頁數（目前頁碼前後最多 3 頁） -->
+        {% for num in page_obj.paginator.page_range %}
+            {% if num >= page_obj.number|add:"-3" and num <= page_obj.number|add:"3" %}
+                {% if num == page_obj.number %}
+                    <li class="page-item active" aria-current="page">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                {% else %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}&sort_by={{ sort_by }}&sort_order={{ sort_order }}">{{ num }}</a>
+                    </li>
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+
+        <!-- 顯示 "..." 提示 (顯示後頁有隱藏頁碼的提示) -->
+        {% if page_obj.number < page_obj.paginator.num_pages|add:"-3" %}
+            <li class="page-item">
+                <span class="page-link">...</span> <!-- 這裡的 "..." 也不再是按鈕 -->
+            </li>
+        {% endif %}
+
+        <!-- 下一頁與最後一頁 -->
+        {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}&sort_by={{ sort_by }}&sort_order={{ sort_order }}" aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span> <!-- 下一頁 -->
+                </a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}&sort_by={{ sort_by }}&sort_order={{ sort_order }}" aria-label="Last">
+                    <span aria-hidden="true">&raquo;&raquo;</span> <!-- 最後一頁 -->
+                </a>
+            </li>
+        {% else %}
+            <li class="page-item disabled">
+                <span class="page-link" aria-hidden="true">&raquo;</span> <!-- 下一頁 (禁用) -->
+            </li>
+            <li class="page-item disabled">
+                <span class="page-link" aria-hidden="true">&raquo;&raquo;</span> <!-- 最後一頁 (禁用) -->
+            </li>
+        {% endif %}
+
+        <a>&nbsp;</a>
+
+        <!-- 頁碼選擇下拉選單 -->
+        <li class="page-item">
+            <form method="get" class="d-inline-block">
+                <select name="page" class="form-select" onchange="this.form.submit()">
+                    {% for num in page_obj.paginator.page_range %}
+                        <option value="{{ num }}" {% if num == page_obj.number %}selected{% endif %}>{{ num }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+        </li>
+    </ul>
+</nav>
+
+
+
+    {% endif %}
+</div>
+{% endblock %}

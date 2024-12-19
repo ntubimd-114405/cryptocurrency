@@ -1,0 +1,96 @@
+<style>
+    a{
+        text-decoration: none;
+    }
+    img{
+        width: auto;
+        height: 50px;
+        display: block; /* 讓圖片成為區塊元素 */
+        margin: 0 auto; /* 自動設定左右外邊距來水平置中 */
+    }
+
+    .icon{
+        width: auto;
+        height: 25px;
+    }
+
+    .footer-container {
+        display: flex;
+        justify-content: space-between; /* 平均分佈 */
+        align-items: flex-start; /* 頂部對齊 */
+        flex-wrap: wrap; /* 如果螢幕較小，允許換行 */
+        gap: 20px; /* 區塊間距 */
+        padding: 20px;
+        background-color: #f8f9fa;
+    }
+
+    .footer-container > div {
+        flex: 1; /* 每個子項目均分寬度 */
+        max-width: 25%; /* 限制最大寬度為容器的四分之一 */
+        min-width: 200px; /* 確保最小寬度，不會過小 */
+    }
+
+    .footer-nav ul {
+        list-style: none;
+        padding: 0;
+    }
+
+    .footer-nav ul li {
+        margin-bottom: 10px;
+    }
+
+    .footer-nav ul li a {
+        text-decoration: none;
+        color: #007bff;
+    }
+
+    .footer-contact .social-links {
+        display: flex;
+    }
+
+    .footer-legal {
+        font-size: 0.9em;
+        color: #6c757d;
+        text-align: center;
+    }
+
+</style>
+<footer>
+    <div class="footer-container">
+        <!-- Logo and description -->
+        <div class="footer-brand">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/46/Bitcoin.svg/2048px-Bitcoin.svg.png" alt="Crypto Explorer" />
+            <p>Crypto Explorer - Your Gateway to Cryptocurrency Insights</p>
+        </div>
+    
+        <!-- Navigation -->
+        <div class="footer-nav">
+            <ul>
+                <li><a href="/">Home</a></li>
+                <li><a href="">Cryptocurrency Prices</a></li>
+                <li><a href="">Analytics Tools</a></li>
+                <li><a href="">Contact Us</a></li>
+            </ul>
+        </div>
+    
+        <!-- Social links -->
+        <div class="footer-contact">
+            <p>Contact us: <a href="mailto:info@cryptoexplorer.com">info@cryptoexplorer.com</a></p>
+            <div class="social-links">
+                <a href="https://twitter.com/cryptoexplorer">
+                    <img class="icon" src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Logo_of_Twitter.svg/220px-Logo_of_Twitter.svg.png" alt="Twitter" />
+                </a>
+                <a href="https://discord.gg/cryptoexplorer">
+                    <img class="icon" src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQp528rR2EhNZ2nxxCdzoQx0nU4x1uRAYP6Xg&s" alt="Discord" />
+                </a>
+            </div>
+        </div>
+    
+        <!-- Legal Disclaimer -->
+        <div class="footer-legal">
+            <p>Disclaimer: Cryptocurrency investments carry risk. Please do your own research before investing.</p>
+            <p>© 2025 Crypto Explorer. All rights reserved.虛擬貨幣分析平台. 所有權利保留。</p>
+        </div>
+    </div>
+    
+</footer>

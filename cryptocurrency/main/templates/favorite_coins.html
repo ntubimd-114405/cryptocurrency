@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>我的最愛</h1>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>圖片</th>
+                <th>名稱</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for coin in favorite_cryptos %}
+                <tr>
+                    <td><img src="{{ coin.logo_url }}"></td>
+                    <td>{{ coin.coinname}}</td>  <!-- 假設有價格字段 -->
+                    <td>
+                        <form action="{% url 'remove_from_favorites' coin.id %}" method="POST">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-danger">移除最愛</button>
+                        </form>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="3">您還沒有最愛幣</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <a href="{% url 'crypto_list' %}" class="btn btn-secondary">返回幣列表</a>
+{% endblock %}
