@@ -1,3 +1,10 @@
+# 常用指令
+celery -A cryptocurrency worker --loglevel=info
+celery -A cryptocurrency worker --loglevel=info --pool=solo
+
+celery -A cryptocurrency beat --loglevel=info
+
+set DJANGO_SETTINGS_MODULE=cryptocurrency.settings
 # 創建虛擬環境
 python -m venv env
 
