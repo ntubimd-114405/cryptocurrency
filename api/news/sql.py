@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 
 # 設定 .env 檔案的路徑
-env_path = Path(__file__).resolve().parents[2] / '.env'
+env_path = Path(__file__).resolve().parents[3] / '.env'
 
 # 加載 .env 檔案
 load_dotenv(dotenv_path=env_path)

@@ -216,7 +216,7 @@ def upload_profile_image(request):
                 request.user.profile.profile_image.save(image_name, user_profile_image)
 
             # 提交表單後，跳轉到主頁
-            return redirect('user_profile')  # 或者你可以跳轉到其他頁面
+            return redirect('home')  # 或者你可以跳轉到其他頁面
     else:
         form = UserProfileForm(instance=request.user.profile)
 
@@ -441,6 +441,26 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from .models import UserNotificationPreference
 
+@login_required
+def upload_profile_image(request):
+    # 處理頭像上傳等其他設定邏輯
+    if request.method == 'POST':
+        # 處理通知設定
+        if 'news_notifications' in request.POST:
+            news_notifications = request.POST.get('news_notifications') == 'on'
+            email_notifications = request.POST.get('email_notifications') == 'on'
+            site_notifications = request.POST.get('site_notifications') == 'on'
+
+            # 取得或創建用戶的通知設置
+            preference, created = UserNotificationPreference.objects.get_or_create(user=request.user)
+            preference.news_notifications = news_notifications
+            preference.email_notifications = email_notifications
+            preference.site_notifications = site_notifications
+            preference.save()
+
+            messages.success(request, '通知設定已更新！')
+
+    return render(request, 'user_profile.html')
 
 @login_required
 def update_notification_preferences(request):

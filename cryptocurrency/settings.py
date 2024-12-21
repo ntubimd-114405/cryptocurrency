@@ -46,7 +46,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
-    'main'
+    'main',
+    'django_celery_beat',
+    'django_celery_results',
 ]
 
 MIDDLEWARE = [
@@ -167,3 +169,36 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER  # 用來發送郵件的默認地址
 #         },
 #     },
 # ]
+
+
+'''
+# Celery 設定
+CELERY_BROKER_URL = 'amqp://localhost'  # RabbitMQ URL
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_BACKEND = 'rpc://'  # 可以選擇使用其他後端來存儲結果
+
+from celery.schedules import crontab
+CELERY_BEAT_SCHEDULE = {
+    'crawl-every-10-minutes': {
+        'task': 'main.tasks.run_scraper',
+        'schedule': crontab(minute='*/1'),  # 每 10 分鐘執行一次
+    },
+}
+'''
+
+from celery.schedules import crontab
+from main.task import run_scraper
+
+CELERY_BROKER_URL = 'amqp://localhost'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Asia/Taipei'
+
+CELERY_BEAT_SCHEDULE = {
+    'run-scraper-every-10-seconds': {
+        'task': 'main.task.run_scraper',
+        'schedule': 10.0,  # 每10秒執行一次
+    },
+}
