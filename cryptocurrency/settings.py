@@ -188,7 +188,7 @@ CELERY_BEAT_SCHEDULE = {
 '''
 
 from celery.schedules import crontab
-from main.task import run_scraper
+from main.task import news_crawler
 
 CELERY_BROKER_URL = 'amqp://localhost'
 CELERY_ACCEPT_CONTENT = ['json']
@@ -198,7 +198,7 @@ CELERY_TIMEZONE = 'Asia/Taipei'
 
 CELERY_BEAT_SCHEDULE = {
     'run-scraper-every-10-seconds': {
-        'task': 'main.task.run_scraper',
-        'schedule': 10.0,  # 每10秒執行一次
+        'task': 'main.task.news_crawler',
+        'schedule': 60.0,
     },
 }
