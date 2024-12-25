@@ -30,6 +30,8 @@ urlpatterns = [
     path('update_password/', views.update_password, name='update_password'),
     path('update-firstname/', views.update_firstname, name='update_firstname'),
 
+    path('send-email/', views.send_email_news, name='send_email'),
+
 
 
 ]

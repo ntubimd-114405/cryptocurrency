@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ subject }}</title>
+</head>
+<body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f4f4f9; color: #333;">
+    <h1 style="color: #4CAF50; font-size: 24px;">Hello, {{ name }}!</h1>
+    <p style="font-size: 16px; line-height: 1.6;">新聞推送email</p>
+    <p style="font-size: 16px; line-height: 1.6;">Message: {{ message }}</p>
+    <table style="width: 100%; border-collapse: collapse; margin-top: 20px; border: 1px solid #ddd;">
+        <thead>
+            <tr>
+                <th style="padding: 10px; text-align: left; border: 1px solid #ddd; background-color: #4CAF50; color: white; font-size: 18px;">標題</th>
+                <th style="padding: 10px; text-align: left; border: 1px solid #ddd; background-color: #4CAF50; color: white; font-size: 18px;">圖片</th>
+                <th style="padding: 10px; text-align: left; border: 1px solid #ddd; background-color: #4CAF50; color: white; font-size: 18px;">來源網站</th>
+                <th style="padding: 10px; text-align: left; border: 1px solid #ddd; background-color: #4CAF50; color: white; font-size: 18px;">時間</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for article in latest_articles %}
+                <tr>
+                    <td style="padding: 10px; text-align: left; border: 1px solid #ddd; font-size: 14px;"><a href="{{ article.url }}" target="_blank" style="color: #1a73e8; text-decoration: none;">{{ article.title }}</a></td>
+                    <td style="padding: 10px; text-align: center; border: 1px solid #ddd; font-size: 14px;">
+                        {% if article.image_url %}
+                            <img src="{{ article.image_url }}" alt="新聞圖片" style="max-width: 100px; max-height: 100px;">
+                        {% else %}
+                            <span style="color: #888; font-style: italic;">無圖片</span>
+                        {% endif %}
+                    </td>
+                    <td style="padding: 10px; text-align: left; border: 1px solid #ddd; font-size: 14px;"><a href="{{ article.website.name }}" target="_blank" style="color: #1a73e8; text-decoration: none;"><img src="{{ article.website.icon_url }}" alt="網站圖片" style="max-width: 100px; max-height: 100px;"></a></td>
+                    <td style="padding: 10px; text-align: left; border: 1px solid #ddd; font-size: 14px;">{{ article.time|date:"Y-m-d" }}</td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td colspan="5" style="padding: 10px; text-align: center; border: 1px solid #ddd; font-size: 14px; color: #888; font-style: italic;">沒有找到新聞</td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>
