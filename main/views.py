@@ -481,3 +481,40 @@ def update_notification_preferences(request):
 
     return redirect('user_profile')  # 如果不是 POST 請求，則重定向回首頁或其他頁面
 
+
+from django.template.loader import render_to_string
+from django.http import HttpResponse
+from django.core.mail import send_mail
+
+def send_email_news(request):
+    # 获取所有用户
+    users = User.objects.all()
+    users = User.objects.filter(notification_preference__email_notifications=True)
+
+    latest_articles = NewsArticle.objects.all().order_by('-time')[:1000]
+
+
+    # 遍历所有用户并发送邮件
+    for user in users:
+        subject = '新聞通知'
+        
+
+        # 使用模板渲染 HTML 邮件内容
+        html_content = render_to_string('email_template.html', {
+            'subject': subject,
+            'name': user.username,  # 假设你希望使用用户名来定制邮件内容
+            'latest_articles':latest_articles,
+        })
+
+        # 使用 send_mail 发送邮件
+        send_mail(
+            subject,              # 邮件主题
+            "",              # 邮件文本内容
+            None, # 发件人邮箱，或者可以从 settings.py 获取
+            [user.email],         # 收件人邮箱（每个用户的邮箱）
+            html_message=html_content,  # 设置 HTML 内容
+        )
+
+    return render(request, 'email_template.html', {'subject':subject,'latest_articles': latest_articles,'name': user.username})
+
+
