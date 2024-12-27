@@ -1,29 +1,29 @@
-import mysql.connector
+import MySQLdb
 from dotenv import load_dotenv
 import os
 from pathlib import Path
 from datetime import datetime
+
 env_path = Path(__file__).resolve().parents[2] / '.env'
 
 # 加載 .env 檔案
 load_dotenv(dotenv_path=env_path)
 
-def get_name(n):
-    # 設定 .env 檔案的路徑
 
+def get_name(n):
     # 初始化交易所
-    conn = mysql.connector.connect(
+    conn = MySQLdb.connect(
         host="localhost",
         user=os.getenv('DB_USER'),
-        password=os.getenv('DB_PASSWORD'),
-        database="cryptocurrency",
-        time_zone="+08:00"
+        passwd=os.getenv('DB_PASSWORD'),
+        db="cryptocurrency",
+        charset="utf8mb4"
     )
 
-    # 創建cursor物件
+    # 創建 cursor 物件
     cursor = conn.cursor()
 
-    # 編寫查詢語句，抓取十筆abbreviation
+    # 編寫查詢語句，抓取 n 筆 abbreviation
     query = f"SELECT id, abbreviation FROM main_coin LIMIT {n};"
 
     # 執行查詢
@@ -31,19 +31,22 @@ def get_name(n):
 
     # 獲取結果
     abbreviations = cursor.fetchall()
+
     # 關閉連接
     cursor.close()
     conn.close()
+
     return abbreviations
+
 
 def save_data(coin_id, data):
     # 連接到 MySQL 資料庫
-    conn = mysql.connector.connect(
+    conn = MySQLdb.connect(
         host="localhost",
         user=os.getenv('DB_USER'),
-        password=os.getenv('DB_PASSWORD'),
-        database="cryptocurrency",
-        time_zone="+08:00"
+        passwd=os.getenv('DB_PASSWORD'),
+        db="cryptocurrency",
+        charset="utf8mb4"
     )
 
     # 創建 cursor 物件

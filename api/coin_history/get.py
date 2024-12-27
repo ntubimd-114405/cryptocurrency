@@ -14,7 +14,7 @@ def get_history(coin):
     else:
         symbol = f'{coin}/USDT'  # 其他情況為 coin/USDT
     timeframe = '1d'     # K 線圖的時間間隔，例如 '1m', '5m', '1h', '1d'
-    since = exchange.parse8601('2024-12-01T00:00:00Z')  # 開始時間
+    since = exchange.parse8601('2024-12-26T00:00:00Z')  # 開始時間
 
     # 獲取歷史數據
     try:
