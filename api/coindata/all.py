@@ -1,12 +1,12 @@
 import requests
-import mysql.connector
+import MySQLdb  # Use MySQLdb from mysqlclient instead of mysql.connector
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import os
 from pathlib import Path
 
 # 設定 .env 檔案的路徑
-env_path = Path(__file__).resolve().parents[3] / '.env'
+env_path = Path(__file__).resolve().parents[2] / '.env'
 
 # 加載 .env 檔案
 load_dotenv(dotenv_path=env_path)
@@ -27,14 +27,13 @@ def main(s):
         'convert': 'USD'  # 以 USD 為基準貨幣
     }
 
-    # 連接到 MariaDB
-    conn = mysql.connector.connect(
+    # 連接到 MariaDB 使用 MySQLdb (mysqlclient)
+    conn = MySQLdb.connect(
         host="localhost",
         user=os.getenv('DB_USER'),
-        password=os.getenv('DB_PASSWORD'),
-        database="cryptocurrency",
-        time_zone="+08:00",
-        charset='utf8mb4'
+        passwd=os.getenv('DB_PASSWORD'),
+        db="cryptocurrency",
+        charset='utf8mb4',
     )
     cursor = conn.cursor()
 

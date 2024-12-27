@@ -1,10 +1,10 @@
-import mysql.connector
+import MySQLdb
 from dotenv import load_dotenv
 import os
 from pathlib import Path
 
 # 設定 .env 檔案的路徑
-env_path = Path(__file__).resolve().parents[3] / '.env'
+env_path = Path(__file__).resolve().parents[2] / '.env'
 
 # 加載 .env 檔案
 load_dotenv(dotenv_path=env_path)
@@ -12,12 +12,12 @@ load_dotenv(dotenv_path=env_path)
 def insert_sql(website_name, articles):
     try:
         # 資料庫連接配置
-        conn = mysql.connector.connect(
+        conn = MySQLdb.connect(
             host="localhost",  # 替換為你的資料庫主機地址
             user=os.getenv('DB_USER'),  # 替換為你的用戶名
-            password=os.getenv('DB_PASSWORD'),  # 替換為你的密碼
-            database="cryptocurrency",  # 替換為你的資料庫名稱
-            time_zone="+08:00"  # 設定為台灣時間
+            passwd=os.getenv('DB_PASSWORD'),  # 替換為你的密碼
+            db="cryptocurrency",  # 替換為你的資料庫名稱
+            charset="utf8mb4"
         )
 
         cursor = conn.cursor()
@@ -38,7 +38,7 @@ def insert_sql(website_name, articles):
 
         # 插入文章資料
         insert_article_query = """
-        INSERT INTO `main_newsarticle` (`title`, `url`, `time`, `website_id`,`image_url`)
+        INSERT INTO `main_newsarticle` (`title`, `url`, `time`, `website_id`, `image_url`)
         VALUES (%s, %s, %s, %s, %s)
         """
         
@@ -51,7 +51,7 @@ def insert_sql(website_name, articles):
             existing_article = cursor.fetchone()
 
             if existing_article is None:  # 如果該標題不存在
-                cursor.execute(insert_article_query, (article[0], article[1], article[2], website_id,article[3]))
+                cursor.execute(insert_article_query, (article[0], article[1], article[2], website_id, article[3]))
 
         # 提交變更
         conn.commit()
@@ -61,19 +61,19 @@ def insert_sql(website_name, articles):
         conn.close()
 
         print(f"{website_name}資料成功插入！")
-    except:
+    except Exception as e:
         print(f"{website_name}出現錯誤")
-        print(f"錯誤訊息: {Exception}")
+        print(f"錯誤訊息: {e}")
 
 def no_content():
     try:
         # 資料庫連接配置
-        conn = mysql.connector.connect(
-            host="localhost",  # 替換為你的資料庫主機地址
-            user=os.getenv('DB_USER'),  # 替換為你的用戶名
-            password=os.getenv('DB_PASSWORD'),  # 替換為你的密碼
-            database="cryptocurrency",  # 替換為你的資料庫名稱
-            time_zone="+08:00"  # 設定為台灣時間
+        conn = MySQLdb.connect(
+            host="localhost",
+            user=os.getenv('DB_USER'),
+            passwd=os.getenv('DB_PASSWORD'),
+            db="cryptocurrency",
+            charset="utf8mb4"
         )
 
         cursor = conn.cursor()
@@ -89,10 +89,10 @@ def no_content():
         articles = cursor.fetchall()
 
         # 顯示結果
-        data=[]
+        data = []
         if articles:
             for article in articles:
-                data.append([article[0],article[1],article[2]])
+                data.append([article[0], article[1], article[2]])
         else:
             print("No articles found with no content.")
 
@@ -100,20 +100,20 @@ def no_content():
         cursor.close()
         conn.close()
         return data
-    except:
+    except Exception as e:
         print(f"no_content()出現錯誤")
-        print(f"錯誤訊息: {Exception}")
+        print(f"錯誤訊息: {e}")
         return []
 
 def insert_content(id, data):
     try:
         # 資料庫連接配置
-        conn = mysql.connector.connect(
-            host="localhost",  # 替換為你的資料庫主機地址
-            user=os.getenv('DB_USER'),  # 替換為你的用戶名
-            password=os.getenv('DB_PASSWORD'),  # 替換為你的密碼
-            database="cryptocurrency",  # 替換為你的資料庫名稱
-            time_zone="+08:00"  # 設定為台灣時間
+        conn = MySQLdb.connect(
+            host="localhost",
+            user=os.getenv('DB_USER'),
+            passwd=os.getenv('DB_PASSWORD'),
+            db="cryptocurrency",
+            charset="utf8mb4"
         )
 
         cursor = conn.cursor()
@@ -123,7 +123,7 @@ def insert_content(id, data):
         cursor.execute(check_query, (id,))
         result = cursor.fetchone()
 
-        if result[0]:
+        if result and result[0]:
             # 只更新 content
             update_query = """
             UPDATE main_newsarticle
@@ -144,21 +144,19 @@ def insert_content(id, data):
         conn.commit()
         cursor.close()
         conn.close()
-    except:
-            print(f"{id}出現錯誤")
-            print(f"錯誤訊息: {Exception}")
+    except Exception as e:
+        print(f"{id}出現錯誤")
+        print(f"錯誤訊息: {e}")
     
-
-
 def insert_image_url(name, icon_url):
     try:
         # 資料庫連接配置
-        conn = mysql.connector.connect(
-            host="localhost",  # 替換為你的資料庫主機地址
-            user=os.getenv('DB_USER'),  # 替換為你的用戶名
-            password=os.getenv('DB_PASSWORD'),  # 替換為你的密碼
-            database="cryptocurrency",  # 替換為你的資料庫名稱
-            time_zone="+08:00"  # 設定為台灣時間
+        conn = MySQLdb.connect(
+            host="localhost",
+            user=os.getenv('DB_USER'),
+            passwd=os.getenv('DB_PASSWORD'),
+            db="cryptocurrency",
+            charset="utf8mb4"
         )
 
         cursor = conn.cursor()
@@ -177,6 +175,6 @@ def insert_image_url(name, icon_url):
         conn.commit()
         cursor.close()
         conn.close()
-    except:
+    except Exception as e:
         print(f"{name}出現錯誤")
-        print(f"錯誤訊息: {Exception}")
+        print(f"錯誤訊息: {e}")
