@@ -441,26 +441,6 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from .models import UserNotificationPreference
 
-@login_required
-def upload_profile_image(request):
-    # 處理頭像上傳等其他設定邏輯
-    if request.method == 'POST':
-        # 處理通知設定
-        if 'news_notifications' in request.POST:
-            news_notifications = request.POST.get('news_notifications') == 'on'
-            email_notifications = request.POST.get('email_notifications') == 'on'
-            site_notifications = request.POST.get('site_notifications') == 'on'
-
-            # 取得或創建用戶的通知設置
-            preference, created = UserNotificationPreference.objects.get_or_create(user=request.user)
-            preference.news_notifications = news_notifications
-            preference.email_notifications = email_notifications
-            preference.site_notifications = site_notifications
-            preference.save()
-
-            messages.success(request, '通知設定已更新！')
-
-    return render(request, 'user_profile.html')
 
 @login_required
 def update_notification_preferences(request):
@@ -489,8 +469,11 @@ from django.core.mail import send_mail
 def send_email_news(request):
     # 获取所有用户
     users = User.objects.all()
-    users = User.objects.filter(notification_preference__email_notifications=True)
-
+    users = User.objects.filter(notification_preference__email_notifications=True)    
+    if not users.exists():
+    # 查詢結果不為空，執行某些操作
+        return HttpResponse("Hello, world!")
+    
     latest_articles = NewsArticle.objects.all().order_by('-time')[:1000]
 
 

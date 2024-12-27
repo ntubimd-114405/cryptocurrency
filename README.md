@@ -1,25 +1,24 @@
 # 常用指令
 celery -A cryptocurrency worker --loglevel=info
+
 celery -A cryptocurrency worker --loglevel=info --pool=solo
 
 celery -A cryptocurrency beat --loglevel=info
 
 set DJANGO_SETTINGS_MODULE=cryptocurrency.settings
+
+git merge team/main
 # 創建虛擬環境
 python -m venv env
 
-# 啟動虛擬環境（Linux/Mac）
-source env/bin/activate  
-
 # 啟動虛擬環境（Windows）
 env\Scripts\activate
-
 
 # Cryptocurrency
 這裡放上你專案的簡短描述或介紹。
 
 # 安裝
-描述如何安裝你的項目，包括任何先決條件或依賴項。
+pip install -r requirements.txt
 
 # 使用方法
 提供使用你項目的指示。你可以包含代碼範例或截圖。
