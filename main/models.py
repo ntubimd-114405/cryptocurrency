@@ -118,3 +118,13 @@ class UserNotificationPreference(models.Model):
     news_notifications = models.BooleanField(default=True)  # 是否接收新聞通知
     email_notifications = models.BooleanField(default=False)  # 電子郵件通知
     site_notifications = models.BooleanField(default=True)  # 站內通知
+
+class DepthData(models.Model):
+    coin = models.ForeignKey(Coin, related_name='depth_data', on_delete=models.CASCADE)  # 外鍵，關聯到 Coin 模型
+    last_update_id = models.BigIntegerField()
+    bids = models.JSONField()  # 使用 JSONField 來存儲 bids
+    asks = models.JSONField()  # 使用 JSONField 來存儲 asks
+    created_at = models.DateTimeField(auto_now_add=True)  # 儲存資料創建的時間
+
+    def __str__(self):
+        return f"Last Update ID: {self.last_update_id}"
