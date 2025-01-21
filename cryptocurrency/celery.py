@@ -1,21 +1,21 @@
 from __future__ import absolute_import, unicode_literals
-import django
-
-
 import os
 from celery import Celery
-from django.conf import settings
 
-# 设置 Django 配置
+# 設定 Django 的默認設置模塊
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'cryptocurrency.settings')
-
-# 确保 Django 已经初始化
-django.setup()
 
 app = Celery('cryptocurrency')
 
-# 配置 Celery 使用 Django 设置
+# 使用 RabbitMQ 作為消息代理
 app.config_from_object('django.conf:settings', namespace='CELERY')
 
-# 自动发现任务
+# 發現並自動加載所有註冊的 Django 任務
 app.autodiscover_tasks()
+
+app.conf.update(
+    task_default_queue='default',
+    task_queues={'default': {'exchange': 'default', 'routing_key': 'default'}},
+    worker_concurrency=1,  # 設定單線程工作
+    worker_pool='solo',  # 使用 solo 池
+)

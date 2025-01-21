@@ -1,16 +1,14 @@
 from celery import shared_task
-import requests
-from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
-import re
 import os
 from .crawler.news import *
+from data_collector.coin_history.ccxt_price import CryptoHistoryFetcher
+from data_collector.new_scraper import site_all
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'cryptocurrency.settings')
 @shared_task
 def news_crawler():
     from .models import NewsWebsite,NewsArticle
-    from data_collector.new_scraper import site_all
     from django.db.models import Q
 
     websites=site_all.website()
@@ -58,3 +56,50 @@ def news_crawler():
                 },
                 )
             print(a.title)
+
+
+
+
+
+@shared_task
+def fetch_history():
+    from django.db.models import Max
+    from .models import Coin,CoinHistory
+
+    coin_history = Coin.objects.all().order_by('id')[:10]
+    result = []
+    for coin in coin_history:
+        # 查找該 coin 的最新日期
+        latest_history = CoinHistory.objects.filter(coin=coin).aggregate(latest_date=Max('date'))
+        latest_date = latest_history['latest_date']
+
+        # 若找不到最新日期，設定為 2025-01-01
+        if latest_date is None:
+            latest_date = datetime(2025, 1, 1, 0, 0)
+        else:
+            latest_date = latest_date + timedelta(minutes=1)
+        result.append((coin, latest_date))
+    for i in result:
+        c=CryptoHistoryFetcher(i[0].abbreviation,i[1])
+        coin = Coin.objects.get(abbreviation=c.coin,api_id=i[0].api_id)
+        data=c.get_history()
+        for history_data in data:
+            date = datetime.strptime(history_data[0], '%Y-%m-%d %H:%M:%S')
+            date=str(date)+"+00:00"
+            open_price = history_data[1]
+            high_price = history_data[2]
+            low_price = history_data[3]
+            close_price = history_data[4]
+            volume = history_data[5]
+            
+            # 儲存歷史資料進入資料庫
+            CoinHistory.objects.create(
+                coin=coin,
+                date=date,
+                open_price=open_price,
+                high_price=high_price,
+                low_price=low_price,
+                close_price=close_price,
+                volume=volume,
+            )
+        print(f"存入資料庫{len(data)}筆：{c.coin} {history_data[0]}")
