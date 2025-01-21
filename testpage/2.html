@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K線圖</title>
+
+    <!-- 加載 Highcharts 包含 Highstock 的版本 -->
+    <script src="https://code.highcharts.com/stock/highstock.js"></script>
+
+    <style>
+        /* 页面背景颜色和内边距 */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* 页面容器样式 */
+        .container {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        /* K线图容器样式 */
+        #container {
+            width: 100%;
+            height: 80%;  /* 控制图表的高度 */
+            border: 1px solid #ccc;  /* 添加边框 */
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);  /* 添加阴影 */
+            background-color: white;  /* 图表背景为白色 */
+        }
+
+        /* 标题样式 */
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        /* 确保设备适配 */
+        @media (max-width: 768px) {
+            #container {
+                height: 60%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- 用来显示 K 线图的容器 -->
+    <div class="container">
+        <h1>BTC/USDT K 線圖</h1>
+        <div id="container"></div>
+    </div>
+
+    <script type="text/javascript">
+        // K 線數據範例（OHLC 格式：[時間, 開盤, 最高, 最低, 收盤]）
+        const ohlcData = [
+            [1640995200000, 47000, 48000, 46000, 47000],
+            [1641081600000, 47000, 49000, 46000, 48000],
+            [1641168000000, 48000, 50000, 47000, 49000],
+            [1641254400000, 49000, 51000, 48000, 50000],
+            [1641340800000, 50000, 52000, 49000, 51000],
+            [1641427200000, 51000, 53000, 50000, 52000]
+        ];
+
+        // 使用 Highcharts 创建 K 线图
+        Highcharts.stockChart('container', {
+            rangeSelector: {
+                selected: 1 // 设置默认显示 1 天的 K 线图
+            },
+            title: {
+                text: 'BTC/USDT K 線圖'
+            },
+            series: [{
+                type: 'candlestick',
+                name: 'BTC/USDT',
+                data: ohlcData,  // 使用上面定义的数据
+                dataGrouping: {
+                    units: [
+                        ['minute', [1, 5, 15, 30]],
+                        ['hour', [1, 2, 6, 12]],
+                        ['day', [1, 2, 5, 10]]
+                    ]
+                }
+            }]
+        });
+    </script>
+
+</body>
+
+</html>
