@@ -197,8 +197,12 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'Asia/Taipei'
 
 CELERY_BEAT_SCHEDULE = {
-    'run-scraper-every-10-seconds': {
+    'news_crawler-every-60-seconds': {
         'task': 'main.task.news_crawler',
-        'schedule': 60.0,
+        'schedule': 3600.0,
+    },
+    'fetch_history-every-5-minutes': {
+        'task': 'main.task.fetch_history',  
+        'schedule': 300.0, 
     },
 }
