@@ -50,8 +50,9 @@ def save_user_profile(sender, instance, **kwargs):
 
 
 class NewsWebsite(models.Model):
-    name = models.CharField(max_length=255, unique=True)  # 新聞網站名稱
-    icon_url = models.URLField(null=True,max_length=500)
+    name = models.CharField(max_length=255)  # 新聞網站名稱
+    url = models.URLField(max_length=255, unique=True)
+    icon_url = models.URLField(max_length=500)
 
     def __str__(self):
         return self.name
@@ -59,7 +60,7 @@ class NewsWebsite(models.Model):
 
 class NewsArticle(models.Model):
     title = models.CharField(max_length=255)  # 標題
-    url = models.URLField(max_length=255)  # 網址
+    url = models.URLField(max_length=255,unique=True)  # 網址
     image_url = models.URLField(null=True,max_length=500)  # 圖片網址
     content = models.TextField(null=True)  # 內文欄位，使用 TextField 儲存長篇文字內容
     time = models.DateTimeField()
