@@ -9,6 +9,7 @@ def parse_relative_time(relative_time):
     try:
         now = datetime.now()
         time_mapping = {
+            "hours ago": "hours",
             "HRS AGO": "hours",
             "HR AGO": "hours",
             "MINS AGO": "minutes",
@@ -18,6 +19,11 @@ def parse_relative_time(relative_time):
         }
 
         # 分割字串
+        if ',' in relative_time:
+            # 解析 "Jul 10, 2024" 類型的日期
+            return datetime.strptime(relative_time, "%b %d, %Y")
+
+        # 處理相對時間（例如：3 hours ago, 5 days ago）
         parts = relative_time.split()
         if len(parts) != 3 or f"{parts[1]} {parts[2]}" not in time_mapping:
             raise ValueError(f"Invalid format: {relative_time}")
@@ -52,7 +58,6 @@ class CoindeskWebsite(BaseWebsite):
 
         # 找到文章列表
         articles = soup.find_all(class_='bg-white flex gap-6 w-full shrink')
-
         for article in articles:
             title = article.find('h3').text  # 假設每篇文章的標題都在 <h2> 標籤中
             link = article.find('a', class_="text-color-charcoal-900 mb-4 hover:underline")["href"]
@@ -60,13 +65,12 @@ class CoindeskWebsite(BaseWebsite):
             time = article.find('span', class_="Noto_Sans_xs_Sans-400-xs")
             if time is None:continue
             time=time.text
-            
             time=parse_relative_time(time)
             if time is None:continue
-            
             time=str(time)+"+00:00"
 
             data.append({"title":title, "url":f"https://www.coindesk.com/{link}", "time":time})
+            
         return data
 
 class CoindeskArticle(BaseArticle):

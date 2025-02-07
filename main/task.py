@@ -4,6 +4,7 @@ import os
 from .crawler.news import *
 from data_collector.coin_history.ccxt_price import CryptoHistoryFetcher
 from data_collector.new_scraper import site_all
+from dateutil import parser
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'cryptocurrency.settings')
 @shared_task
@@ -23,6 +24,14 @@ def news_crawler():
         website_instance = NewsWebsite.objects.get(name=site.name)
         
         for article in site.fetch_page():
+            article_time = parser.parse(article["time"])
+
+            # 計算一個月前的時間（與文章時間的時區對齊）
+            one_month_ago = datetime.now(article_time.tzinfo) - timedelta(days=30)
+
+            # 如果文章時間超過一個月，則跳過
+            if article_time < one_month_ago:
+                continue
             defaults = {
             'title': article["title"],
             'time': article["time"],
@@ -37,7 +46,7 @@ def news_crawler():
                 url=article["url"],
                 defaults=defaults,
             )
-
+        
     articles_empty = NewsArticle.objects.filter(
         Q(content__isnull=True) | Q(content__exact="") | Q(image_url__isnull=True) | Q(image_url__exact="")
     )
@@ -65,8 +74,9 @@ def news_crawler():
 def fetch_history():
     from django.db.models import Max
     from .models import Coin,CoinHistory
+    from celery import group
 
-    coin_history = Coin.objects.all().order_by('id')[:10]
+    coin_history = Coin.objects.all().order_by('id')[:3]
     result = []
     for coin in coin_history:
         # 查找該 coin 的最新日期
@@ -75,10 +85,11 @@ def fetch_history():
 
         # 若找不到最新日期，設定為 2025-01-01
         if latest_date is None:
-            latest_date = datetime(2025, 1, 1, 0, 0)
+            latest_date = datetime(2023, 1, 1, 0, 0)
         else:
             latest_date = latest_date + timedelta(minutes=1)
         result.append((coin, latest_date))
+    
     for i in result:
         c=CryptoHistoryFetcher(i[0].abbreviation,i[1])
         coin = Coin.objects.get(abbreviation=c.coin,api_id=i[0].api_id)
@@ -102,4 +113,7 @@ def fetch_history():
                 close_price=close_price,
                 volume=volume,
             )
-        print(f"存入資料庫{len(data)}筆：{c.coin} {history_data[0]}")
+        if data:  # 確保 history_data 不為空
+            print(f"存入資料庫{len(data)}筆：{c.coin} {history_data[0]}")
+        else:
+            print(f"沒有資料存入資料庫{len(data)}筆：{c.coin} {c.starttime}")
