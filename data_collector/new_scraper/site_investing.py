@@ -13,16 +13,27 @@ class InvestingWebsite(BaseWebsite):
     
 
     def fetch_page(self):
-        response = requests.get(self.url)
-        soup = BeautifulSoup(response.text, 'html.parser')
-        data=[]
-        articles = soup.find_all(class_='list_list__item__dwS6E !mt-0 border-t border-solid border-[#E6E9EB] py-6')
+        headers = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36 Edg/132.0.0.0",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+    "Content-Type": "text/html; charset=utf-8",
+    "DNT": "1",  # Do Not Track request
+    "Cookie": "udid=d493f81db9fce5947411f0ce1b9968c4; _fbp=fb.1.1732502866741.823854017412798344; _ga_FVWZ0RM4DH=GS1.1.1733228501.3.1.1733229857.60.0.0; _ga=GA1.1.643577121.1732502879",  # Cookie值
+}
 
+
+        response = requests.get(self.url, headers=headers)
+        #print(response.text)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        print(soup)
+        data=[]
+        articles = soup.find_all('article', class_="article-item")
         for article in articles:
             title = article.find('a').get_text(strip=True)
             link = article.find('a')['href']  # 相對路徑
             time = article.find('time')['datetime']+"+00:00"
             data.append({"title":title,"url":link, "time":time,"image_url":None})
+            
         return data
 
 
@@ -48,7 +59,10 @@ class InvestingArticle(BaseArticle):
         img = soup.find('img', class_='h-full w-full object-contain')
         if not img is None:img=img["src"]
         content_div = soup.find('div', class_='article_WYSIWYG__O0uhw article_articlePage__UMz3q text-[18px] leading-8')
-        content = content_div.get_text(strip=True)
+        try:
+            content = content_div.get_text(strip=True)
+        except:
+            content= None
         
         self.content=content
         self.image_url = img

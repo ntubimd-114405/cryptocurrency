@@ -11,7 +11,6 @@ class YahooWebsite(BaseWebsite):
         self.url = "https://finance.yahoo.com/topic/crypto/"
         self.icon_url = "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8f/Yahoo%21_Finance_logo_2021.png/1200px-Yahoo%21_Finance_logo_2021.png"
     
-
     def fetch_page(self):
         response = requests.get(self.url)
         soup = BeautifulSoup(response.text, 'html.parser')
@@ -19,12 +18,13 @@ class YahooWebsite(BaseWebsite):
         current_time = datetime.now()
         articles = soup.find_all('section', class_="container")
         for article in articles:
+            
             link_tag = article.find('a')
             link = link_tag['href'] if link_tag and link_tag.has_attr('href') else "無連結"
             if "https://finance.yahoo.com" not in link:continue
 
             # 提取標題（h2 或 h3）
-            title_tag = article.find(['h3'], class_=['clamp yf-18q3fnf'])
+            title_tag = article.find(['h3'], class_=['clamp yf-82qtw3'])
             title = title_tag.text.strip() if title_tag else "無標題"
 
 

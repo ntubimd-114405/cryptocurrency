@@ -189,15 +189,14 @@ CELERY_BEAT_SCHEDULE = {
 
 from celery.schedules import crontab
 from main.task import news_crawler
-
-CELERY_BROKER_URL = 'amqp://localhost'
+CELERY_BROKER_URL = 'amqp://guest:guest@127.0.0.1:5672//'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'Asia/Taipei'
 
 CELERY_BEAT_SCHEDULE = {
-    'news_crawler-every-60-seconds': {
+    'news_crawler-every-1-hour': {
         'task': 'main.task.news_crawler',
         'schedule': 3600.0,
     },

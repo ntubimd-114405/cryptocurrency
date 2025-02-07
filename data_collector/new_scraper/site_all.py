@@ -5,8 +5,8 @@ from data_collector.new_scraper.site_coindesk import CoindeskWebsite,CoindeskArt
 
 
 def website():
-    return [YahooWebsite(),InvestingWebsite(),CoindeskWebsite()]
-
+    return [YahooWebsite(),CoindeskWebsite()]
+    #InvestingWebsite()無法使用
 
 def article(a):
     if "yahoo" in a.url:
