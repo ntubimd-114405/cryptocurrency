@@ -125,21 +125,6 @@ def logout_view(request):
     logout(request)
     return redirect('home')  # 登出後跳轉到登入頁
 
-# 需要登入的頁面保護
-# @login_required
-# def crypto_list(request):
-#     query = request.GET.get('query', '') 
-#     if query:
-#         all_prices = BitcoinPrice.objects.filter(coin__coinname__icontains=query).order_by('id')
-#     else:
-#         all_prices = BitcoinPrice.objects.all().order_by('id')
-    
-#     paginator = Paginator(all_prices, 10)
-#     page_number = request.GET.get('page')
-#     page_obj = paginator.get_page(page_number)
-#     return render(request, 'crypto_list.html', {'page_obj': page_obj})
-
-
 from django.db.models import F
 from django.core.paginator import Paginator
 from django.shortcuts import render
@@ -253,8 +238,7 @@ def remove_from_favorites(request, pk):
         print(f"Coin with ID {pk} not found")  # 如果沒有找到 Coin，打印信息
     except Exception as e:
         print(f"An error occurred: {e}")  # 其他異常處理
-    referer = request.META.get('HTTP_REFERER', '/')  # 默認重定向到根目錄
-    return HttpResponseRedirect(referer)
+    return redirect('favorite_coins')
 
 @login_required
 def favorite_coins(request):
@@ -262,7 +246,6 @@ def favorite_coins(request):
     favorite_cryptos = user_profile.favorite_coin.all()  # 獲取用戶的最愛幣
     return render(request, 'favorite_coins.html', {'favorite_cryptos': favorite_cryptos})
 
-@login_required
 def news_list(request):
     # 獲取搜尋關鍵字和篩選選項
     query = request.GET.get('q', '')  # 搜尋關鍵字
@@ -287,41 +270,6 @@ def news_list(request):
     all_articles = all_articles.order_by('-time')
 
     return render(request, 'news_list.html', {'all_articles': all_articles, 'query': query})
-
-
-def coin_history(request, coin_id):
-    # 查詢 CoinHistory 資料
-    coin_history = CoinHistory.objects.filter(coin_id=coin_id).order_by('date')
-
-    # 準備資料
-    dates = [entry.date for entry in coin_history]
-    open_prices = [entry.open_price for entry in coin_history]
-    high_prices = [entry.high_price for entry in coin_history]
-    low_prices = [entry.low_price for entry in coin_history]
-    close_prices = [entry.close_price for entry in coin_history]
-
-    # 創建 K 線圖
-    fig = go.Figure(data=[go.Candlestick(
-        x=dates,
-        open=open_prices,
-        high=high_prices,
-        low=low_prices,
-        close=close_prices,
-        name="Candlestick"
-    )])
-
-    # 更新圖表的布局
-    fig.update_layout(
-        title=f"Price History for Coin {coin_id}",
-        xaxis_title="Date",
-        yaxis_title="Price",
-        xaxis_rangeslider_visible=False
-    )
-
-    # 將圖表的 HTML 代碼傳遞到模板
-    graph = fig.to_html(full_html=False)
-
-    return render(request, 'coin_history.html', {'graph': graph})
 
 
 def X_list(request):

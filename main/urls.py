@@ -16,7 +16,6 @@ urlpatterns = [
     path('remove-favorite/<int:pk>/', views.remove_from_favorites, name='remove_from_favorites'),
     path('favorites/', views.favorite_coins, name='favorite_coins'),
     path('news/', views.news_list, name='news_list'),
-    path('coin_history/<int:coin_id>/', views.coin_history, name='coin_history'),
     path('post/', views.X_list, name='X_list'),
     path('register/', views.register_view, name='register'),
     path('news/<int:article_id>/', views.news_detail, name='news_detail'),
@@ -31,7 +30,6 @@ urlpatterns = [
     path('update-firstname/', views.update_firstname, name='update_firstname'),
 
     path('send-email/', views.send_email_news, name='send_email'),
-
 
 
 ]
