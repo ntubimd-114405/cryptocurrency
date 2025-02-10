@@ -1,4 +1,4 @@
-from .base_site import BaseArticle,BaseWebsite
+from .base_site import BaseArticle,BaseWebsite,convert_emoji_to_text
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
@@ -59,7 +59,7 @@ class YahooWebsite(BaseWebsite):
 
 
             # 保存結果
-            data.append({"title":title,"url":link, "time":time,"image_url":img})
+            data.append({"title":convert_emoji_to_text(title),"url":link, "time":time,"image_url":img})
         return data
 
 
@@ -83,7 +83,7 @@ class YahooArticle(BaseArticle):
         
         content = soup.find('div', class_='body-wrap')
         content=content.get_text(strip=True)
-        self.content=content
+        self.content=convert_emoji_to_text(content)
 
 
 

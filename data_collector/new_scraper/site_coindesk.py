@@ -1,4 +1,4 @@
-from .base_site import BaseArticle,BaseWebsite
+from .base_site import BaseArticle,BaseWebsite,convert_emoji_to_text
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
@@ -9,15 +9,17 @@ def parse_relative_time(relative_time):
     try:
         now = datetime.now()
         time_mapping = {
+            "hour ago": "hours",
             "hours ago": "hours",
             "HRS AGO": "hours",
             "HR AGO": "hours",
+            "minute ago": "minutes",
+            "minutes ago": "minutes",
             "MINS AGO": "minutes",
             "MIN AGO": "minutes",
             "DAYS AGO": "days",
             "DAY AGO": "days",
         }
-
         # 分割字串
         if ',' in relative_time:
             # 解析 "Jul 10, 2024" 類型的日期
@@ -31,7 +33,6 @@ def parse_relative_time(relative_time):
         # 解析數字和單位
         number = int(parts[0])
         unit = time_mapping[f"{parts[1]} {parts[2]}"]
-
         # 根據單位計算時間
         if unit == "hours":
             return now - timedelta(hours=number)
@@ -52,12 +53,12 @@ class CoindeskWebsite(BaseWebsite):
     
 
     def fetch_page(self):
-        response = requests.get(self.url)
+        response = requests.get("https://www.coindesk.com/latest-crypto-news")
         soup = BeautifulSoup(response.text, 'html.parser')
         data=[]
 
         # 找到文章列表
-        articles = soup.find_all(class_='bg-white flex gap-6 w-full shrink')
+        articles = soup.find_all(class_='flex flex-col')
         for article in articles:
             title = article.find('h3').text  # 假設每篇文章的標題都在 <h2> 標籤中
             link = article.find('a', class_="text-color-charcoal-900 mb-4 hover:underline")["href"]
@@ -67,9 +68,9 @@ class CoindeskWebsite(BaseWebsite):
             time=time.text
             time=parse_relative_time(time)
             if time is None:continue
-            time=str(time)+"+00:00"
+            time=str(time)+"+08:00"
 
-            data.append({"title":title, "url":f"https://www.coindesk.com/{link}", "time":time})
+            data.append({"title":convert_emoji_to_text(title), "url":f"https://www.coindesk.com/{link}", "time":time})
             
         return data
 
@@ -92,16 +93,13 @@ class CoindeskArticle(BaseArticle):
 
         # 找到 img 標籤
         img_tag = soup.find('img',class_="rounded-md")
-        try:
-            # 嘗試獲取第二個符合條件的元素
-            content = soup.find_all('div', class_='document-body')[1]
-        except :
-            content = soup.find_all('div', class_='document-body')[0]
-
+        content_divs = [div.get_text(strip=True) for div in soup.find_all('div', class_='document-body') if div.get_text(strip=True)]
+        # 如果有找到內容，將所有內容合併
+        if content_divs:
+            content = ' '.join(content_divs)
+        else:
+            content = None  # 如果沒有內容，可以設為 None 或其他適當的處理方式
         # 如果成功找到內容，則提取純文本
-        if content:
-            content = content.get_text(strip=True)
-
         # 獲取自定義的 url 屬性
         if img_tag is None:
             url=None
@@ -109,13 +107,10 @@ class CoindeskArticle(BaseArticle):
             url = img_tag.get('url')
 
 
-        self.content=content
+        self.content=convert_emoji_to_text(content)
         self.image_url = url
 
 
 
-    def scrape(self):
-        """Scrape the content of the article."""
-        pass
 
 

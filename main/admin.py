@@ -15,11 +15,22 @@ class BitcoinPriceAdmin(admin.ModelAdmin):
 
 @admin.register(UserProfile)
 class UserProfileAdmin(admin.ModelAdmin):
-    list_display = ('user', 'profile_image', 'get_favorite_coins')
+    list_display = ('user', 'avatar_image', 'get_favorite_coins')
 
     def get_favorite_coins(self, obj):
         return ", ".join([coin.coinname for coin in obj.favorite_coin.all()])
     get_favorite_coins.short_description = 'Favorite Coins'
+
+    def avatar_image(self, obj):
+        # 確保顯示圖片，而不是圖片的 URL
+        return format_html('<img src="{}" style="height: 40px;"/>'.format(obj.profile_image.url))
+
+    avatar_image.short_description = 'Avatar'  # 設置顯示的欄位名稱
+
+
+
+
+
 
 @admin.register(NewsWebsite)
 class NewsWebsiteAdmin(admin.ModelAdmin):

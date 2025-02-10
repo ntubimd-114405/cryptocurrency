@@ -148,9 +148,6 @@ LOGIN_URL = '/login/'  # 未登入時跳轉到此頁面
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
-
-# settings.py
-
 # 用於發送重設密碼郵件的 SMTP 配置
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'  # 使用 Gmail 的 SMTP 服務
@@ -159,33 +156,6 @@ EMAIL_USE_TLS = True  # 使用 TLS 加密
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')  # 使用你的 Gmail 地址（用來發送郵件）
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')  # 使用 Gmail 生成的應用程式專用密碼
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER  # 用來發送郵件的默認地址
-
-#新增密碼強度(最小8碼)
-# AUTH_PASSWORD_VALIDATORS = [
-#     {
-#         'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-#         'OPTIONS': {
-#             'min_length': 8,
-#         },
-#     },
-# ]
-
-
-'''
-# Celery 設定
-CELERY_BROKER_URL = 'amqp://localhost'  # RabbitMQ URL
-CELERY_ACCEPT_CONTENT = ['json']
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_RESULT_BACKEND = 'rpc://'  # 可以選擇使用其他後端來存儲結果
-
-from celery.schedules import crontab
-CELERY_BEAT_SCHEDULE = {
-    'crawl-every-10-minutes': {
-        'task': 'main.tasks.run_scraper',
-        'schedule': crontab(minute='*/1'),  # 每 10 分鐘執行一次
-    },
-}
-'''
 
 from celery.schedules import crontab
 from main.task import news_crawler
@@ -200,8 +170,8 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'main.task.news_crawler',
         'schedule': 3600.0,
     },
-    'fetch_history-every-5-minutes': {
+    'fetch_history-every-1-hour': {
         'task': 'main.task.fetch_history',  
-        'schedule': 300.0, 
+        'schedule': 3600.0, 
     },
 }

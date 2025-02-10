@@ -1,4 +1,4 @@
-from .base_site import BaseArticle,BaseWebsite
+from .base_site import BaseArticle,BaseWebsite,convert_emoji_to_text
 import requests
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
@@ -32,7 +32,7 @@ class InvestingWebsite(BaseWebsite):
             title = article.find('a').get_text(strip=True)
             link = article.find('a')['href']  # 相對路徑
             time = article.find('time')['datetime']+"+00:00"
-            data.append({"title":title,"url":link, "time":time,"image_url":None})
+            data.append({"title":convert_emoji_to_text(title),"url":link, "time":time,"image_url":None})
             
         return data
 
@@ -64,7 +64,7 @@ class InvestingArticle(BaseArticle):
         except:
             content= None
         
-        self.content=content
+        self.content=convert_emoji_to_text(content)
         self.image_url = img
 
 
