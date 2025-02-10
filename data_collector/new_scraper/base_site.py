@@ -2,6 +2,10 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 from abc import ABC, abstractmethod
+import emoji
+
+def convert_emoji_to_text(text):
+    return emoji.demojize(text)
 
 
 class BaseWebsite(ABC):
@@ -31,5 +35,7 @@ class BaseArticle(ABC):
         """Extract details of a news article."""
         pass
 
-    
+
+
+
 

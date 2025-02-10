@@ -1,6 +1,6 @@
 # 常用指令
 celery -A cryptocurrency worker --loglevel=info
-
+celery -A cryptocurrency worker --loglevel=info -P eventlet
 celery -A cryptocurrency worker --loglevel=info --pool=solo
 
 celery -A cryptocurrency beat --loglevel=info
