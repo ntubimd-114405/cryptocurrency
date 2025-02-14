@@ -66,6 +66,19 @@ class NewsArticle(models.Model):
     time = models.DateTimeField()
     website = models.ForeignKey(NewsWebsite, on_delete=models.CASCADE)  # 外鍵關聯到新聞網站
 
+    SENTIMENT_CHOICES = [
+        ('positive', 'Positive'),
+        ('neutral', 'Neutral'),
+        ('negative', 'Negative'),
+    ]
+
+    sentiment = models.CharField(
+        max_length=10,
+        choices=SENTIMENT_CHOICES,
+        null=True,  # 允許存入 NULL 值
+        blank=True  # 表單驗證時允許為空
+    )
+
     def __str__(self):
         return self.title
     

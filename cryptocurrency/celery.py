@@ -11,7 +11,7 @@ from celery import Celery
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'cryptocurrency.settings')
 
 app = Celery('cryptocurrency')
-
+app.conf.broker_connection_retry_on_startup = True
 # 使用 RabbitMQ 作為消息代理
 app.config_from_object('django.conf:settings', namespace='CELERY')
 

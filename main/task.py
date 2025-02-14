@@ -1,12 +1,14 @@
+import os
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'cryptocurrency.settings')
+
 from celery import shared_task
 from datetime import datetime, timedelta
-import os
 from data_collector.coin_history.ccxt_price import CryptoHistoryFetcher
 from data_collector.new_scraper import site_all
+from data_analysis.sentiment.multi_model_voting import predict_sentiment
 from dateutil import parser
+from tqdm import tqdm
 
-
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'cryptocurrency.settings')
 @shared_task
 def news_crawler():
     from .models import NewsWebsite,NewsArticle
@@ -67,9 +69,26 @@ def news_crawler():
             print(a.title)
 
 @shared_task
+def news_sentiment():
+    from .models import NewsArticle
+    
+    articles = NewsArticle.objects.filter(sentiment__isnull=True) | NewsArticle.objects.filter(sentiment="")
+    # 建立對應字典
+    sentiment_mapping = {
+        "-1": "negative",
+        "0": "neutral",
+        "1": "positive"
+    }
+
+    for article in tqdm(articles, desc="Processing articles", unit="article"):
+        if article.content:  # 確保 content 欄位有內容
+            sentiment_value = predict_sentiment(article.content)  # 取得 -1, 0, 1
+            article.sentiment = sentiment_mapping.get(sentiment_value, "neutral")  # 預設為 neutral
+            article.save()
+
+@shared_task
 def fetch_coin_history(coin_id):
     from .models import Coin, CoinHistory
-    from datetime import datetime, timedelta
     from django.db import transaction
     from django.db.models import Max
 

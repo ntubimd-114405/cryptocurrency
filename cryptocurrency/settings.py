@@ -47,8 +47,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.humanize',
     'main',
-    'django_celery_beat',
-    'django_celery_results',
 ]
 
 MIDDLEWARE = [
@@ -172,6 +170,10 @@ CELERY_BEAT_SCHEDULE = {
     },
     'fetch_history-every-1-hour': {
         'task': 'main.task.fetch_history',  
+        'schedule': 3600.0, 
+    },
+    'news_sentiment-every-1-hour': {
+        'task': 'main.task.news_sentiment',  
         'schedule': 3600.0, 
     },
 }

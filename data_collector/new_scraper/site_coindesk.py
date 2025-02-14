@@ -106,7 +106,6 @@ class CoindeskArticle(BaseArticle):
         else:
             url = img_tag.get('url')
 
-
         self.content=convert_emoji_to_text(content)
         self.image_url = url
 

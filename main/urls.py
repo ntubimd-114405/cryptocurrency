@@ -31,6 +31,8 @@ urlpatterns = [
 
     path('send-email/', views.send_email_news, name='send_email'),
 
+    path('test/', views.test, name='test'),
+
 
 ]
 if settings.DEBUG:

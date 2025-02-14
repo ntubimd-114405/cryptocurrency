@@ -48,6 +48,7 @@
                         <th style="width: 50px; text-align: center;">網址</th>
                         <th style="width: 50px; text-align: center;">時間</th>
                         <th style="width: 50px; text-align: center;">評論</th>
+                        <th style="width: 50px; text-align: center;">情緒</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -66,6 +67,7 @@
                             <td><a href="{{ article.url }}" target="_blank">閱讀更多</a></td>
                             <td>{{ article.time|date:"Y-m-d" }}</td>
                             <td><a href="{% url 'news_detail' article_id=article.id %}">評論</a></td>
+                            <td>{{ article.sentiment }}</td>
                         </tr>
                     {% empty %}
                         <tr>
