@@ -3,9 +3,12 @@ from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 from abc import ABC, abstractmethod
 import emoji
+import unicodedata
 
 def convert_emoji_to_text(text):
-    return emoji.demojize(text)
+    text = emoji.demojize(text)
+    text = unicodedata.normalize("NFKC", text)  
+    return text
 
 
 class BaseWebsite(ABC):
