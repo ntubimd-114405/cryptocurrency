@@ -449,7 +449,7 @@ def send_email_news(request):
     return render(request, 'email_template.html', {'subject':subject,'latest_articles': latest_articles,'name': user.username})
 
 
-from main.task import news_sentiment
+from main.task import news_sentiment,macro_economy
 def test(request):
     news_sentiment()
     return redirect('home')

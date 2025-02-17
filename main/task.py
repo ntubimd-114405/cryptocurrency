@@ -5,9 +5,11 @@ from celery import shared_task
 from datetime import datetime, timedelta
 from data_collector.coin_history.ccxt_price import CryptoHistoryFetcher
 from data_collector.new_scraper import site_all
+from data_collector.macro_economy.fredapi_data import get_fred_data
 from data_analysis.sentiment.multi_model_voting import predict_sentiment
 from dateutil import parser
 from tqdm import tqdm
+import pandas as pd
 
 @shared_task
 def news_crawler():
@@ -143,6 +145,37 @@ def fetch_history():
     tasks = group(fetch_coin_history.s(coin.id) for coin in coin_history)
     tasks.apply_async()
 
+
+@shared_task
+def macro_economy():
+    from .models import Indicator,IndicatorValue
+    indicators = {
+        "國內生產總值 (GDP)": "GDP",
+        "失業率": "UNRATE",
+        "通脹率 (CPI)": "CPIAUCSL",
+        "利率 (聯邦基金利率)": "FEDFUNDS",
+        "貿易平衡": "NETEXP",
+        "貨幣供應量 (M2)": "M2SL",
+        "政府預算赤字/盈餘": "FYFSD",
+        "生產者物價指數 (PPI)": "PPIACO",
+        "消費者信心指數 (CCI)": "UMCSENT",
+    }
+
+    for k, v in indicators.items():
+        print(f"正在處理: {k}")
+        
+        indicator, created = Indicator.objects.get_or_create(name=k)
+        
+        data = get_fred_data(v) 
+
+        for date, value in data.items():  
+            date = date.date() 
+            if pd.notna(value):
+                IndicatorValue.objects.get_or_create(
+                    indicator=indicator, date=date, defaults={'value': value}
+                )
+
+        print(f"{k} 完成處理")
 
 
 def test():
