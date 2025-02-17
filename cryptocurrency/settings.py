@@ -176,4 +176,10 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'main.task.news_sentiment',  
         'schedule': 3600.0, 
     },
+    'macro_economy-every-1-day': {
+        'task': 'main.task.macro_economy',  
+        'schedule': 86400.0,
+    },
 }
+
+

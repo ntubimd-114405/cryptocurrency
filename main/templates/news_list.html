@@ -67,7 +67,17 @@
                             <td><a href="{{ article.url }}" target="_blank">閱讀更多</a></td>
                             <td>{{ article.time|date:"Y-m-d" }}</td>
                             <td><a href="{% url 'news_detail' article_id=article.id %}">評論</a></td>
-                            <td>{{ article.sentiment }}</td>
+                            <td>
+                                {% if article.sentiment == 'positive' %}
+                                    😄
+                                {% elif article.sentiment == 'neutral' %}
+                                    😐
+                                {% elif article.sentiment == 'negative' %}
+                                    😔
+                                {% else %}
+                                    ❓
+                                {% endif %}
+                            </td>
                         </tr>
                     {% empty %}
                         <tr>
