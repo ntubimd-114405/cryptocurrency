@@ -58,13 +58,15 @@ def predict_sentiment(text):
         for segment in text_segments:
             segment_sentiments.append(analyze_sentiment(segment, model_name, sentiment_map))
         segment_sentiments = [x for x in segment_sentiments if x != "-9"]
+
         if segment_sentiments:
-            all_sentiments.extend(majority_vote(segment_sentiments))
+            all_sentiments.append(majority_vote(segment_sentiments))
+
     if all_sentiments:
         return majority_vote(all_sentiments)
     else:
         return "0"
 
 if __name__ == "__main__":
-    sample_text = "Bitcoin hits a new all-time high as investors remain optimistic. " * 10
+    sample_text = "The Bitcoin market is too volatile to trust." * 10
     print(predict_sentiment(sample_text))
