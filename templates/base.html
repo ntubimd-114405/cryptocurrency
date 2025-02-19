@@ -38,7 +38,7 @@
                         <a href="{% url 'send_email' %}" class="nav-link text-white">發送郵件</a>
                     </li>
                     <li class="nav-item">
-                        <a href="{% url 'test' %}" class="nav-link text-white">情緒分析</a>
+                        <a href="{% url 'charts' %}" class="nav-link text-white">經濟數據圖表</a>
                     </li>
                 </ul>  
             </nav>
@@ -50,7 +50,7 @@
                     <div><img src="{{ user.profile.profile_image.url }}" class="profile-image"></div>
                     <a href="{% url 'logout' %}" class="btn btn-outline-light btn-sm">登出</a>
                     <a href="{% url 'favorite_coins' %}" class="btn btn-outline-light btn-sm">我的最愛</a>
-                    <a href="{% url 'user_profile' %}" class="btn btn-outline-light btn-sm">更改屎用者資料</a>
+                    <a href="{% url 'user_profile' %}" class="btn btn-outline-light btn-sm">更改使用者資料</a>
                     
                     
                     

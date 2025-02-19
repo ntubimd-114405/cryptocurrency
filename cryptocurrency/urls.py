@@ -20,4 +20,5 @@ from django.urls import path, include
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('main.urls')),  # 將根路徑指向 myapp
+    path('macro/', include('macro_trends.urls')), 
 ]

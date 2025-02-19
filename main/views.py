@@ -449,7 +449,34 @@ def send_email_news(request):
     return render(request, 'email_template.html', {'subject':subject,'latest_articles': latest_articles,'name': user.username})
 
 
-from main.task import news_sentiment,macro_economy
-def test(request):
-    news_sentiment()
-    return redirect('home')
+import numpy as np
+import pandas as pd
+from data_analysis.prediction.btc import predict_crypto_price
+import json
+def crypto_price_chart(request):
+    coin = Coin.objects.get(coinname="Bitcoin")
+    recent_data = (
+        CoinHistory.objects.filter(coin=coin)
+        .order_by("-date")[:24]  # 取最近 24 小時
+        .values("date", "close_price", "high_price", "low_price", "open_price", "volume")
+    )
+
+    # 轉換為 DataFrame
+    df = pd.DataFrame(list(recent_data))
+    df = df.sort_values("date")  # 依時間排序
+
+    # 確保 date 欄位是 datetime 類型
+    df["date"] = pd.to_datetime(df["date"])
+    df = df.sort_values("date")  # 依時間排序
+    # 預測價格
+    predicted_price = predict_crypto_price(df[["close_price", "high_price", "low_price", "open_price", "volume"]])
+    print(df["date"].iloc[-1] + pd.Timedelta(hours=1))
+    # 構造 JSON 返回給前端
+    data = {
+        "labels": df["date"].dt.strftime("%Y-%m-%d %H:%M:%S").tolist() + [(df["date"].iloc[-1] + pd.Timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S")],  # 加入預測時間
+        "prices": df["close_price"].tolist(),  # 歷史價格
+        "predicted_price": {"date": df["date"].iloc[-1] + pd.Timedelta(hours=1), "price": predicted_price},
+    }
+
+
+    return render(request, "chart.html", {"chart_data": json.dumps(data , default=str)})

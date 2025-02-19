@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+
+{% block title %}未來一小時價格預測{% endblock %}
+
+{% block content %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <div style="width: 90%; height: 500px; margin: auto;">
+        <canvas id="cryptoChart"></canvas>
+    </div>
+
+    <script>
+        var chartData = JSON.parse('{{ chart_data|safe }}');
+var ctx = document.getElementById('cryptoChart').getContext('2d');
+
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: chartData.labels,
+        datasets: [
+            {
+                label: '歷史價格 (USD)',
+                data: chartData.prices.concat(null),  // 確保與 labels 長度一致
+                borderColor: 'blue',
+                backgroundColor: 'rgba(0, 0, 255, 0.2)',
+                borderWidth: 2
+            },
+            {
+                label: '預測價格 (USD)',
+                data: Array(chartData.prices.length).fill(null).concat(chartData.predicted_price.price),
+                borderColor: 'red',
+                backgroundColor: 'rgba(255, 0, 0, 0.2)',
+                borderWidth: 2,
+                pointRadius: 5,
+                pointBackgroundColor: 'red'
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            x: {
+                title: {
+                    display: true,
+                    text: '時間'
+                }
+            },
+            y: {
+                title: {
+                    display: true,
+                    text: '價格 (USD)'
+                }
+            }
+        }
+    }
+});
+    </script>
+{% endblock %}
