@@ -31,8 +31,7 @@ urlpatterns = [
 
     path('send-email/', views.send_email_news, name='send_email'),
 
-    path('test/', views.test, name='test'),
-
+    path("crypto_chart/", views.crypto_price_chart, name="crypto_chart"),
 
 ]
 if settings.DEBUG:

@@ -3,18 +3,15 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'cryptocurrency.settings')
 
 from celery import shared_task
 from datetime import datetime, timedelta
-from data_collector.coin_history.ccxt_price import CryptoHistoryFetcher
-from data_collector.new_scraper import site_all
-from data_collector.macro_economy.fredapi_data import get_fred_data
-from data_analysis.sentiment.multi_model_voting import predict_sentiment
 from dateutil import parser
 from tqdm import tqdm
-import pandas as pd
+from data_collector.coin_history.ccxt_price import CryptoHistoryFetcher
 
 @shared_task
 def news_crawler():
     from .models import NewsWebsite,NewsArticle
     from django.db.models import Q
+    from data_collector.new_scraper import site_all
 
     websites=site_all.website()
     for site in websites:
@@ -73,7 +70,8 @@ def news_crawler():
 @shared_task
 def news_sentiment():
     from .models import NewsArticle
-    
+    from data_analysis.sentiment.multi_model_voting import predict_sentiment
+
     articles = NewsArticle.objects.filter(sentiment__isnull=True) | NewsArticle.objects.filter(sentiment="")
     # 建立對應字典
     sentiment_mapping = {
@@ -93,6 +91,7 @@ def fetch_coin_history(coin_id):
     from .models import Coin, CoinHistory
     from django.db import transaction
     from django.db.models import Max
+    
 
     coin = Coin.objects.get(id=coin_id)
 
@@ -117,20 +116,17 @@ def fetch_coin_history(coin_id):
             date = str(date) + "+00:00"
             open_price, high_price, low_price, close_price, volume = history_data[1:6]
 
-            coin_history_data.append(CoinHistory(
+            CoinHistory.objects.get_or_create(
                 coin=coin,
                 date=date,
-                open_price=open_price,
-                high_price=high_price,
-                low_price=low_price,
-                close_price=close_price,
-                volume=volume,
-            ))
-
-        # 批量插入数据，避免逐条插入造成性能问题
-        with transaction.atomic():  # 确保数据库一致性
-            CoinHistory.objects.bulk_create(coin_history_data)
-
+                defaults={
+                    "open_price": open_price,
+                    "high_price": high_price,
+                    "low_price": low_price,
+                    "close_price": close_price,
+                    "volume": volume,
+                }
+            )
         print(f"成功存入数据库 {len(data)} 筆：{c.coin} {data[-1][0]}")
     else:
         print(f"没有数据存入数据库：{c.coin} {c.starttime}")
@@ -140,42 +136,11 @@ def fetch_history():
     from celery import group
     from .models import Coin
     from django.db.models import Q
+    
     #coin_history = Coin.objects.all().order_by('id')[:3]
     coin_history = Coin.objects.filter(Q(id=34) | Q(id__lte=5)).order_by('id')
     tasks = group(fetch_coin_history.s(coin.id) for coin in coin_history)
     tasks.apply_async()
-
-
-@shared_task
-def macro_economy():
-    from .models import Indicator,IndicatorValue
-    indicators = {
-        "國內生產總值 (GDP)": "GDP",
-        "失業率": "UNRATE",
-        "通脹率 (CPI)": "CPIAUCSL",
-        "利率 (聯邦基金利率)": "FEDFUNDS",
-        "貿易平衡": "NETEXP",
-        "貨幣供應量 (M2)": "M2SL",
-        "政府預算赤字/盈餘": "FYFSD",
-        "生產者物價指數 (PPI)": "PPIACO",
-        "消費者信心指數 (CCI)": "UMCSENT",
-    }
-
-    for k, v in indicators.items():
-        print(f"正在處理: {k}")
-        
-        indicator, created = Indicator.objects.get_or_create(name=k)
-        
-        data = get_fred_data(v) 
-
-        for date, value in data.items():  
-            date = date.date() 
-            if pd.notna(value):
-                IndicatorValue.objects.get_or_create(
-                    indicator=indicator, date=date, defaults={'value': value}
-                )
-
-        print(f"{k} 完成處理")
 
 
 def test():

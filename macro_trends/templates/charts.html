@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block title %}所有指標圖表{% endblock %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <div id="charts-container"></div>
+    <script>
+        // 從 Django 傳入的 JSON 字串中解析資料
+        const chartData = JSON.parse('{{ chart_data|escapejs }}');
+        const container = document.getElementById('charts-container');
+
+        // 針對每個指標建立一個圖表
+        Object.keys(chartData).forEach(function(indicatorName, index) {
+            // 為每個圖表建立一個標題
+            const title = document.createElement('h2');
+            title.textContent = indicatorName;
+            container.appendChild(title);
+            
+            // 建立 canvas 元素
+            const canvas = document.createElement('canvas');
+            canvas.id = 'chart-' + index;
+            container.appendChild(canvas);
+
+            // 取得 canvas 的 2d context
+            const ctx = canvas.getContext('2d');
+
+            // 建立 Chart.js 圖表（此範例使用折線圖）
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: chartData[indicatorName].dates,
+                    datasets: [{
+                        label: indicatorName,
+                        data: chartData[indicatorName].data,
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        fill: false,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: '日期'
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: '指標值'
+                            }
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+{% endblock %}
