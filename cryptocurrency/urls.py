@@ -21,4 +21,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('main.urls')),  # 將根路徑指向 myapp
     path('macro/', include('macro_trends.urls')), 
+    path('metric/', include('metric_data.urls')), 
+    path('finance/', include('finance.urls')), 
 ]

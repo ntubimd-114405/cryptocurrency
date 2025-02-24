@@ -48,6 +48,9 @@ INSTALLED_APPS = [
     'django.contrib.humanize',
     'main',
     'macro_trends',
+    'metric_data',
+    'finance',
+    
 ]
 
 MIDDLEWARE = [
@@ -164,6 +167,7 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'Asia/Taipei'
 
+
 CELERY_BEAT_SCHEDULE = {
     'news_crawler-every-1-hour': {
         'task': 'main.tasks.news_crawler',
@@ -179,6 +183,14 @@ CELERY_BEAT_SCHEDULE = {
     },
     'macro_economy-every-1-day': {
         'task': 'macro_trends.tasks.macro_economy',  
+        'schedule': 86400.0,
+    },
+    'update_bitcoin_metrics-every-1-hour': {
+        'task': 'metric_data.tasks.update_bitcoin_metrics',  
+        'schedule': 3600.0,
+    },
+    'update_bitcoin_metrics-every-1-day': {
+        'task': 'finance.tasks.save_financial',  
         'schedule': 86400.0,
     },
 }

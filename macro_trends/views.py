@@ -3,6 +3,15 @@ from django.core.serializers.json import DjangoJSONEncoder
 import json
 from .models import Indicator, IndicatorValue
 
+def macro_home(request):
+    # 獲取所有比特幣指標
+    metrics = Indicator.objects.all()
+
+    context = {
+        'metrics': metrics
+    }
+    return render(request, 'macro_home.html', context)
+
 def charts_view(request):
     # 取得所有 Indicator 及其對應的 IndicatorValue
     indicators = Indicator.objects.all()
@@ -21,4 +30,4 @@ def charts_view(request):
     context = {
         'chart_data': json.dumps(chart_data, cls=DjangoJSONEncoder)
     }
-    return render(request, 'charts.html', context)
+    return render(request, 'macro_charts.html', context)

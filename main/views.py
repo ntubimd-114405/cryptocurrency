@@ -448,7 +448,7 @@ def send_email_news(request):
 
     return render(request, 'email_template.html', {'subject':subject,'latest_articles': latest_articles,'name': user.username})
 
-
+'''
 import numpy as np
 import pandas as pd
 from data_analysis.prediction.btc import predict_crypto_price
@@ -480,3 +480,6 @@ def crypto_price_chart(request):
 
 
     return render(request, "chart.html", {"chart_data": json.dumps(data , default=str)})
+'''
+def crypto_price_chart(request):
+    return HttpResponse("hello")

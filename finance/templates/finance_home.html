@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block title %}金融指標{% endblock %}
+
+{% block content %}
+<style>
+    .nav-link {
+    color: #007bff; /* 或其他你想要的顏色 */
+    }
+    .nav-link:hover {
+        color: #0056b3; /* 當鼠標懸停時的顏色 */
+    }
+    table{
+        width: 80%;
+    }
+</style>
+<h1>金融指標</h1>
+<!-- 添加連結到圖表頁面 -->
+<a href="{% url 'finance_chart' %}" class="nav-link">圖表</a>
+    
+<table>
+    <thead>
+        <tr>
+            <th>名稱</th>
+            <th>代號</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for symbol in symbols %}
+        <tr>
+            <td>{{ symbol.name }}</td>
+            <td>{{ symbol.symbol }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

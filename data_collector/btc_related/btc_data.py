@@ -1,56 +1,48 @@
 import requests
-'''
-https://api.blockchain.info/charts/$chartName?timespan=$timespan&rollingAverage=$rollingAverage&start=$start&format=$format&sampled=$sampled
-$timespan- Duration of the chart, default is 1 year for most charts, 1 week for mempool charts. (Optional)
-$rollingAverage- Duration over which the data should be averaged. (Optional)
-$start- Datetime at which to start the chart. (Optional)
-$format- Either JSON or CSV, defaults to JSON. (Optional)
-$sampled- Boolean set to 'true' or 'false' (default 'true'). If true, limits the number of datapoints returned to ~1.5k for performance reasons. (Optional)
-https://api.blockchain.info/charts/transactions-per-second?timespan=5weeks&rollingAverage=8hours&format=json
-'''
+from datetime import datetime, timezone
 
-def get_bitcoin_hashrate():
-    url = "https://api.blockchain.info/charts/hash-rate?timespan=1days&format=json"
-    response = requests.get(url)
-    data = response.json()
-    return data
-
-def get_bitcoin_difficulty():
-    url = "https://api.blockchain.info/q/getdifficulty"
-    response = requests.get(url)
-    data = response.json()
-    return data
-
-def get_bitcoin_active_addresses():
-    url = "https://api.blockchain.info/charts/n-unique-addresses?timespan=1days&format=json"
-    response = requests.get(url)
-    data = response.json()
-    return data
-
-def get_bitcoin_block_height():
-    url = "https://api.blockchain.info/q/getblockcount"
-    response = requests.get(url)
-    data = response.text
-    return data
-
-def get_bitcoin_block_size():
-    url = "https://api.blockchain.info/charts/avg-block-size?timespan=1days&format=json"
-    response = requests.get(url)
-    data = response.json()
-    return data
-
-def main():
-    hashrate = get_bitcoin_hashrate()
-    difficulty = get_bitcoin_difficulty()
-    active_addresses = get_bitcoin_active_addresses()
-    block_height = get_bitcoin_block_height()
-    block_size = get_bitcoin_block_size()
+def convert_data(data):
+    if 'values' not in data or not isinstance(data['values'], list):
+        # 返回一個適當的錯誤消息或空數據結構
+        return {
+            "name": data.get("name", "Hash Rate"),
+            "unit": data.get("unit", ""),
+            "period": data.get("period", ""),
+            "description": data.get("description", ""),
+            "values": [],  # 返回空的值
+            "error": "No valid values found"  # 可選的錯誤訊息
+        }
     
-    print(f"Bitcoin Hashrate: {hashrate} TH/s")
-    print(f"Bitcoin Mining Difficulty: {difficulty}")
-    print(f"Bitcoin Active Addresses: {active_addresses}")
-    print(f"Bitcoin Block Height: {block_height}")
-    print(f"Bitcoin Block Size: {block_size}")
+    values_array = [
+        [datetime.fromtimestamp(entry['x'], tz=timezone.utc).isoformat(), entry['y']]
+        for entry in data['values']
+    ]
+    result = {
+        "name": data.get("name", "Hash Rate"),
+        "unit": data.get("unit", ""),
+        "period": data.get("period", ""),
+        "description": data.get("description", ""),
+        "values": values_array
+    }
+    return result
 
-if __name__ == "__main__":
-    main()
+def get_bitcoin_data(chart_name, start_time):
+    url = f"https://api.blockchain.info/charts/{chart_name}?timespan=1year&format=json&start={start_time}"
+    response = requests.get(url)
+    data = response.json()
+    return convert_data(data)
+
+def get_all_data(name, start_time):
+    chart_mapping = {
+        "Hash Rate": "hash-rate",
+        "Number Of Unique Addresses Used": "n-unique-addresses",
+        "Average Block Size": "avg-block-size",
+        "Miners Revenue":"miners-revenue",
+        "Mempool Size":"mempool-size",
+        "Difficulty":"difficulty",
+    }
+#,"miners-revenue","mempool-size","difficulty"]
+    chart_name = chart_mapping.get(name)
+    if chart_name:
+        return get_bitcoin_data(chart_name, start_time)
+    return None

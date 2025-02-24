@@ -1,6 +1,7 @@
 # 常用指令
 celery -A cryptocurrency worker --loglevel=info
 celery -A cryptocurrency worker --loglevel=info -P eventlet
+celery -A cryptocurrency worker --loglevel=info -P gevent
 celery -A cryptocurrency worker --loglevel=info --pool=solo
 
 celery -A cryptocurrency beat --loglevel=info
@@ -8,6 +9,10 @@ celery -A cryptocurrency beat --loglevel=info
 set DJANGO_SETTINGS_MODULE=cryptocurrency.settings
 
 git merge team/main
+
+# Cuda
+https://developer.nvidia.com/cuda-11-8-0-download-archive
+https://developer.nvidia.com/rdp/cudnn-archive
 # 創建虛擬環境
 python -m venv env
 
