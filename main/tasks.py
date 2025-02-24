@@ -4,7 +4,6 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'cryptocurrency.settings')
 from celery import shared_task
 from datetime import datetime, timedelta
 from dateutil import parser
-from tqdm import tqdm
 from data_collector.coin_history.ccxt_price import CryptoHistoryFetcher
 
 @shared_task
@@ -80,11 +79,12 @@ def news_sentiment():
         "1": "positive"
     }
 
-    for article in tqdm(articles, desc="Processing articles", unit="article"):
+    for article in articles:
         if article.content:  # 確保 content 欄位有內容
             sentiment_value = predict_sentiment(article.content)  # 取得 -1, 0, 1
             article.sentiment = sentiment_mapping.get(sentiment_value, "neutral")  # 預設為 neutral
             article.save()
+            print(article)
 
 @shared_task
 def fetch_coin_history(coin_id):
