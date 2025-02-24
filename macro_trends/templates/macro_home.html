@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+
+{% block title %}宏觀經濟指標{% endblock %}
+
+{% block content %}
+<style>
+    .nav-link {
+    color: #007bff; /* 或其他你想要的顏色 */
+}
+
+    .nav-link:hover {
+        color: #0056b3; /* 當鼠標懸停時的顏色 */
+    }
+    table{
+        width: 80%;
+    }
+</style>
+<h1>宏觀經濟首頁</h1>
+<!-- 添加連結到圖表頁面 -->
+<a href="{% url 'macro_charts' %}" class="nav-link">圖表</a>
+
+
+<table>
+    <thead>
+        <tr>
+            <th>指標名稱</th>
+            <th>簡稱</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for metric in metrics %}
+        <tr>
+            <td>{{ metric.name }}</td>
+            <td>{{ metric.abbreviation }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
