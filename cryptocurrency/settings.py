@@ -190,8 +190,8 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': 86400.0,
     },
     'fetch_trends_task-every-1-day': {
-        'task': 'yourapp.tasks.fetch_trends',  
-        'schedule': 86400.0,  # 每天執行一次
+        'task': 'other.tasks.fetch_trends',  
+        'schedule': 86400.0,
     },
 }
 

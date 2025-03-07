@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Coin, BitcoinPrice, UserProfile, NewsWebsite, NewsArticle, CoinHistory, XPost, Comment
+from .models import Coin, BitcoinPrice, UserProfile, NewsWebsite, NewsArticle, CoinHistory, XPost
 from django.utils.html import format_html
 
 @admin.register(Coin)
@@ -47,7 +47,3 @@ class CoinHistoryAdmin(admin.ModelAdmin):
 @admin.register(XPost)
 class XPostAdmin(admin.ModelAdmin):
     list_display = ('ids', 'html', 'text')
-
-@admin.register(Comment)
-class CommentAdmin(admin.ModelAdmin):
-    list_display = ('article', 'user', 'content', 'created_at', 'updated_at')

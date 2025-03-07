@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block title %}新聞{% endblock %}
+
+{% block content %}
+<h1>最新新聞</h1><a href="{% url 'news_list' %}">查看更多</a>
+<div class="news-list">
+    <div class="news-item">
+        <h2><a href="#">假新聞標題 1</a></h2>
+        <p>這是新聞摘要 1...</p>
+    </div>
+    <div class="news-item">
+        <h2><a href="#">假新聞標題 2</a></h2>
+        <p>這是新聞摘要 2...</p>
+    </div>
+    <div class="news-item">
+        <h2><a href="#">假新聞標題 3</a></h2>
+        <p>這是新聞摘要 3...</p>
+    </div>
+</div>
+{% endblock %}
