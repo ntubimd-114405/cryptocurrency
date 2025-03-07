@@ -20,7 +20,6 @@ from django.urls import path, include
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('main.urls')),  # 將根路徑指向 myapp
-    path('macro/', include('macro_trends.urls')), 
-    path('metric/', include('metric_data.urls')), 
-    path('finance/', include('finance.urls')), 
+    path('news/', include('news.urls')), 
+    path('other/', include('other.urls')), 
 ]

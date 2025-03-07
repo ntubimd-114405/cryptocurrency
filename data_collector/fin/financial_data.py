@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 def get_finance(symbol, start_date, interval="1d"):
     
     # 获取当前 UTC 时间
-    today_utc = datetime.now(timezone.utc).date()
+    today_utc = datetime.now(timezone.utc)
     if start_date >= today_utc:
         return None
     

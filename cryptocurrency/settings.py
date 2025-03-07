@@ -47,9 +47,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.humanize',
     'main',
-    'macro_trends',
-    'metric_data',
-    'finance',
     'other',
     'news',
     
@@ -181,15 +178,19 @@ CELERY_BEAT_SCHEDULE = {
     },
 
     'macro_economy-every-1-day': {
-        'task': 'macro_trends.tasks.macro_economy',  
+        'task': 'other.tasks.macro_economy',  
         'schedule': 86400.0,
     },
     'update_bitcoin_metrics-every-1-hour': {
-        'task': 'metric_data.tasks.update_bitcoin_metrics',  
+        'task': 'other.tasks.update_bitcoin_metrics',  
         'schedule': 3600.0,
     },
     'update_bitcoin_metrics-every-1-day': {
-        'task': 'finance.tasks.save_financial',  
+        'task': 'other.tasks.save_financial',  
+        'schedule': 86400.0,
+    },
+    'fetch_trends_task-every-1-day': {
+        'task': 'other.tasks.fetch_trends',  
         'schedule': 86400.0,
     },
 }

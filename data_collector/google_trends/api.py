@@ -10,7 +10,6 @@ def trends(timeframe):
 
     # 建立 payload，設定查詢時間範圍
     pytrends.build_payload(keywords, cat=0, timeframe=timeframe, geo='', gprop='')
-
     # 取得關鍵字的搜尋量趨勢資料
     data = pytrends.interest_over_time()
 
