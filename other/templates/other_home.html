@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block title %}指標{% endblock %}
+
+{% block content %}
+<style>
+    .nav-link {
+    color: #007bff; /* 或其他你想要的顏色 */
+    }
+    .nav-link:hover {
+        color: #0056b3; /* 當鼠標懸停時的顏色 */
+    }
+    table{
+        width: 80%;
+    }
+</style>
+<h1>指標</h1>
+<!-- 添加連結到圖表頁面 -->
+<a href="{% url 'finance_chart' %}" class="nav-link">finance圖表</a>
+<a href="{% url 'macro_chart' %}" class="nav-link">macro圖表</a>
+<a href="{% url 'metric_chart' %}" class="nav-link">metric圖表</a>
+<a href="{% url 'trend_data_chart' %}" class="nav-link">trend圖表</a>
+{% endblock %}
