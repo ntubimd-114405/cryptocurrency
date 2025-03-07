@@ -50,6 +50,8 @@ INSTALLED_APPS = [
     'macro_trends',
     'metric_data',
     'finance',
+    'other',
+    'news',
     
 ]
 
@@ -160,7 +162,7 @@ EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')  # 使用 Gmail 生成的
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER  # 用來發送郵件的默認地址
 
 from celery.schedules import crontab
-from main.tasks import news_crawler
+
 CELERY_BROKER_URL = 'amqp://guest:guest@127.0.0.1:5672//'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
@@ -170,17 +172,14 @@ CELERY_TIMEZONE = 'Asia/Taipei'
 
 CELERY_BEAT_SCHEDULE = {
     'news_crawler-every-1-hour': {
-        'task': 'main.tasks.news_crawler',
+        'task': 'news.tasks.news_crawler',
         'schedule': 3600.0,
     },
     'fetch_history-every-1-hour': {
         'task': 'main.tasks.fetch_history',  
         'schedule': 3600.0, 
     },
-    'news_sentiment-every-1-hour': {
-        'task': 'main.tasks.news_sentiment',  
-        'schedule': 3600.0, 
-    },
+
     'macro_economy-every-1-day': {
         'task': 'macro_trends.tasks.macro_economy',  
         'schedule': 86400.0,
@@ -196,3 +195,9 @@ CELERY_BEAT_SCHEDULE = {
 }
 
 
+'''
+'news_sentiment-every-1-hour': {
+    'task': 'main.tasks.news_sentiment',  
+    'schedule': 3600.0, 
+},
+'''
