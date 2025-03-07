@@ -9,9 +9,9 @@ def website():
     #InvestingWebsite()無法使用
 
 def article(a):
-    if "yahoo" in a.url:
+    if "finance.yahoo.com" in a.url:
         return YahooArticle(a)
-    elif "investing" in a.url:
+    elif "hk.investing.com" in a.url:
         return InvestingArticle(a)
-    elif "coindesk" in a.url:
+    elif "www.coindesk.com" in a.url:
         return CoindeskArticle(a)

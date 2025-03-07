@@ -9,7 +9,6 @@ from collections import Counter
 import tensorflow as tf
 import logging
 import torch
-from tqdm import tqdm
 
 tf.debugging.set_log_device_placement(False)
 tf.get_logger().setLevel('ERROR')
@@ -53,7 +52,7 @@ def predict_sentiment(text):
     
     text_segments = split_text(text)  # 拆分長文本
     all_sentiments = []
-    for model_name, sentiment_map in tqdm(models_info, desc="Processing models", leave=False):
+    for model_name, sentiment_map in models_info:
         segment_sentiments=[]
         for segment in text_segments:
             segment_sentiments.append(analyze_sentiment(segment, model_name, sentiment_map))
