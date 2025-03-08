@@ -12,7 +12,9 @@
         margin: 0;
         padding: 0;
         font-family: Arial, sans-serif;
+        position: relative; /* 確保不會影響頁面其他元素 */
     }
+
     .sidebar {
         position: fixed;
         left: 0;
@@ -24,16 +26,20 @@
         padding-top: 13px;
         transition: all 0.3s;
         box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        z-index: 1000; /* 確保選單位於頁面其他元素之上 */
     }
+
     .sidebar a {
         display: block;
         padding: 10px 20px;
         color: #007bff;
         text-decoration: none;
     }
+
     .sidebar a:hover {
         background: #e9ecef;
     }
+
     .toggle-btn {
         position: fixed;
         top: 50%;
@@ -46,13 +52,17 @@
         cursor: pointer;
         border-radius: 3px;
         transition: left 0.3s;
+        z-index: 1000; /* 確保按鈕位於選單的上層 */
     }
+
     .sidebar.collapsed {
         left: -200px;
     }
+
     .sidebar.collapsed + .toggle-btn {
         left: 0;
     }
+
     .content {
         padding: 20px;
         flex-grow: 1;
