@@ -3,6 +3,8 @@
 {% block title %}所有金融指標圖表{% endblock %}
 
 {% block content %}
+
+{% include 'sidebar.html' %}
 <div id="charts-container"></div>
 <script>
     // 從 Django 傳入的 JSON 字串中解析資料
