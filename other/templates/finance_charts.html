@@ -8,6 +8,8 @@
 
 <!-- 引入時間範圍選擇器 -->
 {% include 'time_range_selector.html' %}
+<!-- 引入時間範圍選擇器 -->
+{% include 'chart_filter_buttons.html' %}
 
 <!-- 圖表容器 -->
 <div id="charts-container"></div>
@@ -29,13 +31,13 @@
     const charts = {};
 
     // 針對每個指標建立圖表
-    Object.keys(chartData).forEach(function(symbolName, index) {
+    Object.keys(chartData).forEach(function(symbolName) {
         const title = document.createElement('h2');
         title.textContent = symbolName;
         container.appendChild(title);
         
         const canvas = document.createElement('canvas');
-        canvas.id = 'chart-' + index;
+        canvas.id = 'chart-' + symbolName;  // 使用 symbolName 來設定 ID，確保與按鈕的 data-symbol 匹配
         container.appendChild(canvas);
 
         const ctx = canvas.getContext('2d');
@@ -62,6 +64,7 @@
             }
         });
     });
+
 
     // 更新所有圖表的函數，提供給 `time_range_selector.html`
     window.updateAllCharts = function(startIndex, endIndex) {
