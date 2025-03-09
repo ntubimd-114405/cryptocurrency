@@ -19,7 +19,7 @@
         <div class="container d-flex justify-content-between align-items-center">
             <!-- Logo -->
             <a href="/" class="d-flex align-items-center text-white text-decoration-none">
-                <img src="https://hkdesignpro.com/wp-content/uploads/%E5%90%89%E7%A5%A5%E7%89%A9LOGO-1024x595.jpg" alt="Logo" style="width: auto; height: 50px;">
+                <img src="../media/default/crypto.png" alt="Logo" style="width: auto; height: 75px;">
                 <span class="ms-2 fw-bold">加me獲幣</span>
             </a>
 
@@ -27,37 +27,103 @@
             <nav>
                 <ul class="nav">
                     <li class="nav-item">
-                        <a href="{% url 'crypto_list' %}" class="nav-link text-white">列表</a>
+                        <a href="{% url 'crypto_list' %}" class="nav-link text-white">貨幣列表</a>
                     </li>
-                    <li class="nav-item">
-                        <a href="{% url 'news_home' %}" class="nav-link text-white">新聞</a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{% url 'X_list' %}" class="nav-link text-white">川普</a>
-                    </li>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            外部資訊
+                        </button>
+                        <ul class="dropdown-menu custom-dropdown">
+                            <li class="nav-item">
+                                <a href="{% url 'news_home' %}" class="nav-link dropdown-item">📰 新聞</a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{% url 'X_list' %}" class="nav-link dropdown-item">🗣️ 川普</a>
+                            </li>
+                        </ul>
+                    </div>
                     <li class="nav-item">
                         <a href="{% url 'send_email' %}" class="nav-link text-white">發送郵件</a>
                     </li>
-                    <li class="nav-item">
-                        <a href="{% url 'other_home' %}" class="nav-link text-white">其他指標</a>
-                    </li>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                          經濟指標
+                        </button>
+                        <ul class="dropdown-menu custom-dropdown">
+                            <li class="nav-item">
+                                <a href="{% url 'macro_chart' %}" class="nav-link dropdown-item">
+                                    <i class="fa-solid fa-chart-line"></i> 宏觀經濟指標
+                                </a>
+                                <a href="{% url 'metric_chart' %}" class="nav-link dropdown-item">
+                                    <i class="fa-brands fa-bitcoin"></i> 比特幣指標
+                                </a>
+                                <a href="{% url 'finance_chart' %}" class="nav-link dropdown-item">
+                                    <i class="fa-solid fa-money-bill-trend-up"></i> 金融指標
+                                </a>
+                            </li>
+                        </ul>
+                        
+                        <!-- 引入 Font Awesome 圖示庫 -->
+                        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+                        
+                      </div>
+                      
                 </ul>  
             </nav>
             
             <!-- User Authentication -->
             <div>
                 {% if user.is_authenticated %}
-                    <span class="me-3">歡迎, {{ user.username }}!</span>
-                    <div><img src="{{ user.profile.profile_image.url }}" class="profile-image"></div>
-                    <a href="{% url 'logout' %}" class="btn btn-outline-light btn-sm">登出</a>
-                    <a href="{% url 'favorite_coins' %}" class="btn btn-outline-light btn-sm">我的最愛</a>
-                    <a href="{% url 'user_profile' %}" class="btn btn-outline-light btn-sm">更改使用者資料</a>
-                    
-                    
+                <div class="dropdown">
+                    <!-- 按鈕觸發下拉選單 -->
+                    <button class="btn btn-outline-light btn-sm dropdown-toggle d-flex align-items-center custom-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-person-fill me-1" viewBox="0 0 16 16">
+                            <path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6"/>
+                        </svg>
+                    </button>
+                
+                    <!-- 下拉選單 -->
+                    <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark user-dropdown" style = "width: 215px;">
+                        <!-- 頭像 + 使用者名稱 -->
+                        <li class="dropdown-header text-center">
+                            <img src="{{ user.profile.profile_image.url }}" class="profile-image">
+                            <div class="username">| {{ user.username }} |</div>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                
+                        <!-- 功能按鈕 -->
+                        <li class="button-container">
+                            <a href="{% url 'logout' %}" class="btn btn-outline-light btn-sm">登出</a>
+                            <a href="{% url 'favorite_coins' %}" class="btn btn-outline-light btn-sm">我的最愛</a>
+                            <a href="{% url 'user_profile' %}" class="btn btn-outline-light btn-sm">更改..資料</a>
+                        </li>
+                    </ul>
+                </div>
                     
                 {% else %}
-                    <a href="{% url 'login' %}" class="btn btn-outline-light btn-sm">登入</a>
-                    <a href="{% url 'register' %}" class="btn btn-outline-light btn-sm">註冊</a>
+                <div class="dropdown">
+                    <!-- 按鈕觸發下拉選單 -->
+                    <button class="btn btn-outline-light btn-sm dropdown-toggle d-flex align-items-center custom-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-person-fill me-1" viewBox="0 0 16 16">
+                            <path d="M3 14s-1 0-1-1 1-4 6-4 6 3 6 4-1 1-1 1zm5-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6"/>
+                        </svg>
+                    </button>
+                
+                    <!-- 下拉選單 -->
+                    <ul class="dropdown-menu dropdown-menu-end dropdown-menu-dark custom-dropdown">
+                        <li>
+                            <a class="dropdown-item" href="{% url 'login' %}">
+                                <i class="fa-solid fa-right-to-bracket"></i> 登入
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="{% url 'register' %}">
+                                <i class="fa-solid fa-user-plus"></i> 註冊
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                
                 {% endif %}
             </div>
         </div>

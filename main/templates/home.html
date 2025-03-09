@@ -1,9 +1,51 @@
 {% extends 'base.html' %}
-
+{% load static %}
 {% block title %}虛擬貨幣首頁{% endblock %}
 
 {% block content %}
     {% load humanize %}
+    
+    <link rel="stylesheet" href="{% static 'css/home.css' %}">
+    
+    <div class="container container1">
+        <header class = "hero">
+            <h2>歡迎來到虛擬貨幣分析平台</h2>
+            <p>即時更新的加密貨幣價格與市場數據，助您做出明智的決策。</p>
+            <a href="#price-list" class="btn btn-primary">查看幣種列表</a>
+        </header>
+        
+        <section id="highlights" class="section">
+            <h2>市場統計</h2>
+        <p><strong>總市值 (USD):</strong> 
+            <span id="total_market_cap">載入中...</span>
+        </p>
+
+        <p><strong>24 小時交易量 (USD):</strong> 
+            <span id="total_24h_volume">載入中...</span>
+        </p>
+
+        <p><strong>市占率:</strong> 
+            <span id="btc_dominance">載入中...</span> | 
+            <span id="eth_dominance">載入中...</span> | 
+            <span id="other_dominance">載入中...</span>
+        </p>
+    </div>
+
+    <div class="container container2">
+        <h2>標題</h2>
+        <p>文字</p>
+        <small>小字</small>
+        <button>按鈕</button>
+        <div class="box">Container2</div>
+    </div>
+
+    <div class="container container3">
+        <h2>標題</h2>
+        <p>文字</p>
+        <small>小字</small>
+        <button>按鈕</button>
+        <div class="box">Container3</div>
+    </div>
     <div class="container">
         <header class="hero">
             <h1>歡迎來到虛擬貨幣分析平台</h1>

@@ -1,0 +1,30 @@
+.container1 {
+    background-color: #FFFFFF;
+}
+
+.container2 {
+    background-color: #F5F8FF;
+}
+
+.container3 {
+    background-color: #2B2B2B;
+    color: white;
+}
+
+.box {
+    display: inline-block;
+    background-color: #135A7B;
+    color: #E8C28E;
+    padding: 20px;
+    border-radius: 15px;
+    margin-top: 10px;
+}
+
+button {
+    background-color: #31A7C4;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 5px;
+}
