@@ -1,0 +1,109 @@
+<style>
+    .button-container {
+        margin: 20px auto;
+        text-align: center;
+    }
+    
+    .chart-button {
+        display: inline-block;
+        padding: 8px 15px;
+        margin: 5px;
+        font-size: 14px;
+        border: 2px solid #2E6695;
+        background: white;
+        color: #2E6695;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+
+    .chart-button.active {
+        background: #2E6695;
+        color: white;
+    }
+</style>
+
+<div id="filter-buttons" class="button-container"></div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const chartData = JSON.parse('{{ chart_data|escapejs }}');
+        const buttonContainer = document.getElementById('filter-buttons');
+        const allButton = document.createElement('button');
+        
+        // 存儲圖表的活躍狀態
+        const activeCharts = new Set(Object.keys(chartData));  // 預設所有圖表都顯示
+
+        // 建立篩選按鈕
+        allButton.textContent = '全部隱藏';
+        allButton.classList.add('chart-button', 'active');
+        allButton.addEventListener('click', function () {
+            if (activeCharts.size === Object.keys(chartData).length) {
+                // 當所有圖表都顯示時，切換為隱藏所有圖表
+                activeCharts.clear();
+                allButton.textContent = '全部顯示';
+                allButton.classList.remove('active');
+                // 清除所有單個按鈕的 active 類
+                Object.keys(chartData).forEach(function (symbolName) {
+                    const button = document.querySelector(`button[data-symbol="${symbolName}"]`);
+                    button.classList.remove('active');
+                });
+            } else {
+                // 顯示所有圖表
+                activeCharts.clear();
+                Object.keys(chartData).forEach(name => activeCharts.add(name));
+                allButton.textContent = '全部隱藏';
+                allButton.classList.add('active');
+                // 使所有按鈕都變回藍色
+                Object.keys(chartData).forEach(function (symbolName) {
+                    const button = document.querySelector(`button[data-symbol="${symbolName}"]`);
+                    button.classList.add('active');
+                });
+            }
+            updateChartVisibility();
+        });
+        buttonContainer.appendChild(allButton);
+
+        Object.keys(chartData).forEach(function (symbolName) {
+            // 創建按鈕
+            const button = document.createElement('button');
+            button.textContent = symbolName;
+            button.classList.add('chart-button', 'active'); // 初始狀態為 active，顯示藍色
+            button.setAttribute('data-symbol', symbolName); // 增加 data-symbol 屬性以識別每個按鈕
+            button.addEventListener('click', function () {
+                if (activeCharts.has(symbolName)) {
+                    activeCharts.delete(symbolName);
+                    button.classList.remove('active');
+                } else {
+                    activeCharts.add(symbolName);
+                    button.classList.add('active');
+                }
+                updateChartVisibility();
+
+                // 更新“全部顯示”按鈕狀態
+                if (activeCharts.size === Object.keys(chartData).length) {
+                    allButton.textContent = '全部隱藏';
+                    allButton.classList.add('active');
+                } else {
+                    allButton.textContent = '全部顯示';
+                    allButton.classList.remove('active');
+                }
+            });
+            buttonContainer.appendChild(button);
+        });
+
+        // 更新圖表顯示狀態
+        function updateChartVisibility() {
+            Object.keys(chartData).forEach(function (symbolName) {
+                const chartElement = document.getElementById(`chart-${symbolName}`);
+                if (activeCharts.has(symbolName)) {
+                    chartElement.style.display = 'block';
+                    chartElement.previousSibling.style.display = 'block'; // 顯示標題
+                } else {
+                    chartElement.style.display = 'none';
+                    chartElement.previousSibling.style.display = 'none'; // 隱藏標題
+                }
+            });
+        }
+    });
+</script>

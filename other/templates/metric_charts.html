@@ -6,7 +6,11 @@
 
 {% include 'sidebar.html' %}
 
-{% include 'time_range_selector.html' %} {# 加入時間範圍選擇器 #}
+{% include 'time_range_selector.html' %}
+
+<!-- 引入時間範圍選擇器 -->
+{% include 'chart_filter_buttons.html' %}
+
 
 <div id="charts-container"></div>
 
@@ -27,42 +31,37 @@
     const charts = {};
 
     // 針對每個比特幣指標建立圖表
-    Object.keys(chartData).forEach(function(metricName, index) {
-        // 建立圖表標題
+    Object.keys(chartData).forEach(function(symbolName) {
         const title = document.createElement('h2');
-        title.textContent = metricName;
+        title.textContent = symbolName;
         container.appendChild(title);
 
-        // 建立 canvas 元素
+        // 建立 canvas 元素，確保 ID 和符號名稱對應
         const canvas = document.createElement('canvas');
-        canvas.id = 'chart-' + index;
+        canvas.id = 'chart-' + symbolName;  // 使用 symbolName 來設定 ID，確保與按鈕的 data-symbol 匹配
         container.appendChild(canvas);
 
         const ctx = canvas.getContext('2d');
 
         // 創建 Chart.js 圖表
-        charts[metricName] = new Chart(ctx, {
+        charts[symbolName] = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: window.allDates,
                 datasets: [{
-                    label: metricName,
-                    data: chartData[metricName].data,
+                    label: symbolName ,
+                    data: chartData[symbolName].data,
                     borderColor: '#37BCD8',
                     backgroundColor: 'rgba(55, 188, 216, 0.2)',
-                    fill: true,
-                    tension: 0.3
+                    fill: false,
+                    tension: 0.1
                 }]
             },
             options: {
                 responsive: true,
                 scales: {
-                    x: {
-                        title: { display: true, text: '日期' }
-                    },
-                    y: {
-                        title: { display: true, text: '指標值' }
-                    }
+                    x: { title: { display: true, text: '日期' }},
+                    y: { title: { display: true, text: '指標值' }}
                 }
             }
         });

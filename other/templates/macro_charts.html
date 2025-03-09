@@ -10,6 +10,9 @@
 <!-- 時間範圍選擇器 -->
 {% include 'time_range_selector.html' %}
 
+<!-- 引入篩選圖表按鈕 -->
+{% include 'chart_filter_buttons.html' %}
+
 <div id="charts-container"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -29,42 +32,37 @@
     const charts = {};
 
     // 針對每個指標建立圖表
-    Object.keys(chartData).forEach(function(indicatorName, index) {
-        // 建立圖表標題
+    Object.keys(chartData).forEach(function(symbolName) {
         const title = document.createElement('h2');
-        title.textContent = indicatorName;
+        title.textContent = symbolName;
         container.appendChild(title);
 
-        // 建立 canvas 元素
+        // 建立 canvas 元素，確保 ID 和符號名稱對應
         const canvas = document.createElement('canvas');
-        canvas.id = 'chart-' + index;
+        canvas.id = 'chart-' + symbolName;  // 使用 symbolName 來設定 ID，確保與按鈕的 data-symbol 匹配
         container.appendChild(canvas);
 
         const ctx = canvas.getContext('2d');
 
         // 創建 Chart.js 圖表
-        charts[indicatorName] = new Chart(ctx, {
+        charts[symbolName] = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: window.allDates,
                 datasets: [{
-                    label: indicatorName,
-                    data: chartData[indicatorName].data,
+                    label: symbolName ,
+                    data: chartData[symbolName].data,
                     borderColor: '#37BCD8',
                     backgroundColor: 'rgba(55, 188, 216, 0.2)',
-                    fill: true,
-                    tension: 0.3
+                    fill: false,
+                    tension: 0.1
                 }]
             },
             options: {
                 responsive: true,
                 scales: {
-                    x: {
-                        title: { display: true, text: '日期' }
-                    },
-                    y: {
-                        title: { display: true, text: '指標值' }
-                    }
+                    x: { title: { display: true, text: '日期' }},
+                    y: { title: { display: true, text: '指標值' }}
                 }
             }
         });
@@ -72,10 +70,10 @@
 
     // 提供更新圖表的函數給 `time_range_selector.html`
     window.updateAllCharts = function(startIndex, endIndex) {
-        Object.keys(charts).forEach(indicatorName => {
-            charts[indicatorName].data.labels = window.allDates.slice(startIndex, endIndex + 1);
-            charts[indicatorName].data.datasets[0].data = chartData[indicatorName].data.slice(startIndex, endIndex + 1);
-            charts[indicatorName].update();
+        Object.keys(charts).forEach(symbolName => {
+            charts[symbolName].data.labels = window.allDates.slice(startIndex, endIndex + 1);
+            charts[symbolName].data.datasets[0].data = chartData[symbolName].data.slice(startIndex, endIndex + 1);
+            charts[symbolName].update();
         });
     };
 </script>
