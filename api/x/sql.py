@@ -22,7 +22,7 @@ def insert_xpost(ids, html, text):
 
     # 插入操作
     insert_query = """
-    INSERT IGNORE INTO main_xpost (ids, html, text)
+    INSERT IGNORE INTO news_xpost (ids, html, text)
     VALUES (%s, %s, %s)
     """
 

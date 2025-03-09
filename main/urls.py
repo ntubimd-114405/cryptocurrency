@@ -15,7 +15,6 @@ urlpatterns = [
     path('add_to_favorites/<int:pk>/', views.add_to_favorites, name='add_to_favorites'),
     path('remove-favorite/<int:pk>/', views.remove_from_favorites, name='remove_from_favorites'),
     path('favorites/', views.favorite_coins, name='favorite_coins'),
-    path('post/', views.X_list, name='X_list'),
     path('register/', views.register_view, name='register'),
 
 

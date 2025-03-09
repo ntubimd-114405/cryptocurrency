@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404,redirect
 import requests
 from django.http import JsonResponse,HttpResponseRedirect
-from .models import BitcoinPrice,UserProfile,Coin,NewsWebsite,NewsArticle,CoinHistory,XPost,User
+from .models import BitcoinPrice,UserProfile,Coin,NewsWebsite,NewsArticle,CoinHistory,User
 from datetime import datetime
 from django.core.paginator import Paginator
 # 登入頁面
@@ -245,11 +245,6 @@ def favorite_coins(request):
     user_profile = request.user.profile
     favorite_cryptos = user_profile.favorite_coin.all()  # 獲取用戶的最愛幣
     return render(request, 'favorite_coins.html', {'favorite_cryptos': favorite_cryptos})
-
-def X_list(request):
-    # 获取指定 id 的 XPost 对象
-    xposts = XPost.objects.all()
-    return render(request, 'x_list.html', {'xposts': xposts})
 
 #忘記密碼
 from django.contrib.auth import views as auth_views
