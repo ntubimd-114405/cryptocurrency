@@ -115,3 +115,101 @@ img.profile-image {
     object-fit: cover;
     image-rendering: smooth; /* 可選，嘗試此屬性來改善加載過程 */
 }
+
+.custom-btn {
+    border-radius: 8px;
+    padding: 10px 15px;
+    transition: all 0.3s ease-in-out;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.custom-btn:hover {
+    background-color: #0056b3; /* 深藍色 */
+    box-shadow: 0px 6px 10px rgba(0, 0, 0, 0.2);
+}
+
+/* 美化下拉選單 */
+.custom-dropdown {
+    border-radius: 10px;
+    overflow: hidden;
+    min-width: 150px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* 下拉選單內的選項 */
+.custom-dropdown .dropdown-item {
+    padding: 12px 15px;
+    transition: background-color 0.2s ease-in-out;
+    font-size: 16px;
+}
+
+.custom-dropdown .dropdown-item:hover {
+    background-color: #f8f9fa; /* 淡灰色 */
+    color: #007bff; /* 藍色 */
+}
+
+/* 美化下拉選單 */
+.custom-dropdown {
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* 選單項目 hover 效果 */
+.custom-dropdown .dropdown-item {
+    transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
+}
+
+.custom-dropdown .dropdown-item:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: #f8f9fa;
+}
+
+/* 調整圖示與文字的間距 */
+.dropdown-item i {
+    margin-right: 8px;
+}
+
+.user-dropdown {
+    min-width: 320px;  /* 原本 220px，擴大到 320px */
+    max-width: 360px;  /* 避免過大 */
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+    padding: 15px;  /* 內距加大，讓內容更寬鬆 */
+}
+
+/* 頭像區塊 */
+.profile-image {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    display: block;
+    margin: 0 auto 10px;
+    border: 2px solid white;
+}
+
+/* 使用者名稱 */
+.username {
+    text-align: center;
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+/* 讓按鈕平均分布 */
+.button-container {
+    display: flex;
+    flex-wrap: wrap; /* 允許換行 */
+    gap: 8px; /* 按鈕間距 */
+    justify-content: center; /* 置中排列 */
+}
+
+/* 讓按鈕等寬 */
+.button-container a {
+    flex: 1;
+    text-align: center;
+    min-width: 100px; /* 最小寬度 */
+    padding: 8px 12px;
+}
