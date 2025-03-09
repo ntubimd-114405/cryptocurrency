@@ -8,7 +8,7 @@
 
 <!-- 引入時間範圍選擇器 -->
 {% include 'time_range_selector.html' %}
-<!-- 引入時間範圍選擇器 -->
+<!-- 引入圖表篩選按鈕 -->
 {% include 'chart_filter_buttons.html' %}
 
 <!-- 圖表容器 -->
@@ -20,32 +20,51 @@
     // 從 Django 傳入的 JSON 字串中解析資料
     const chartData = JSON.parse('{{ chart_data|escapejs }}');
     const container = document.getElementById('charts-container');
+    const startRange = document.getElementById('startRange');
+    const endRange = document.getElementById('endRange');
+    const startLabel = document.getElementById('startLabel');
+    const endLabel = document.getElementById('endLabel');
+
+    let earliestDate = null;
+    let latestDate = null;
+    let allDates = [];
 
     // 取得所有日期，確保時間範圍的一致性
-    window.allDates = [];
     Object.values(chartData).forEach(data => {
-        window.allDates = data.dates;
+        allDates = allDates.concat(data.dates);
     });
 
     // 存儲所有圖表的實例
     const charts = {};
 
     // 針對每個指標建立圖表
-    Object.keys(chartData).forEach(function(symbolName) {
+    Object.keys(chartData).forEach(function(symbolName, index) {
         const title = document.createElement('h2');
         title.textContent = symbolName;
         container.appendChild(title);
-        
+
         const canvas = document.createElement('canvas');
-        canvas.id = 'chart-' + symbolName;  // 使用 symbolName 來設定 ID，確保與按鈕的 data-symbol 匹配
+        canvas.id = 'chart-' + index;
         container.appendChild(canvas);
 
         const ctx = canvas.getContext('2d');
+        const dates = chartData[symbolName].dates;
+        allDates = allDates.concat(dates);
+
+        // 更新最早和最晚日期
+        dates.forEach(date => {
+            if (!earliestDate || new Date(date) < new Date(earliestDate)) {
+                earliestDate = date;
+            }
+            if (!latestDate || new Date(date) > new Date(latestDate)) {
+                latestDate = date;
+            }
+        });
 
         charts[symbolName] = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: window.allDates,
+                labels: dates,
                 datasets: [{
                     label: symbolName + ' 收盤價',
                     data: chartData[symbolName].data,
@@ -65,11 +84,62 @@
         });
     });
 
+    // 設定時間範圍選擇器的範圍
+    allDates = Array.from(new Set(allDates)); // 移除重複的日期
+    allDates.sort((a, b) => new Date(a) - new Date(b)); // 排序日期
+
+    startRange.min = 0;
+    startRange.max = allDates.length - 1;
+    startRange.value = 0;
+
+    endRange.min = 0;
+    endRange.max = allDates.length - 1;
+    endRange.value = allDates.length - 1;
+
+    // 顯示選擇的時間範圍
+    function updateTimeRangeLabel() {
+        const startDate = allDates[startRange.value];
+        const endDate = allDates[endRange.value];
+        startLabel.textContent = startDate;
+        endLabel.textContent = endDate;
+    }
+
+    // 更新圖表顯示的日期範圍
+    function updateCharts() {
+        const startDate = allDates[startRange.value];
+        const endDate = allDates[endRange.value];
+        startLabel.textContent = startDate;
+        endLabel.textContent = endDate;
+
+        // 更新所有圖表的顯示
+        Object.keys(chartData).forEach(function(symbolName, index) {
+            const chart = Chart.getChart('chart-' + index);
+            const filteredDates = chartData[symbolName].dates.filter(date => 
+                new Date(date) >= new Date(startDate) && new Date(date) <= new Date(endDate)
+            );
+            const filteredData = chartData[symbolName].data.slice(
+                chartData[symbolName].dates.indexOf(filteredDates[0]),
+                chartData[symbolName].dates.indexOf(filteredDates[filteredDates.length - 1]) + 1
+            );
+
+            // 更新圖表資料
+            chart.data.labels = filteredDates;
+            chart.data.datasets[0].data = filteredData;
+            chart.update(); // 更新圖表
+        });
+    }
+
+    // 當使用者調整時間範圍時，更新圖表
+    startRange.addEventListener('input', updateCharts);
+    endRange.addEventListener('input', updateCharts);
+
+    // 初始化顯示的時間範圍
+    updateTimeRangeLabel();
 
     // 更新所有圖表的函數，提供給 `time_range_selector.html`
     window.updateAllCharts = function(startIndex, endIndex) {
         Object.keys(charts).forEach(symbolName => {
-            charts[symbolName].data.labels = window.allDates.slice(startIndex, endIndex + 1);
+            charts[symbolName].data.labels = allDates.slice(startIndex, endIndex + 1);
             charts[symbolName].data.datasets[0].data = chartData[symbolName].data.slice(startIndex, endIndex + 1);
             charts[symbolName].update();
         });
