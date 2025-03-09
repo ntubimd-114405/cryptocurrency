@@ -176,6 +176,7 @@ def macro_economy():
 
 
 def all():
+    fetch_trends_task()
     save_financial()
     update_bitcoin_metrics()
     macro_economy()

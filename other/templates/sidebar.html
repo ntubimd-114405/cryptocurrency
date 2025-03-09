@@ -1,0 +1,80 @@
+<div class="sidebar" id="sidebar">
+    <a href="{% url 'finance_chart' %}">finance圖表</a>
+    <a href="{% url 'macro_chart' %}">macro圖表</a>
+    <a href="{% url 'metric_chart' %}">metric圖表</a>
+    <a href="{% url 'trend_data_chart' %}">trend圖表</a>
+</div>
+<button class="toggle-btn" id="toggle-btn">◀</button>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+        position: relative; /* 確保不會影響頁面其他元素 */
+    }
+
+    .sidebar {
+        position: fixed;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        height: 200px;
+        width: 200px;
+        background: #f8f9fa;
+        padding-top: 13px;
+        transition: all 0.3s;
+        box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        z-index: 1000; /* 確保選單位於頁面其他元素之上 */
+    }
+
+    .sidebar a {
+        display: block;
+        padding: 10px 20px;
+        color: #007bff;
+        text-decoration: none;
+    }
+
+    .sidebar a:hover {
+        background: #e9ecef;
+    }
+
+    .toggle-btn {
+        position: fixed;
+        top: 50%;
+        left: 200px;
+        transform: translateY(-50%);
+        background: #007bff;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        cursor: pointer;
+        border-radius: 3px;
+        transition: left 0.3s;
+        z-index: 1000; /* 確保按鈕位於選單的上層 */
+    }
+
+    .sidebar.collapsed {
+        left: -200px;
+    }
+
+    .sidebar.collapsed + .toggle-btn {
+        left: 0;
+    }
+
+    .content {
+        padding: 20px;
+        flex-grow: 1;
+        transition: margin-left 0.3s;
+    }
+</style>
+
+<script>
+    $(document).ready(function(){
+        $("#toggle-btn").click(function(){
+            $("#sidebar").toggleClass("collapsed");
+            $(this).text($("#sidebar").hasClass("collapsed") ? "▶" : "◀");
+        });
+    });
+</script>

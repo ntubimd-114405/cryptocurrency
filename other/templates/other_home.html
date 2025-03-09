@@ -3,21 +3,173 @@
 {% block title %}指標{% endblock %}
 
 {% block content %}
+<!-- 引入選單 -->
+{% include 'sidebar.html' %}
+
 <style>
+    body {
+        font-family: 'Arial', sans-serif;
+        background-color: #f4f7fc;
+        color: #333;
+    }
+
     .nav-link {
-    color: #007bff; /* 或其他你想要的顏色 */
+        color: #37BCD8; /* 使用你指定的顏色 */
+        text-decoration: none;
+        font-weight: bold;
+        transition: color 0.3s;
     }
+
     .nav-link:hover {
-        color: #0056b3; /* 當鼠標懸停時的顏色 */
+        color: #2E6695; /* 深藍色，當鼠標懸停時變色 */
+        text-decoration: underline;
     }
-    table{
-        width: 80%;
+
+    h1 {
+        font-size: 32px;
+        color: #2E6695; /* 標題使用深藍色 */
+        margin-bottom: 40px;
+        text-align: center;
+    }
+
+    .section {
+        background-color: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        margin-bottom: 30px;
+        transition: all 0.3s ease-in-out;
+    }
+
+    .section:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .section h2 {
+        font-size: 26px;
+        color: #2E6695; /* 深藍色 */
+        margin-bottom: 15px;
+    }
+
+    .section p {
+        font-size: 16px;
+        line-height: 1.6;
+        color: #666; /* 淺灰色文字 */
+        margin-bottom: 20px;
+    }
+
+    .section ul {
+        list-style-type: none;
+        padding-left: 0;
+        margin-bottom: 20px;
+    }
+
+    .section ul li {
+        font-size: 16px;
+        line-height: 1.8;
+        color: #555; /* 深灰色 */
+        margin-bottom: 10px;
+    }
+
+    .section ul li strong {
+        color: #37BCD8; /* 使用亮藍色強調 */
+    }
+
+    .section a {
+        display: inline-block;
+        padding: 12px 25px;
+        background-color: #37BCD8; /* 亮藍色按鈕 */
+        color: white;
+        text-decoration: none;
+        font-size: 16px;
+        border-radius: 5px;
+        transition: background-color 0.3s ease, transform 0.3s ease;
+    }
+
+    .section a:hover {
+        background-color: #2E6695; /* 深藍色按鈕懸停效果 */
+        transform: translateY(-2px);
+    }
+
+    .section a:active {
+        background-color: #3A9EC2; /* 中藍色按鈕點擊效果 */
+        transform: translateY(1px);
+    }
+
+    @media (max-width: 768px) {
+        .section {
+            padding: 15px;
+        }
+        .section h2 {
+            font-size: 22px;
+        }
+        .section p {
+            font-size: 14px;
+        }
+        .section a {
+            padding: 10px 20px;
+        }
     }
 </style>
+
 <h1>指標</h1>
-<!-- 添加連結到圖表頁面 -->
-<a href="{% url 'finance_chart' %}" class="nav-link">finance圖表</a>
-<a href="{% url 'macro_chart' %}" class="nav-link">macro圖表</a>
-<a href="{% url 'metric_chart' %}" class="nav-link">metric圖表</a>
-<a href="{% url 'trend_data_chart' %}" class="nav-link">trend圖表</a>
+
+<!-- Finance Chart Section -->
+<div class="section">
+    <h2>財務圖表 (Finance Chart)</h2>
+    <p>這些是關於財經市場的主要指標，包括股市、商品期貨等，對於投資者來說，這些指標提供了市場走勢的重要信息。</p>
+    <ul>
+        <li><strong>S&P 500 指數</strong>: 追蹤美國500大上市公司股票的指數。</li>
+        <li><strong>黃金期貨</strong>: 用來預測黃金價格變動的期貨合約。</li>
+        <li><strong>WTI 原油期貨</strong>: 反映美國西德克薩斯中質原油價格的期貨指數。</li>
+        <li><strong>美元指數</strong>: 衡量美元相對於一籃子貨幣的強弱。</li>
+        <li><strong>VIX 波動率指數</strong>: 反映市場對未來30天波動的預期。</li>
+    </ul>
+    <a href="{% url 'finance_chart' %}" class="nav-link">查看財務圖表</a>
+</div>
+
+<!-- Macro Chart Section -->
+<div class="section">
+    <h2>宏觀經濟指標 (Macro Chart)</h2>
+    <p>這些指標反映了整體經濟情況，對政策制定者、經濟學家和投資者有很高的參考價值。</p>
+    <ul>
+        <li><strong>國內生產總值 (GDP)</strong>: 衡量一國所有商品和服務的總產值。</li>
+        <li><strong>失業率</strong>: 計算國家勞動力市場中的失業人數比例。</li>
+        <li><strong>通脹率 (CPI)</strong>: 衡量消費者物價變動的指標。</li>
+        <li><strong>利率 (聯邦基金利率)</strong>: 美國聯邦儲備系統設定的基準利率。</li>
+        <li><strong>貿易平衡</strong>: 一國出口與進口之間的差額。</li>
+        <li><strong>貨幣供應量 (M2)</strong>: 衡量市場上可用貨幣的總量。</li>
+        <li><strong>政府預算赤字/盈餘</strong>: 政府支出與收入的差額。</li>
+        <li><strong>生產者物價指數 (PPI)</strong>: 衡量生產者價格變動的指標。</li>
+        <li><strong>消費者信心指數 (CCI)</strong>: 衡量消費者對經濟的信心。</li>
+    </ul>
+    <a href="{% url 'macro_chart' %}" class="nav-link">查看宏觀經濟指標圖表</a>
+</div>
+
+<!-- Metric Chart Section -->
+<div class="section">
+    <h2>加密貨幣指標 (Metric Chart)</h2>
+    <p>這些指標主要關注加密貨幣網絡的運行狀況與健康指標，特別是在比特幣等加密貨幣中。</p>
+    <ul>
+        <li><strong>Hash Rate</strong>: 衡量區塊鏈網絡的運算能力。</li>
+        <li><strong>Number Of Unique Addresses Used</strong>: 計算使用過的獨立地址數量。</li>
+        <li><strong>Average Block Size</strong>: 每個區塊的平均大小。</li>
+        <li><strong>Miners Revenue</strong>: 挖礦者的總收入。</li>
+        <li><strong>Mempool Size</strong>: 反映網絡中的交易積壓情況。</li>
+        <li><strong>Difficulty</strong>: 衡量挖礦難度的指標。</li>
+    </ul>
+    <a href="{% url 'metric_chart' %}" class="nav-link">查看加密貨幣指標圖表</a>
+</div>
+
+<!-- Trend Data Chart Section -->
+<div class="section">
+    <h2>趨勢數據 (Trend Data Chart)</h2>
+    <p>趨勢數據指標用來分析並展示市場或經濟的長期趨勢。</p>
+    <ul>
+        <li><strong>Trend Data</strong>: 各種經濟或市場的長期趨勢數據。</li>
+    </ul>
+    <a href="{% url 'trend_data_chart' %}" class="nav-link">查看趨勢數據圖表</a>
+</div>
+
 {% endblock %}

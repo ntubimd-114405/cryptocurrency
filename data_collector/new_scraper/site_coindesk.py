@@ -94,7 +94,7 @@ class CoindeskWebsite(BaseWebsite):
             link=link["href"]
             link = link.split("https://www.coindesk.com")[-1]
             
-            time = article.find('span', class_="Noto_Sans_xs_Sans-400-xs")
+            time = article.find('span', class_="font-metadata")
             if time is None:continue
             time=time.text
             time=parse_relative_time(time)
