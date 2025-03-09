@@ -7,7 +7,7 @@
     
     <link rel="stylesheet" href="{% static 'css/home.css' %}">
     <div class="container container1">
-        <img src="../../media/default/btc-1.png" alt="" style = "height: auto; width: 250px;">
+        <img src="{% static 'images/btc-1.png' %}" alt="" style = "height: auto; width: 250px;">
         <header class = "hero"> 
             <h2>歡迎來到虛擬貨幣分析平台</h2>
             <p>即時更新的加密貨幣價格與市場數據，助您做出明智的決策。</p>
@@ -38,11 +38,11 @@
             <a href="{% url 'X_list' %}" class = "p1">川普</a>
         </div>
         
-        <img src="../../media/default/news.png" alt="" style = "height: auto; width: 250px; margin-top: 25px; margin-bottom: 25px;">
+        <img src="{% static 'images/news.png' %}" alt="" style = "height: auto; width: 250px; margin-top: 25px; margin-bottom: 25px;">
     </div>
 
     <div class="container container3">
-        <img src="../../media/default/pointer.png" alt="" style = "height: auto; width: 250px; margin-top: 25px; margin-bottom: 25px;">
+        <img src="{% static 'images/pointer.png' %}" alt="" style = "height: auto; width: 250px; margin-top: 25px; margin-bottom: 25px;">
         <div class="pointer">
             <h2 style = "color: white;">經濟指標</h2>
             <p>在您想要投資的時候，可以參考這些經濟指標，助您投資順利。</p>
