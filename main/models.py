@@ -104,13 +104,7 @@ class CoinHistory(models.Model):
         return f"{self.coin.coinname} - {self.date.strftime('%Y-%m-%d %H:%M:%S')}"
     
 
-class XPost(models.Model):
-    ids = models.CharField(max_length=255, unique=True)
-    html = models.TextField()
-    text = models.TextField()
 
-    def __str__(self):
-        return f"Tweet ID: {self.ids}"
     
 class UserNotificationPreference(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="notification_preference")

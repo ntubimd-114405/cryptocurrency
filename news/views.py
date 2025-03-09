@@ -1,15 +1,18 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from .models import Article, Website,Reply,Comment
+from .models import Article, Website,Reply,Comment,XPost
 from datetime import datetime
 import re
 
 
 def home(request):
+    # 取得最新 3 則新聞
+    latest_articles = Article.objects.all().order_by('-time')[:3]
 
     context = {
-
+        'all_articles': latest_articles  # 傳遞新聞資料
     }
     return render(request, 'news_home.html', context)
+
 
 def news_list(request):
     # 獲取搜尋關鍵字和篩選選項
@@ -65,3 +68,31 @@ def news_detail(request, article_id):
 
     comments = article.comments.all()
     return render(request, 'news_detail.html', {'article': article, 'comments': comments, 'paragraphs': paragraphs})
+
+from django.shortcuts import render
+from .models import Article, XPost  # 確保你有這些模型
+
+# 共用的 X_list 邏輯
+def get_xposts():
+    return XPost.objects.all()
+
+def news_home(request):
+    all_articles = Article.objects.all().order_by('-time')[:3]  # 查詢新聞文章
+    xposts = XPost.objects.all().order_by('-ids')[:3]  # 使用共用的函數來獲取 Twitter 貼文
+    print(xposts)
+
+    return render(request, 'news_home.html', {
+        'all_articles': all_articles,  # 傳遞新聞文章
+        'xposts': xposts,              # 傳遞 Twitter 貼文
+    })
+
+def X_list(request):
+    # 获取所有 XPost 对象，使用相同的函數來避免重複
+    xposts = get_xposts()
+    return render(request, 'x_list.html', {'xposts': xposts})
+
+
+def X_list(request):
+    # 获取指定 id 的 XPost 对象
+    xposts = XPost.objects.all()
+    return render(request, 'x_list.html', {'xposts': xposts})
