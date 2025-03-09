@@ -1,18 +1,35 @@
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 .container1 {
-    background-color: #FFFFFF;
+    background: linear-gradient(to right, #ffffff, #E3F2FD);
     display: flex;
     align-items: center; /* 垂直置中 */
     justify-content: center; /* 讓內容居中 */
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeIn 0.8s ease-in-out forwards;
 }
 .hero{
     max-width: 500px;
 }
 
 .container2 {
-    background-color: #F5F8FF;
+    background: linear-gradient(to right, #F5F8FF, #DDE7FF);
     display: flex;
     align-items: center; /* 垂直置中 */
     justify-content: center; /* 讓內容居中 */
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeIn 0.8s ease-in-out forwards;
 }
 
 .news{
@@ -21,11 +38,14 @@
 }
 
 .container3 {
-    background-color: #2B2B2B;
+    background: linear-gradient(to right, #2B2B2B, #3B3B3B);
     color: white;
     display: flex;
     align-items: center; /* 垂直置中 */
     justify-content: center; /* 讓內容居中 */
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeIn 0.8s ease-in-out forwards;
 }
 
 .pointer{
@@ -36,8 +56,47 @@
     background-color: #31A7C4;
     color: white;
     border: none;
+    padding: 12px 24px; /* 按鈕大小更明顯 */
+    cursor: pointer;
+    border-radius: 8px; /* 圓角更柔和 */
+    font-weight: bold;
+    transition: all 0.3s ease-in-out; /* 讓變化更流暢 */
+    text-decoration: none; /* 移除底線 */
+    display: inline-block;
+}
+
+.p1:hover {
+    background-color: #2589A3; /* 懸停時變深色 */
+}
+
+img {
+    max-width: 100%; /* 讓圖片可以縮放 */
+    height: auto;
+    border-radius: 10px; /* 圓角讓圖片更柔和 */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* 陰影提升質感 */
+}
+
+.news, .pointer, .hero {
+    text-align: left;
+    padding: 20px;
+}
+
+.back-to-top {
+    position: fixed;
+    bottom: 40px;
+    right: 20px;
+    background-color: #31A7C4;
+    color: white;
+    border: none;
     padding: 10px 20px;
     cursor: pointer;
-    border-radius: 5px;
-    margin: 0 5px;
+    border-radius: 8px;
+    font-weight: bold;
+    display: none; /* 預設不顯示 */
+    transition: all 0.3s ease-in-out;
+}
+
+.back-to-top:hover {
+    background-color: #2589A3;
+    transform: scale(1.1);
 }

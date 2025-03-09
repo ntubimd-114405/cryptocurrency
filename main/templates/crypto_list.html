@@ -1,9 +1,11 @@
 {% extends 'base.html' %}
 
+{% load static %}
 {% block title %}虛擬貨幣首頁{% endblock %}
 
 {% block content %}
 {% load humanize %}
+<link rel="stylesheet" href="{% static 'css/crypto_list.css' %}">
 <div class="container mt-4">
     <h1 class="text-center mb-4">虛擬貨幣價格列表</h1>
     <form method="get" class="mb-4">
@@ -18,8 +20,8 @@
             {{ error }}
         </div>
     {% else %}
-    <table class="table table-bordered table-striped table-hover">
-        <thead class="table-dark">
+    <table class="table table-bordered table-hover">
+        <thead class="table-light">
             <tr>
                 <th style="width: 10%; text-align: center; vertical-align: middle;">
                     <a href="?sort_by=coin__coinname&sort_order={% if sort_by == 'coin__coinname' and sort_order == 'asc' %}desc{% elif sort_by == 'coin__coinname' and sort_order == 'desc' %}default{% else %}asc{% endif %}&page={{ page_obj.number }}">
