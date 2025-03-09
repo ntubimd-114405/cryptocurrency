@@ -93,7 +93,7 @@ class CoindeskWebsite(BaseWebsite):
                 continue  
             link=link["href"]
             link = link.split("https://www.coindesk.com")[-1]
-            
+
             time = article.find('span', class_="font-metadata")
             if time is None:continue
             time=time.text
@@ -122,16 +122,15 @@ class CoindeskArticle(BaseArticle):
         response = requests.get(self.url)
         soup = BeautifulSoup(response.text, 'html.parser')
 
-
         # 找到 img 標籤
-        title_tag = soup.find('h1',class_="text-headline-lg")
+        title_tag = soup.find('h1',class_="font-headline-lg")
         if title_tag is None:
-            title = (self.url.split("/")[-1]).replace("-"," ")
+            title = (self.url.split("/")[-1]).replace("-"," ")#用網址中的標題
         else:
             title = title_tag.text.strip()
         self.title = title.encode('ascii', 'ignore').decode('ascii')
-
-        summary_tag = soup.find('h2',class_="text-body-large")
+        
+        summary_tag = soup.find('h2',class_="font-headline-xs")
         if summary_tag is None:
             summary=None
         else:

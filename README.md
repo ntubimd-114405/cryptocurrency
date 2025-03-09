@@ -10,6 +10,10 @@ set DJANGO_SETTINGS_MODULE=cryptocurrency.settings
 
 git merge team/main
 
+# 匯出匯入資料
+python -Xutf8 ./manage.py dumpdata --indent 2 > data.json
+python manage.py loaddata data.json
+
 # Cuda
 https://developer.nvidia.com/cuda-11-8-0-download-archive
 https://developer.nvidia.com/rdp/cudnn-archive
