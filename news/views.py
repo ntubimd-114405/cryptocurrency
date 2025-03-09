@@ -69,12 +69,6 @@ def news_detail(request, article_id):
     comments = article.comments.all()
     return render(request, 'news_detail.html', {'article': article, 'comments': comments, 'paragraphs': paragraphs})
 
-from django.shortcuts import render
-from .models import Article, XPost  # 確保你有這些模型
-
-# 共用的 X_list 邏輯
-def get_xposts():
-    return XPost.objects.all()
 
 def news_home(request):
     all_articles = Article.objects.all().order_by('-time')[:3]  # 查詢新聞文章
@@ -85,12 +79,6 @@ def news_home(request):
         'all_articles': all_articles,  # 傳遞新聞文章
         'xposts': xposts,              # 傳遞 Twitter 貼文
     })
-
-def X_list(request):
-    # 获取所有 XPost 对象，使用相同的函數來避免重複
-    xposts = get_xposts()
-    return render(request, 'x_list.html', {'xposts': xposts})
-
 
 def X_list(request):
     # 获取指定 id 的 XPost 对象
