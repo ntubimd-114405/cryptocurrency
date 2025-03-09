@@ -1,28 +1,56 @@
 <div class="slider-container">
-    <label for="startRange">開始日期: <span id="startLabel"></span></label>
-    <input type="range" id="startRange" min="0" max="100" value="0">
+    <div class="slider-wrapper">
+        <label for="startRange" class="slider-label">開始日期: <span id="startLabel"></span></label>
+        <input type="range" id="startRange" min="0" max="100" value="0">
+    </div>
     
-    <label for="endRange">結束日期: <span id="endLabel"></span></label>
-    <input type="range" id="endRange" min="0" max="100" value="100">
+    <div class="slider-wrapper">
+        <label for="endRange" class="slider-label">結束日期: <span id="endLabel"></span></label>
+        <input type="range" id="endRange" min="0" max="100" value="100">
+    </div>
 </div>
 
 <style>
     .slider-container {
-        margin: 20px;
-        padding: 10px;
+        margin: 20px auto;
+        padding: 15px;
         background: #f8f9fa;
-        border-radius: 10px;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        border-radius: 12px;
+        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
         text-align: center;
+        max-width: 600px;
+    }
+
+    .slider-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin: 10px 0;
+    }
+
+    .slider-label {
+        font-weight: bold;
+        color: #333;
+        font-size: 16px;
+        flex: 1;
+        text-align: left;
+    }
+
+    .slider-label span {
+        color: #2E6695;
+        font-family: monospace;
+        font-size: 16px;
+        font-weight: bold;
+        margin-left: 5px;
     }
 
     .slider-container input {
-        width: 45%;
-        margin: 10px;
+        flex: 2;
+        margin-left: 10px;
         cursor: pointer;
         -webkit-appearance: none;
         appearance: none;
-        height: 5px;
+        height: 6px;
         background: #2E6695;
         border-radius: 5px;
         outline: none;
@@ -31,39 +59,45 @@
 
     .slider-container input::-webkit-slider-thumb {
         -webkit-appearance: none;
-        width: 20px;
-        height: 20px;
+        width: 18px;
+        height: 18px;
         background: #37BCD8;
         border-radius: 50%;
         cursor: pointer;
+        transition: 0.2s;
+    }
+
+    .slider-container input::-webkit-slider-thumb:hover {
+        background: #2CA8C2;
     }
 
     .slider-container input::-moz-range-thumb {
-        width: 20px;
-        height: 20px;
+        width: 18px;
+        height: 18px;
         background: #37BCD8;
         border-radius: 50%;
         cursor: pointer;
+        transition: 0.2s;
+    }
+
+    .slider-container input::-moz-range-thumb:hover {
+        background: #2CA8C2;
     }
 </style>
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {
-        // 確保這個 JS 只執行一次
         if (window.timeRangeInitialized) return;
         window.timeRangeInitialized = true;
 
-        // 從全域變數取得日期數據
         const allDates = window.allDates || [];
         if (allDates.length === 0) return;
 
-        // 設定滑桿的範圍
         const startRange = document.getElementById('startRange');
         const endRange = document.getElementById('endRange');
         startRange.max = allDates.length - 1;
         endRange.max = allDates.length - 1;
 
-        // 設定初始值
         let startIndex = 0;
         let endIndex = allDates.length - 1;
         document.getElementById('startLabel').innerText = allDates[startIndex];
