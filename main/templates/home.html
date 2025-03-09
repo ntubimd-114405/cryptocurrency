@@ -38,11 +38,11 @@
             <a href="{% url 'X_list' %}" class = "p1">川普</a>
         </div>
         
-        <img src="../../media/default/news.png" alt="" style = "height: auto; width: 250px; margin: 25px 200px;">
+        <img src="../../media/default/news.png" alt="" style = "height: auto; width: 250px; margin-top: 25px; margin-bottom: 25px;">
     </div>
 
     <div class="container container3">
-        <img src="../../media/default/pointer.png" alt="" style = "height: auto; width: 250px; margin: 25px 250px">
+        <img src="../../media/default/pointer.png" alt="" style = "height: auto; width: 250px; margin-top: 25px; margin-bottom: 25px;">
         <div class="pointer">
             <h2 style = "color: white;">經濟指標</h2>
             <p>在您想要投資的時候，可以參考這些經濟指標，助您投資順利。</p>
@@ -53,6 +53,8 @@
         </div>
         
     </div>
+    <button id="backToTop" class="back-to-top">▲ 回到頂部</button>
+
     <div class="container">
         <script>
             // 當網頁加載完畢時，從 CoinGecko API 獲取市場數據
@@ -85,8 +87,27 @@
                         document.getElementById('other_dominance').textContent = '無法取得';
                     });
             }
+
+            let backToTopButton = document.getElementById("backToTop");
+
+            // 監聽滾動事件
+            window.onscroll = function () {
+                if (document.documentElement.scrollTop > 100) { 
+                    backToTopButton.style.display = "block"; // 滾動超過 500px 顯示按鈕
+                } else {
+                    backToTopButton.style.display = "none"; // 否則隱藏按鈕
+                }
+            };
+
+            // 點擊按鈕回到頂部
+            backToTopButton.onclick = function () {
+                window.scrollTo({
+                    top: 0,
+                    behavior: "smooth" // 平滑滾動效果
+                });
+            };
         </script>
-        </section>
+    </section>
 
         <!-- <section id="price-list" class="section">
             <h2>幣種價格列表</h2>

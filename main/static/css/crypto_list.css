@@ -1,0 +1,8 @@
+.table-bordered {
+    border: none; /* 移除所有邊框 */
+    border-bottom: 2px solid #fffafa;
+}
+
+.table-bordered th, .table-bordered td {
+    border: none; /* 移除表格單元格的邊框 */
+}
