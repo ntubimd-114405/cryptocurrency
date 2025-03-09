@@ -249,3 +249,20 @@ input[type="text"], input[type="password"], input[type="file"] {
 .upload-back-button:hover {
     background-color: #ddd;
 }
+
+#header1{
+    background-color: #37BCD8;
+    font-size: 20px;
+}
+
+.nav-link{
+    background-color: #3A9EC2;
+    margin: 0 5px;
+    border-radius: 5px;
+}
+
+#btn1{
+    background-color: #3A9EC2;
+    font-size: 20px;
+    color: white;
+}

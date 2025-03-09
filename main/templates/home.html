@@ -6,69 +6,54 @@
     {% load humanize %}
     
     <link rel="stylesheet" href="{% static 'css/home.css' %}">
-    
     <div class="container container1">
-        <header class = "hero">
+        <img src="../../media/default/btc-1.png" alt="" style = "height: auto; width: 250px;">
+        <header class = "hero"> 
             <h2>歡迎來到虛擬貨幣分析平台</h2>
             <p>即時更新的加密貨幣價格與市場數據，助您做出明智的決策。</p>
-            <a href="#price-list" class="btn btn-primary">查看幣種列表</a>
+            <a href="{% url 'crypto_list' %}" class = "p1">查看貨幣列表</a>
+            <section id="highlights" class="section" style = "margin-top: 10px;">
+                <h2>市場統計</h2>
+            <p><strong>總市值 (USD):</strong> 
+                <span id="total_market_cap">載入中...</span>
+            </p>
+    
+            <p><strong>24 小時交易量 (USD):</strong> 
+                <span id="total_24h_volume">載入中...</span>
+            </p>
+    
+            <p><strong>市占率:</strong> 
+                <span id="btc_dominance">載入中...</span> | 
+                <span id="eth_dominance">載入中...</span> | 
+                <span id="other_dominance">載入中...</span>
+            </p>
         </header>
-        
-        <section id="highlights" class="section">
-            <h2>市場統計</h2>
-        <p><strong>總市值 (USD):</strong> 
-            <span id="total_market_cap">載入中...</span>
-        </p>
-
-        <p><strong>24 小時交易量 (USD):</strong> 
-            <span id="total_24h_volume">載入中...</span>
-        </p>
-
-        <p><strong>市占率:</strong> 
-            <span id="btc_dominance">載入中...</span> | 
-            <span id="eth_dominance">載入中...</span> | 
-            <span id="other_dominance">載入中...</span>
-        </p>
     </div>
 
     <div class="container container2">
-        <h2>標題</h2>
-        <p>文字</p>
-        <small>小字</small>
-        <button>按鈕</button>
-        <div class="box">Container2</div>
+        <div class="news">
+            <h2>外部資訊</h2>
+            <p>可以幫助您得知最近加密貨幣方面發生什麼事情。</p>
+            <a href="{% url 'news_home' %}" class = "p1">新聞</a>
+            <a href="{% url 'X_list' %}" class = "p1">川普</a>
+        </div>
+        
+        <img src="../../media/default/news.png" alt="" style = "height: auto; width: 250px; margin: 25px 200px;">
     </div>
 
     <div class="container container3">
-        <h2>標題</h2>
-        <p>文字</p>
-        <small>小字</small>
-        <button>按鈕</button>
-        <div class="box">Container3</div>
+        <img src="../../media/default/pointer.png" alt="" style = "height: auto; width: 250px; margin: 25px 250px">
+        <div class="pointer">
+            <h2 style = "color: white;">經濟指標</h2>
+            <p>在您想要投資的時候，可以參考這些經濟指標，助您投資順利。</p>
+            
+            <a href="{% url 'macro_chart' %}" class = "p1">宏觀經濟指標</a>
+            <a href="{% url 'metric_chart' %}" class = "p1">比特幣指標</a>
+            <a href="{% url 'finance_chart' %}" class = "p1">金融指標</a>
+        </div>
+        
     </div>
     <div class="container">
-        <header class="hero">
-            <h1>歡迎來到虛擬貨幣分析平台</h1>
-            <p>即時更新的加密貨幣價格與市場數據，助您做出明智的決策。</p>
-            <a href="#price-list" class="btn btn-primary">查看幣種列表</a>
-        </header>
-
-        <section id="highlights" class="section">
-            <h2>市場統計</h2>
-        <p><strong>總市值 (USD):</strong> 
-            <span id="total_market_cap">載入中...</span>
-        </p>
-
-        <p><strong>24 小時交易量 (USD):</strong> 
-            <span id="total_24h_volume">載入中...</span>
-        </p>
-
-        <p><strong>市占率:</strong> 
-            <span id="btc_dominance">載入中...</span> | 
-            <span id="eth_dominance">載入中...</span> | 
-            <span id="other_dominance">載入中...</span>
-        </p>
-
         <script>
             // 當網頁加載完畢時，從 CoinGecko API 獲取市場數據
             window.onload = function() {
@@ -103,7 +88,7 @@
         </script>
         </section>
 
-        <section id="price-list" class="section">
+        <!-- <section id="price-list" class="section">
             <h2>幣種價格列表</h2>
 
             {% if error %}
@@ -150,6 +135,6 @@
                     </tbody>
                 </table>
             {% endif %}
-        </section>
+        </section> -->
     </div>
 {% endblock %}

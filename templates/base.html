@@ -15,7 +15,7 @@
 </head>
 <body>
     
-    <header class="bg-primary text-white py-3">
+    <header class="text-white py-1" id = "header1">
         <div class="container d-flex justify-content-between align-items-center">
             <!-- Logo -->
             <a href="/" class="d-flex align-items-center text-white text-decoration-none">
@@ -30,15 +30,15 @@
                         <a href="{% url 'crypto_list' %}" class="nav-link text-white">貨幣列表</a>
                     </li>
                     <div class="btn-group">
-                        <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button type="button" class="btn dropdown-toggle" id = "btn1" data-bs-toggle="dropdown" aria-expanded="false">
                             外部資訊
                         </button>
                         <ul class="dropdown-menu custom-dropdown">
                             <li class="nav-item">
-                                <a href="{% url 'news_home' %}" class="nav-link dropdown-item">📰 新聞</a>
+                                <a href="{% url 'news_home' %}" class="nav-link1 dropdown-item">📰 新聞</a>
                             </li>
                             <li class="nav-item">
-                                <a href="{% url 'X_list' %}" class="nav-link dropdown-item">🗣️ 川普</a>
+                                <a href="{% url 'X_list' %}" class="nav-link1 dropdown-item">🗣️ 川普</a>
                             </li>
                         </ul>
                     </div>
@@ -46,18 +46,18 @@
                         <a href="{% url 'send_email' %}" class="nav-link text-white">發送郵件</a>
                     </li>
                     <div class="btn-group">
-                        <button type="button" class="btn btn-primary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button type="button" class="btn dropdown-toggle" id = "btn1" data-bs-toggle="dropdown" aria-expanded="false">
                           經濟指標
                         </button>
                         <ul class="dropdown-menu custom-dropdown">
                             <li class="nav-item">
-                                <a href="{% url 'macro_chart' %}" class="nav-link dropdown-item">
+                                <a href="{% url 'macro_chart' %}" class="nav-link1 dropdown-item">
                                     <i class="fa-solid fa-chart-line"></i> 宏觀經濟指標
                                 </a>
-                                <a href="{% url 'metric_chart' %}" class="nav-link dropdown-item">
+                                <a href="{% url 'metric_chart' %}" class="nav-link1 dropdown-item">
                                     <i class="fa-brands fa-bitcoin"></i> 比特幣指標
                                 </a>
-                                <a href="{% url 'finance_chart' %}" class="nav-link dropdown-item">
+                                <a href="{% url 'finance_chart' %}" class="nav-link1 dropdown-item">
                                     <i class="fa-solid fa-money-bill-trend-up"></i> 金融指標
                                 </a>
                             </li>
@@ -95,7 +95,7 @@
                         <li class="button-container">
                             <a href="{% url 'logout' %}" class="btn btn-outline-light btn-sm">登出</a>
                             <a href="{% url 'favorite_coins' %}" class="btn btn-outline-light btn-sm">我的最愛</a>
-                            <a href="{% url 'user_profile' %}" class="btn btn-outline-light btn-sm">更改..資料</a>
+                            <a href="{% url 'user_profile' %}" class="btn btn-outline-light btn-sm">修改個人資料</a>
                         </li>
                     </ul>
                 </div>
