@@ -5,37 +5,50 @@
 {% block content %}
 
 {% include 'sidebar.html' %}
+
+<!-- 引入時間範圍選擇器 -->
+{% include 'time_range_selector.html' %}
+
+<!-- 圖表容器 -->
 <div id="charts-container"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <script>
     // 從 Django 傳入的 JSON 字串中解析資料
     const chartData = JSON.parse('{{ chart_data|escapejs }}');
     const container = document.getElementById('charts-container');
 
-    // 針對每個指標建立一個圖表
+    // 取得所有日期，確保時間範圍的一致性
+    window.allDates = [];
+    Object.values(chartData).forEach(data => {
+        window.allDates = data.dates;
+    });
+
+    // 存儲所有圖表的實例
+    const charts = {};
+
+    // 針對每個指標建立圖表
     Object.keys(chartData).forEach(function(symbolName, index) {
-        // 為每個圖表建立一個標題
         const title = document.createElement('h2');
         title.textContent = symbolName;
         container.appendChild(title);
         
-        // 建立 canvas 元素
         const canvas = document.createElement('canvas');
         canvas.id = 'chart-' + index;
         container.appendChild(canvas);
 
-        // 取得 canvas 的 2d context
         const ctx = canvas.getContext('2d');
 
-        // 建立 Chart.js 圖表（此範例使用折線圖）
-        new Chart(ctx, {
+        charts[symbolName] = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: chartData[symbolName].dates,
+                labels: window.allDates,
                 datasets: [{
                     label: symbolName + ' 收盤價',
                     data: chartData[symbolName].data,
-                    borderColor: 'rgba(75, 192, 192, 1)',
-                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: '#37BCD8',
+                    backgroundColor: 'rgba(55, 188, 216, 0.2)',
                     fill: false,
                     tension: 0.1
                 }]
@@ -43,21 +56,21 @@
             options: {
                 responsive: true,
                 scales: {
-                    x: {
-                        title: {
-                            display: true,
-                            text: '日期'
-                        }
-                    },
-                    y: {
-                        title: {
-                            display: true,
-                            text: '收盤價'
-                        }
-                    }
+                    x: { title: { display: true, text: '日期' }},
+                    y: { title: { display: true, text: '收盤價' }}
                 }
             }
         });
     });
+
+    // 更新所有圖表的函數，提供給 `time_range_selector.html`
+    window.updateAllCharts = function(startIndex, endIndex) {
+        Object.keys(charts).forEach(symbolName => {
+            charts[symbolName].data.labels = window.allDates.slice(startIndex, endIndex + 1);
+            charts[symbolName].data.datasets[0].data = chartData[symbolName].data.slice(startIndex, endIndex + 1);
+            charts[symbolName].update();
+        });
+    };
 </script>
+
 {% endblock %}

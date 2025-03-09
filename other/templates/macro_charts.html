@@ -4,60 +4,80 @@
 
 {% block content %}
 
+<!-- 側邊欄 -->
 {% include 'sidebar.html' %}
-    <div id="charts-container"></div>
-    <script>
-        // 從 Django 傳入的 JSON 字串中解析資料
-        const chartData = JSON.parse('{{ chart_data|escapejs }}');
-        const container = document.getElementById('charts-container');
 
-        // 針對每個指標建立一個圖表
-        Object.keys(chartData).forEach(function(indicatorName, index) {
-            // 為每個圖表建立一個標題
-            const title = document.createElement('h2');
-            title.textContent = indicatorName;
-            container.appendChild(title);
-            
-            // 建立 canvas 元素
-            const canvas = document.createElement('canvas');
-            canvas.id = 'chart-' + index;
-            container.appendChild(canvas);
+<!-- 時間範圍選擇器 -->
+{% include 'time_range_selector.html' %}
 
-            // 取得 canvas 的 2d context
-            const ctx = canvas.getContext('2d');
+<div id="charts-container"></div>
 
-            // 建立 Chart.js 圖表（此範例使用折線圖）
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: chartData[indicatorName].dates,
-                    datasets: [{
-                        label: indicatorName,
-                        data: chartData[indicatorName].data,
-                        borderColor: 'rgba(75, 192, 192, 1)',
-                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                        fill: false,
-                        tension: 0.1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    scales: {
-                        x: {
-                            title: {
-                                display: true,
-                                text: '日期'
-                            }
-                        },
-                        y: {
-                            title: {
-                                display: true,
-                                text: '指標值'
-                            }
-                        }
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    // 解析 Django 傳入的 JSON 數據
+    const chartData = JSON.parse('{{ chart_data|escapejs }}');
+    const container = document.getElementById('charts-container');
+
+    // 儲存所有時間點，確保滑桿控制範圍一致
+    window.allDates = [];
+    Object.values(chartData).forEach(data => {
+        window.allDates = data.dates;
+    });
+
+    // 存儲所有圖表的實例
+    const charts = {};
+
+    // 針對每個指標建立圖表
+    Object.keys(chartData).forEach(function(indicatorName, index) {
+        // 建立圖表標題
+        const title = document.createElement('h2');
+        title.textContent = indicatorName;
+        container.appendChild(title);
+
+        // 建立 canvas 元素
+        const canvas = document.createElement('canvas');
+        canvas.id = 'chart-' + index;
+        container.appendChild(canvas);
+
+        const ctx = canvas.getContext('2d');
+
+        // 創建 Chart.js 圖表
+        charts[indicatorName] = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: window.allDates,
+                datasets: [{
+                    label: indicatorName,
+                    data: chartData[indicatorName].data,
+                    borderColor: '#37BCD8',
+                    backgroundColor: 'rgba(55, 188, 216, 0.2)',
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    x: {
+                        title: { display: true, text: '日期' }
+                    },
+                    y: {
+                        title: { display: true, text: '指標值' }
                     }
                 }
-            });
+            }
         });
-    </script>
+    });
+
+    // 提供更新圖表的函數給 `time_range_selector.html`
+    window.updateAllCharts = function(startIndex, endIndex) {
+        Object.keys(charts).forEach(indicatorName => {
+            charts[indicatorName].data.labels = window.allDates.slice(startIndex, endIndex + 1);
+            charts[indicatorName].data.datasets[0].data = chartData[indicatorName].data.slice(startIndex, endIndex + 1);
+            charts[indicatorName].update();
+        });
+    };
+</script>
+
 {% endblock %}

@@ -5,45 +5,54 @@
 {% block content %}
 
 {% include 'sidebar.html' %}
+
+{% include 'time_range_selector.html' %} {# 加入時間範圍選擇器 #}
+
 <div id="charts-container"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <script>
-    // 從 Django 傳入的 JSON 字串中解析資料
+    // 解析 Django 傳來的 JSON 數據
     const chartData = JSON.parse('{{ chart_data|escapejs }}');
     const container = document.getElementById('charts-container');
 
-    // 為每個圖表建立一個標題
+    // 儲存所有時間點，確保滑桿控制範圍一致
+    window.allDates = chartData.dates;
+
+    // 建立圖表標題
     const title = document.createElement('h2');
     title.textContent = "Trend Data";
     container.appendChild(title);
-    
+
     // 建立 canvas 元素
     const canvas = document.createElement('canvas');
+    canvas.id = 'trend-chart';
     container.appendChild(canvas);
 
-    // 取得 canvas 的 2d context
     const ctx = canvas.getContext('2d');
 
-    // 建立 Chart.js 圖表（此範例使用折線圖）
-    new Chart(ctx, {
+    // 創建 Chart.js 圖表
+    const trendChart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: chartData.dates,
+            labels: window.allDates,
             datasets: [
                 {
                     label: 'Full Value',
                     data: chartData.full_values,
-                    borderColor: 'rgba(75, 192, 192, 1)',
-                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                    fill: false,
-                    tension: 0.1
+                    borderColor: '#37BCD8',
+                    backgroundColor: 'rgba(55, 188, 216, 0.2)',
+                    fill: true,
+                    tension: 0.3
                 },
                 {
                     label: 'Abbreviated Value',
                     data: chartData.abbreviated_values,
-                    borderColor: 'rgba(153, 102, 255, 1)',
+                    borderColor: '#9966FF',
                     backgroundColor: 'rgba(153, 102, 255, 0.2)',
-                    fill: false,
-                    tension: 0.1
+                    fill: true,
+                    tension: 0.3
                 }
             ]
         },
@@ -51,19 +60,22 @@
             responsive: true,
             scales: {
                 x: {
-                    title: {
-                        display: true,
-                        text: 'Date'
-                    }
+                    title: { display: true, text: 'Date' }
                 },
                 y: {
-                    title: {
-                        display: true,
-                        text: 'Search Volume'
-                    }
+                    title: { display: true, text: 'Search Volume' }
                 }
             }
         }
     });
+
+    // 提供更新圖表的函數給 `time_range_selector.html`
+    window.updateAllCharts = function(startIndex, endIndex) {
+        trendChart.data.labels = window.allDates.slice(startIndex, endIndex + 1);
+        trendChart.data.datasets[0].data = chartData.full_values.slice(startIndex, endIndex + 1);
+        trendChart.data.datasets[1].data = chartData.abbreviated_values.slice(startIndex, endIndex + 1);
+        trendChart.update();
+    };
 </script>
+
 {% endblock %}
