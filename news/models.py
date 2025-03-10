@@ -21,7 +21,7 @@ class Article(models.Model):
     website = models.ForeignKey(Website, on_delete=models.CASCADE)  # 外鍵關聯到新聞網站
 
     def __str__(self):
-        return self.title
+        return self.title if self.title else "No Title"
     
 
 class Comment(models.Model):

@@ -22,8 +22,6 @@ def news_crawler():
         
         for article in site.fetch_page():
             defaults = {
-            'title': article["title"],
-            'time': article["time"],
             'website': website_instance
             }
 
@@ -37,10 +35,9 @@ def news_crawler():
             )
     articles_empty = Article.objects.filter(
         Q(content__isnull=True) | Q(content__exact="") |
-        Q(image_url__isnull=True) | Q(image_url__exact="") |
         Q(title__isnull=True) | Q(title__exact="") |  
-        Q(time__isnull=True)  
-    )
+        Q(time__isnull=True) 
+    ).order_by('-id')
     #articles_empty = NewsArticle.objects.all()
     print(len(articles_empty))
     for article in articles_empty:
@@ -59,7 +56,7 @@ def news_crawler():
                         'website':a.website
                     },
                     )
-                print(a.title)
+                print(article.id,a.title,)
         except Exception as e:
             print(f"發生錯誤: {e}")
             continue

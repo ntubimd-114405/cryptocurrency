@@ -94,8 +94,8 @@
 
         // 更新圖表顯示狀態
         function updateChartVisibility() {
-            Object.keys(chartData).forEach(function (symbolName) {
-                const chartElement = document.getElementById(`chart-${symbolName}`);
+            Object.keys(chartData).forEach(function (symbolName, index) {
+                const chartElement = document.getElementById(`chart-${index}`);
                 if (activeCharts.has(symbolName)) {
                     chartElement.style.display = 'block';
                     chartElement.previousSibling.style.display = 'block'; // 顯示標題

@@ -177,3 +177,40 @@ img.profile-image {
     color: white;
     font-size: 20px
 }
+
+
+
+/* 新加的 調整下拉式選單
+/* 設定 .dropdown-menu 默認隱藏 */
+.custom-dropdown {
+    display: none; /* 隱藏下拉選單 */
+    position: absolute;
+    top: 70%; /* 使下拉選單顯示在按鈕下方 */
+    left: 0; /* 使下拉選單對齊按鈕左側 */
+    z-index: 1000;
+    min-width: 200px; /* 調整下拉選單的寬度 */
+    margin-top: 5px; /* 調整下拉選單與按鈕的間距 */
+}
+
+/* 當滑鼠懸停在 .btn-group 上時顯示下拉選單 */
+.btn-group:hover .custom-dropdown {
+    display: block;
+}
+
+/* 點擊 .dropdown-toggle 進行跳轉 */
+.dropdown-toggle {
+    cursor: pointer; /* 讓按鈕顯示為可點擊的手型 */
+}
+
+/* 調整下拉選單項目的外觀 */
+.custom-dropdown li {
+    padding: 10px 15px;
+}
+
+.custom-dropdown a {
+    text-decoration: none;
+}
+
+.custom-dropdown a:hover {
+    background-color: #f8f9fa; /* 懸停時變色 */
+}

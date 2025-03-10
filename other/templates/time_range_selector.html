@@ -1,15 +1,15 @@
 <div class="slider-container">
     <div class="slider-wrapper">
         <label for="startRange" class="slider-label">開始日期: <span id="startLabel"></span></label>
-        <input type="range" id="startRange" min="0" max="100" value="0">
+        <input type="range" id="startRange" min="0" max="0" value="0">
     </div>
     
     <div class="slider-wrapper">
         <label for="endRange" class="slider-label">結束日期: <span id="endLabel"></span></label>
-        <input type="range" id="endRange" min="0" max="100" value="100">
+        <input type="range" id="endRange" min="0" max="0" value="0">
     </div>
 </div>
-
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
     .slider-container {
         margin: 20px auto;
@@ -86,41 +86,32 @@
 </style>
 
 <script>
-    document.addEventListener("DOMContentLoaded", function () {
-        if (window.timeRangeInitialized) return;
-        window.timeRangeInitialized = true;
+    function updateCharts() {
+        const startDate = allDates[startRange.value];
+        const endDate = allDates[endRange.value];
+        startLabel.textContent = startDate;
+        endLabel.textContent = endDate;
 
-        const allDates = window.allDates || [];
-        if (allDates.length === 0) return;
+        // 更新所有圖表的顯示
+        Object.keys(chartData).forEach(function(indicatorName, index) {
+            const chart = Chart.getChart('chart-' + index);
+            const filteredDates = chartData[indicatorName].dates.filter(date => 
+                new Date(date) >= new Date(startDate) && new Date(date) <= new Date(endDate)
+            );
+            const filteredData = chartData[indicatorName].data.slice(
+                chartData[indicatorName].dates.indexOf(filteredDates[0]),
+                chartData[indicatorName].dates.indexOf(filteredDates[filteredDates.length - 1]) + 1
+            );
 
-        const startRange = document.getElementById('startRange');
-        const endRange = document.getElementById('endRange');
-        startRange.max = allDates.length - 1;
-        endRange.max = allDates.length - 1;
+            // 更新圖表資料
+            chart.data.labels = filteredDates;
+            chart.data.datasets[0].data = filteredData;
+            chart.update(); // 更新圖表
+        });
+    }
 
-        let startIndex = 0;
-        let endIndex = allDates.length - 1;
-        document.getElementById('startLabel').innerText = allDates[startIndex];
-        document.getElementById('endLabel').innerText = allDates[endIndex];
-
-        function updateCharts() {
-            startIndex = parseInt(startRange.value);
-            endIndex = parseInt(endRange.value);
-
-            if (startIndex >= endIndex) {
-                startIndex = endIndex - 1;
-                startRange.value = startIndex;
-            }
-
-            document.getElementById('startLabel').innerText = allDates[startIndex];
-            document.getElementById('endLabel').innerText = allDates[endIndex];
-
-            if (typeof window.updateAllCharts === "function") {
-                window.updateAllCharts(startIndex, endIndex);
-            }
-        }
-
-        startRange.addEventListener('input', updateCharts);
-        endRange.addEventListener('input', updateCharts);
-    });
+    // 當使用者調整時間範圍時，更新圖表
+    startRange.addEventListener('input', updateCharts);
+    endRange.addEventListener('input', updateCharts);
+    
 </script>

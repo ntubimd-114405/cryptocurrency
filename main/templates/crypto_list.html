@@ -150,17 +150,15 @@
                     {% if user.is_authenticated %}
                         <td style="text-align: center; vertical-align: middle;">
                             {% if price.coin.id in favorite_coin_ids %}
-                                <!-- 如果加密貨幣已在最愛清單中，顯示移除最愛 -->
-                                <form action="{% url 'remove_from_favorites' price.coin.id %}" method="POST">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-danger">移除最愛</button>
-                                </form>
+                                <!-- 如果加密貨幣已在最愛清單中，顯示紅色愛心 -->
+                                <svg id="heart-icon-{{ price.coin.id }}" class="favorite-icon" data-coin-id="{{ price.coin.id }}" viewBox="0 0 24 24" fill="red" stroke="red" stroke-width="2">
+                                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                                </svg>
                             {% else %}
-                                <!-- 如果加密貨幣不在最愛清單中，顯示加入最愛 -->
-                                <form action="{% url 'add_to_favorites' price.coin.id %}" method="POST">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-primary">加入最愛</button>
-                                </form>
+                                <!-- 如果加密貨幣不在最愛清單中，顯示空心愛心 -->
+                                <svg id="heart-icon-{{ price.coin.id }}" class="favorite-icon" data-coin-id="{{ price.coin.id }}" viewBox="0 0 24 24" fill="none" stroke="red" stroke-width="2">
+                                    <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                                </svg>
                             {% endif %}
                         </td>
                     {% endif %}
@@ -169,8 +167,37 @@
         </tbody>
     </table>
     
-    
-    
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+$(document).ready(function() {
+    $('.favorite-icon').on('click', function() {
+        var coinId = $(this).data('coin-id');
+        var isFavorite = $(this).attr('fill') === 'red'; // 檢查愛心是否已經變成紅色
+        var heartIcon = $(this);
+
+        // 發送 AJAX 請求，添加或移除最愛
+        $.ajax({
+            url: isFavorite ? "{% url 'remove_from_favorites' 0 %}".replace('0', coinId) : "{% url 'add_to_favorites' 0 %}".replace('0', coinId),
+            method: 'POST',
+            data: {
+                'csrfmiddlewaretoken': '{{ csrf_token }}'
+            },
+            success: function(response) {
+                if (response.status === 'success') {
+                    // 根據當前最愛狀態，更新愛心顏色
+                    heartIcon.attr('fill', isFavorite ? 'none' : 'red');
+                    heartIcon.attr('stroke', isFavorite ? 'red' : 'none');
+                } else {
+                    console.log("Error:", response.message);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.log("Error:", error);
+            }
+        });
+    });
+});
+</script>
 <!-- 分頁導航 -->
 <nav aria-label="Page navigation example">
     <ul class="pagination justify-content-center">

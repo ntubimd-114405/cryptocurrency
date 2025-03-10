@@ -19,7 +19,7 @@
         <div class="container d-flex justify-content-between align-items-center">
             <!-- Logo -->
             <a href="/" class="d-flex align-items-center text-white text-decoration-none">
-                <img src="../media/default/crypto.png" alt="Logo" style="width: auto; height: 75px;">
+                <img src="{% static 'images/crypto.png' %}" alt="Logo" style="width: auto; height: 75px;">
                 <span class="ms-2 fw-bold">加me獲幣</span>
             </a>
 
@@ -30,24 +30,21 @@
                         <a href="{% url 'crypto_list' %}" class="nav-link text-white">貨幣列表</a>
                     </li>
                     <div class="btn-group">
-                        <button type="button" class="btn dropdown-toggle" id = "btn1" data-bs-toggle="dropdown" aria-expanded="false">
+                        <button type="button" class="btn dropdown-toggle" id="btn1" data-bs-toggle="dropdown" aria-expanded="false" onclick="window.location.href='{% url 'news_home' %}'">
                             外部資訊
                         </button>
                         <ul class="dropdown-menu custom-dropdown">
                             <li class="nav-item">
-                                <a href="{% url 'news_home' %}" class="nav-link1 dropdown-item">📰 新聞</a>
+                                <a href="{% url 'news_list' %}" class="nav-link1 dropdown-item">📰 新聞</a>
                             </li>
                             <li class="nav-item">
                                 <a href="{% url 'X_list' %}" class="nav-link1 dropdown-item">🗣️ X</a>
                             </li>
                         </ul>
                     </div>
-                    <li class="nav-item">
-                        <a href="{% url 'send_email' %}" class="nav-link text-white">發送郵件</a>
-                    </li>
                     <div class="btn-group">
-                        <button type="button" class="btn dropdown-toggle" id = "btn1" data-bs-toggle="dropdown" aria-expanded="false">
-                          經濟指標
+                        <button type="button" class="btn dropdown-toggle" id="btn1" data-bs-toggle="dropdown" aria-expanded="false" onclick="window.location.href='{% url 'other_home' %}'">
+                            經濟指標
                         </button>
                         <ul class="dropdown-menu custom-dropdown">
                             <li class="nav-item">
