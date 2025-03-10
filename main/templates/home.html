@@ -4,55 +4,77 @@
 
 {% block content %}
     {% load humanize %}
-    
     <link rel="stylesheet" href="{% static 'css/home.css' %}">
-    <div class="container container1">
-        <img src="{% static 'images/btc-1.png' %}" alt="" style = "height: auto; width: 250px;">
-        <header class = "hero"> 
-            <h2>歡迎來到虛擬貨幣分析平台</h2>
-            <p>即時更新的加密貨幣價格與市場數據，助您做出明智的決策。</p>
-            <a href="{% url 'crypto_list' %}" class = "p1">查看貨幣列表</a>
-            <section id="highlights" class="section" style = "margin-top: 10px;">
-                <h2>市場統計</h2>
-            <p><strong>總市值 (USD):</strong> 
-                <span id="total_market_cap">載入中...</span>
-            </p>
-    
-            <p><strong>24 小時交易量 (USD):</strong> 
-                <span id="total_24h_volume">載入中...</span>
-            </p>
-    
-            <p><strong>市占率:</strong> 
-                <span id="btc_dominance">載入中...</span> | 
-                <span id="eth_dominance">載入中...</span> | 
-                <span id="other_dominance">載入中...</span>
-            </p>
-        </header>
-    </div>
 
-    <div class="container container2">
-        <div class="news">
-            <h2>外部資訊</h2>
-            <p>可以幫助您得知最近加密貨幣方面發生什麼事情。</p>
-            <a href="{% url 'news_home' %}" class = "p1">新聞</a>
-            <a href="{% url 'X_list' %}" class = "p1">川普</a>
-        </div>
+
+    <div class="card mb-3" id = "c1" style="max-width: 100%;">
+        <div class="row g-0">
+          <div class="col-md-4">
+            <img src="../../media/default/btc-1.png" alt="" style = "height: auto; width: 250px; margin-top: 50px;">
+          </div>
+          <div class="col-md-8">
+            <div class="card-body">
+                <h2>歡迎來到虛擬貨幣分析平台</h2>
+                <p>即時更新的加密貨幣價格與市場數據，助您做出明智的決策。</p>
+                <a href="{% url 'crypto_list' %}" class = "p1">查看貨幣列表</a>
+                <section id="highlights" class="section" style = "margin-top: 10px;">
+                    <h2>市場統計</h2>
+                <p><strong>總市值 (USD):</strong> 
+                    <span id="total_market_cap">載入中...</span>
+                </p>
         
+                <p><strong>24 小時交易量 (USD):</strong> 
+                    <span id="total_24h_volume">載入中...</span>
+                </p>
+        
+                <p><strong>市占率:</strong> 
+                    <span id="btc_dominance">載入中...</span> | 
+                    <span id="eth_dominance">載入中...</span> | 
+                    <span id="other_dominance">載入中...</span>
+                </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card mb-3" id = "c2" style="max-width: 100%;">
+        <div class="row g-0">
+          <div class="col-md-8">
+            <div class="card-body">
+                <h2>外部資訊</h2>
+                <p>在這裡，您可以輕鬆掌握全球加密貨幣市場的最新動態。無論是最新的新聞、重要事件，還是市場趨勢的變化，我們都為您提供最即時的資訊。</p>
+                <p>點擊以下連結，隨時了解關於加密貨幣和其他相關議題的報導，幫助您作出更明智的投資決策。</p>
+                <a href="{% url 'news_home' %}" class = "p1">新聞</a>
+                <a href="{% url 'X_list' %}" class = "p1">川普</a>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <img src="../../media/default/news.png" alt="" style = "height: auto; width: 250px; margin-top: 25px; margin-bottom: 25px;">
+          </div>
+
         <img src="{% static 'images/news.png' %}" alt="" style = "height: auto; width: 250px; margin-top: 25px; margin-bottom: 25px;">
     </div>
 
-    <div class="container container3">
-        <img src="{% static 'images/pointer.png' %}" alt="" style = "height: auto; width: 250px; margin-top: 25px; margin-bottom: 25px;">
-        <div class="pointer">
-            <h2 style = "color: white;">經濟指標</h2>
-            <p>在您想要投資的時候，可以參考這些經濟指標，助您投資順利。</p>
-            
-            <a href="{% url 'macro_chart' %}" class = "p1">宏觀經濟指標</a>
-            <a href="{% url 'metric_chart' %}" class = "p1">比特幣指標</a>
-            <a href="{% url 'finance_chart' %}" class = "p1">金融指標</a>
+    
+
+      <div class="card mb-3" id = "c3" style="max-width: 100%;">
+        <div class="row g-0">
+          <div class="col-md-4">
+            <img src="../../media/default/pointer.png" alt="" style = "height: auto; width: 250px; margin-top: 25px; margin-bottom: 25px;">
+          </div>
+          <div class="col-md-8">
+            <div class="card-body">
+                <h2>經濟指標</h2>
+                <p>在這裡，我們為您提供一些重要的經濟指標，這些指標可以幫助您了解市場趨勢，作為投資決策的參考依據。</p>
+                <p>您可以點擊以下連結，查看各類指標圖表，讓您更輕鬆掌握宏觀經濟、比特幣和金融市場的動態。</p>  
+                <a href="{% url 'macro_chart' %}" class = "p1">宏觀經濟指標</a>
+                <a href="{% url 'metric_chart' %}" class = "p1">比特幣指標</a>
+                <a href="{% url 'finance_chart' %}" class = "p1">金融指標</a>
+            </div>
+          </div>
         </div>
-        
-    </div>
+      </div>
+    
     <button id="backToTop" class="back-to-top">▲ 回到頂部</button>
 
     <div class="container">

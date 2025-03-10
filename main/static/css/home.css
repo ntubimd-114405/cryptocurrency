@@ -1,85 +1,99 @@
-@keyframes fadeIn {
-    from {
-        opacity: 0;
-        transform: translateY(20px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+/* 全域卡片樣式 */
+.card {
+    max-width: 100%;
+    margin: 20px auto;
+    background-color: #ffffff;
+    border-radius: 15px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    overflow: hidden;
 }
 
-.container1 {
-    background: linear-gradient(to right, #ffffff, #E3F2FD);
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+}
+
+#c2{
+    background-color: #F5F8FF;
+}
+
+#c3{
+    background-color: #E0E8F8;
+}
+
+/* 卡片內部佈局 */
+.card .row {
     display: flex;
-    align-items: center; /* 垂直置中 */
-    justify-content: center; /* 讓內容居中 */
-    opacity: 0;
-    transform: translateY(20px);
-    animation: fadeIn 0.8s ease-in-out forwards;
-}
-.hero{
-    max-width: 500px;
+    align-items: center;
 }
 
-.container2 {
-    background: linear-gradient(to right, #F5F8FF, #DDE7FF);
-    display: flex;
-    align-items: center; /* 垂直置中 */
-    justify-content: center; /* 讓內容居中 */
-    opacity: 0;
-    transform: translateY(20px);
-    animation: fadeIn 0.8s ease-in-out forwards;
-}
 
-.news{
-    max-width: 500px;
-    margin-left: 200px;
-}
 
-.container3 {
-    background: linear-gradient(to right, #2B2B2B, #3B3B3B);
-    color: white;
-    display: flex;
-    align-items: center; /* 垂直置中 */
-    justify-content: center; /* 讓內容居中 */
-    opacity: 0;
-    transform: translateY(20px);
-    animation: fadeIn 0.8s ease-in-out forwards;
-}
-
-.pointer{
-    max-width: 500px;
-}
-
-.p1 {
-    background-color: #31A7C4;
-    color: white;
-    border: none;
-    padding: 12px 24px; /* 按鈕大小更明顯 */
-    cursor: pointer;
-    border-radius: 8px; /* 圓角更柔和 */
-    font-weight: bold;
-    transition: all 0.3s ease-in-out; /* 讓變化更流暢 */
-    text-decoration: none; /* 移除底線 */
-    display: inline-block;
-}
-
-.p1:hover {
-    background-color: #2589A3; /* 懸停時變深色 */
-}
-
-img {
-    max-width: 100%; /* 讓圖片可以縮放 */
-    height: auto;
-    border-radius: 10px; /* 圓角讓圖片更柔和 */
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2); /* 陰影提升質感 */
-}
-
-.news, .pointer, .hero {
-    text-align: left;
+.card-body {
     padding: 20px;
 }
+
+.card-body h2 {
+    font-size: 1.8rem;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.card-body p {
+    color: #666;
+    margin: 5px 0 15px;
+    font-size: 1rem;
+}
+
+.card-body a.p1 {
+    display: inline-block;
+    padding: 8px 16px;
+    margin: 5px;
+    background-color: #007bff;
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: background-color 0.3s;
+}
+
+.card-body a.p1:hover {
+    background-color: #0056b3;
+}
+
+/* 自訂顏色樣式 */
+.card-dark {
+    background-color: #333;
+    color: #fff;
+}
+
+.card-dark .card-body h2 {
+    color: #fff;
+}
+
+.card-dark .card-body a.p1 {
+    background-color: #555;
+}
+
+.card-dark .card-body a.p1:hover {
+    background-color: #777;
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+    .card .row {
+        flex-direction: column;
+    }
+
+    .card img {
+        border-radius: 15px 15px 0 0;
+    }
+
+    .card-body {
+        text-align: center;
+    }
+}
+
 
 .back-to-top {
     position: fixed;
