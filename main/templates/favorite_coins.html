@@ -12,14 +12,11 @@
         </thead>
         <tbody>
             {% for coin in favorite_cryptos %}
-                <tr>
-                    <td><img src="{{ coin.logo_url }}"></td>
-                    <td>{{ coin.coinname}}</td>  <!-- 假設有價格字段 -->
+                <tr id="coin-{{ coin.id }}">
+                    <td><img src="{{ coin.logo_url }}" alt="{{ coin.coinname }}" width="50"></td>
+                    <td>{{ coin.coinname }}</td>
                     <td>
-                        <form action="{% url 'remove_from_favorites' coin.id %}" method="POST">
-                            {% csrf_token %}
-                            <button type="submit" class="btn btn-danger">移除最愛</button>
-                        </form>
+                        <button class="btn btn-danger remove-favorite" data-coin-id="{{ coin.id }}">移除最愛</button>
                     </td>
                 </tr>
             {% empty %}
@@ -30,4 +27,38 @@
         </tbody>
     </table>
     <a href="{% url 'crypto_list' %}" class="btn btn-secondary">返回幣列表</a>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            $('.remove-favorite').on('click', function() {
+                var coinId = $(this).data('coin-id');
+                var button = $(this);
+
+                // 發送 AJAX 請求以移除最愛
+                $.ajax({
+                    url: "{% url 'remove_from_favorites' 0 %}".replace('0', coinId),
+                    method: 'POST',
+                    data: {
+                        'csrfmiddlewaretoken': '{{ csrf_token }}'
+                    },
+                    success: function(response) {
+                        // 移除最愛成功，隱藏該行
+                        if (response.status === 'success') {
+                            button.closest('tr').remove();
+                        } else {
+                            alert("移除最愛時出錯！");
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        alert("發生錯誤，請稍後再試！");
+                    }
+                });
+            });
+        });
+    </script>
+{% endblock %}
+
+{% block scripts %}
+
 {% endblock %}

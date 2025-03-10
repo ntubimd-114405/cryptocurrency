@@ -211,34 +211,27 @@ def upload_profile_image(request):
 def add_to_favorites(request, pk):
     user_profile = request.user.profile
     try:
-        # 根據 pk 查詢 Coin 物件
         crypto = Coin.objects.get(id=pk)
-        print(crypto)
-        # 將該 Coin 添加到 user's favorite_cryptos
         user_profile.favorite_coin.add(crypto)
         user_profile.save()
+        return JsonResponse({'status': 'success', 'action': 'add'})
     except Coin.DoesNotExist:
-        print(f"Coin with ID {pk} not found")  # 如果沒有找到 Coin，打印信息
+        return JsonResponse({'status': 'error', 'message': 'Coin not found'})
     except Exception as e:
-        print(f"An error occurred: {e}")  # 其他異常處理
-    return redirect('crypto_list')  # 重定向回顯示幣列表的頁面
+        return JsonResponse({'status': 'error', 'message': str(e)})
 
 @login_required
 def remove_from_favorites(request, pk):
     user_profile = request.user.profile
-    try:
-        # 根據 pk 查詢 Coin 物件
-        crypto = Coin.objects.get(id=pk)
-        print(crypto)
-        # 從 user's favorite_cryptos 刪除該 Coin
-        user_profile.favorite_coin.remove(crypto)
-        user_profile.save()
-        print(f"Removed {crypto.coinname} from favorites")  # 提示刪除成功
-    except Coin.DoesNotExist:
-        print(f"Coin with ID {pk} not found")  # 如果沒有找到 Coin，打印信息
-    except Exception as e:
-        print(f"An error occurred: {e}")  # 其他異常處理
-    return redirect('favorite_coins')
+    coin = get_object_or_404(Coin, id=pk)
+
+    # 移除最愛
+    user_profile.favorite_coin.remove(coin)
+
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({'status': 'success'})
+
+    return redirect('favorite_coins')  # 如果不是 AJAX 請求，重定向回我的最愛頁面
 
 @login_required
 def favorite_coins(request):
