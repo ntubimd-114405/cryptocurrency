@@ -132,11 +132,11 @@ class CoindeskArticle(BaseArticle):
         
         summary_tag = soup.find('h2',class_="font-headline-xs")
         if summary_tag is None:
-            summary=None
+            self.summary=None
         else:
             summary = summary_tag.text.strip()
             self.summary = summary
-
+            
         content_divs = [div.get_text(strip=True) for div in soup.find_all('div', class_='document-body') if div.get_text(strip=True)]
         if content_divs:
             content = ' '.join(content_divs)

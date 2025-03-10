@@ -4,7 +4,6 @@ from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 import re
 
-
 class YahooWebsite(BaseWebsite):
     def __init__(self):
         self.name = "Yahoo"
@@ -39,6 +38,7 @@ class YahooWebsite(BaseWebsite):
             time_str = time_tag.text.strip() if time_tag else None
             
             img_tag = article.find('img')
+
             img = None
             if img_tag:
                 img = img_tag['src']
@@ -80,9 +80,8 @@ class YahooArticle(BaseArticle):
         self.image_url = data.image_url
         self.time = data.time
         self.website = data.website
-        self.summary = data.summary
+        self.summary = ""
 
-    
 
     def get_news_details(self):
         headers = {
@@ -92,8 +91,26 @@ class YahooArticle(BaseArticle):
         soup = BeautifulSoup(response.text, 'html.parser')
         
         content = soup.find('div', class_='atoms-wrapper')
-        content=content.get_text(strip=True)
-        self.content=convert_emoji_to_text(content)
+        if content:
+            content=content.get_text(strip=True)
+            self.content=convert_emoji_to_text(content)
 
+        img_tag = soup.find('img',class_="yf-g633g8")
+        if img_tag:
+            img_url=img_tag.get('src')
+            if  not "data:image/gif;" in img_url:
+                self.image_url=img_url
+            
+
+
+        title = soup.find('div', class_='cover-title')
+        if title:
+            self.title=title.get_text(strip=True)
+
+        time_tag = soup.find("time", class_="byline-attr-meta-time")
+
+        if time_tag:
+            # 獲取 datetime 屬性
+            self.time = time_tag.get("datetime")
 
 
