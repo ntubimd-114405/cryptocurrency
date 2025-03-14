@@ -1,21 +1,26 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends 'base.html' %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>使用者設定</title>
-    {% load static %}
-    <link rel="stylesheet" href="{% static 'css/userstyle.css' %}">
-</head>
+{% block content %}
+{% load static %}
+<link rel="stylesheet" href="{% static 'css/userstyle.css' %}">
 
-<body class="upload-user-settings-body">
-
-    <div class="upload-user-settings-container">
-        <h1>使用者設定</h1>
-
-        <!-- User Avatar and Basic Info -->
-        <div class="upload-profile-info-container">
+<div class="upload-user-settings-container">
+    <div class="upload-layout">
+        <!-- Left Section (25%) -->
+        <aside class="upload-left-panel">
+            <nav class="user-menu">
+                <ul>
+                    <li><a href="#profile-overview">基本概況</a></li>
+                    <li><a href="#account-settings">帳號</a></li>
+                    <li><a href="#notification-settings">通知</a></li>
+                    <li><a href="#other-settings">其他</a></li>
+                </ul>
+            </nav>
+        </aside>
+        
+        <!-- Right Section (75%) -->
+        <main class="upload-right-panel">
+            <h1>使用者設定</h1>
             {% if user.is_authenticated %}
             <div class="upload-avatar-section">
                 <img src="{{ user.profile.profile_image.url }}" alt="Profile Image" class="upload-profile-avatar">
@@ -27,116 +32,87 @@
             {% else %}
             <p>尚未登入</p>
             {% endif %}
-        </div>
-        <hr>
-        <!-- Update firstname Form -->
-        <section class="firstname-section">
-            <h2>修改使用者名稱</h2>
-            <form method="post" action="{% url 'update_firstname' %}">
+            <hr>
+            <section class="firstname-section">
+                <h2>修改使用者名稱</h2>
+                <form method="post" action="{% url 'update_firstname' %}">
+                    {% csrf_token %}
+                    <div>
+                        <label for="firstname">新名稱：</label>
+                        <input type="text" id="firstname" name="firstname" value="{{ user.first_name }}" required>
+                    </div><br>
+                    <button type="submit" class="upload-submit-button">修改名稱</button>
+                </form>
+            </section>
+            
+            <section class="upload-form-section">
+                <h2>更改頭像</h2>
+                <form method="post" enctype="multipart/form-data" class="upload-update-avatar-form">
+                    {% csrf_token %}
+                    <div class="upload-form-group">
+                        <label for="profile_image">選擇新頭像</label>
+                        <input type="file" name="profile_image" id="profile_image" accept="image/*">
+                    </div>
+                    <button type="submit" class="upload-submit-button">上傳頭像</button>
+                </form>
+            </section>
+            
+            <section class="password-section">
+                <h2>修改密碼</h2>
+                <form method="post" action="{% url 'update_password' %}">
+                    {% csrf_token %}
+                    <div>
+                        <label for="current_password">目前密碼：</label>
+                        <input type="password" id="current_password" name="current_password" required>
+                    </div>
+                    <div>
+                        <label for="password">新密碼：</label>
+                        <input type="password" id="password" name="password" required>
+                    </div>
+                    <div>
+                        <label for="password_confirm">確認新密碼：</label>
+                        <input type="password" id="password_confirm" name="password_confirm" required>
+                    </div><br>
+                    <button type="submit" class="upload-submit-button">修改密碼</button>
+                </form>
+            </section>
+            
+            <form method="post" action="{% url 'update_notification_preferences' %}">
                 {% csrf_token %}
-                <div>
-                    <label for="firstname">新名稱：</label>
-                    <input type="text" id="firstname" name="firstname" value="{{ user.first_name }}" required>
-                </div><br>
-                <button type="submit" class="upload-submit-button">修改名稱</button>
+                <label>
+                    <input type="checkbox" name="news_notifications" {% if user.notification_preference and user.notification_preference.news_notifications %}checked{% endif %}>
+                    接收新聞通知
+                </label>
+                <label>
+                    <input type="checkbox" name="email_notifications" {% if user.notification_preference and user.notification_preference.email_notifications %}checked{% endif %}>
+                    電子郵件通知
+                </label>
+                <label>
+                    <input type="checkbox" name="site_notifications" {% if user.notification_preference and user.notification_preference.site_notifications %}checked{% endif %}>
+                    站內通知
+                </label>
+                <button type="submit">保存設定</button>
             </form>
-
-            <!-- 名稱修改的訊息 -->
-            {% if messages %}
+            
+            {% if user.notifications.exists %}
             <ul>
-                {% for message in messages %}
-                {% if 'firstname' in message.tags %}
-                <li class="{{ message.tags }}">{{ message }}</li>
-                {% endif %}
+                {% for notification in user.notifications.all %}
+                <li>
+                    <a href="{{ notification.url }}">{{ notification.title }}</a> - {{ notification.content }}
+                    <small>{{ notification.created_at }}</small>
+                </li>
                 {% endfor %}
             </ul>
+            {% else %}
+            <p>目前沒有通知。</p>
             {% endif %}
-        </section>
 
-        <!-- Update Profile Image Form -->
-        <section class="upload-form-section">
-            <h2>更改頭像</h2>
-            <form method="post" enctype="multipart/form-data" class="upload-update-avatar-form">
-                {% csrf_token %}
-                <div class="upload-form-group">
-                    <label for="profile_image">選擇新頭像</label>
-                    <input type="file" name="profile_image" id="profile_image" accept="image/*">
-                </div>
-                <button type="submit" class="upload-submit-button">上傳頭像</button>
-            </form>
-        </section>
-
-        <!-- Update Password Form -->
-        <section class="password-section">
-            <h2>修改密碼</h2>
-            <form method="post" action="{% url 'update_password' %}">
-                {% csrf_token %}
-                <div>
-                    <label for="current_password">目前密碼：</label>
-                    <input type="password" id="current_password" name="current_password" required>
-                </div>
-                <div>
-                    <label for="password">新密碼：</label>
-                    <input type="password" id="password" name="password" required>
-                </div>
-                <div>
-                    <label for="password_confirm">確認新密碼：</label>
-                    <input type="password" id="password_confirm" name="password_confirm" required>
-                </div><br>
-                <button type="submit" class="upload-submit-button">修改密碼</button>
-            </form>
-
-            <!-- 密碼修改的訊息 -->
-            {% if messages %}
-            <ul>
-                {% for message in messages %}
-                {% if 'password' in message.tags %}
-                <li class="{{ message.tags }}">{{ message }}</li>
-                {% endif %}
-                {% endfor %}
-            </ul>
-            {% endif %}
-        </section>
-
-        <form method="post" action="{% url 'update_notification_preferences' %}">
-            {% csrf_token %}
-            <label>
-                <input type="checkbox" name="news_notifications" {% if user.notification_preference and user.notification_preference.news_notifications %}checked{% endif %}>
-                接收新聞通知
-            </label>
-            <label>
-                <input type="checkbox" name="email_notifications" {% if user.notification_preference and user.notification_preference.email_notifications %}checked{% endif %}>
-                電子郵件通知
-            </label>
-            <label>
-                <input type="checkbox" name="site_notifications" {% if user.notification_preference and user.notification_preference.site_notifications %}checked{% endif %}>
-                站內通知
-            </label>
-            <button type="submit">保存設定</button>
-        </form>
-        
-        
-
-        {% if user.notifications.exists %}
-        <ul>
-            {% for notification in user.notifications.all %}
-            <li>
-                <a href="{{ notification.url }}">{{ notification.title }}</a> - {{ notification.content }}
-                <small>{{ notification.created_at }}</small>
-            </li>
-            {% endfor %}
-        </ul>
-        {% else %}
-        <p>目前沒有通知。</p>
-        {% endif %}
-
-
-        <!-- Back Button -->
-        <div class="upload-back-button-container">
-            <a href="{% url 'home' %}" class="upload-back-button">返回上一頁</a>
-        </div>
+            <div class="upload-back-button-container">
+                <a href="{% url 'home' %}" class="upload-back-button">返回上一頁</a>
+            </div>
+        </main>
     </div>
+</div>
 
-</body>
 
-</html>
+{% endblock %}

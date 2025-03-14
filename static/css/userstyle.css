@@ -1,10 +1,30 @@
 .upload-user-settings-container {
-    max-width: 800px;
+    max-width: 100%;
     margin: 40px auto;
     background-color: #fff;
     padding: 20px;
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.upload-layout {
+    display: flex;
+    gap: 20px;
+}
+
+.upload-left-panel {
+    width: 25%;
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05); /* Subtle shadow for depth */
+}
+
+.upload-right-panel {
+    width: 75%;
+    padding: 20px;
+    border-radius: 8px;
+    background-color: #fff;
 }
 
 .upload-profile-info-container {
@@ -44,7 +64,9 @@ label {
     margin-bottom: 5px;
 }
 
-input[type="text"], input[type="password"], input[type="file"] {
+input[type="text"],
+input[type="password"],
+input[type="file"] {
     width: 100%;
     padding: 8px;
     border: 1px solid #ddd;
@@ -78,4 +100,67 @@ input[type="text"], input[type="password"], input[type="file"] {
 
 .upload-back-button:hover {
     background-color: #ddd;
+}
+
+/* Left Menu Styling */
+.user-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.user-menu ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+.user-menu li {
+    margin: 0;
+}
+
+.user-menu a {
+    display: block;
+    padding: 12px 20px;
+    font-size: 16px;
+    color: #333;
+    font-weight: 500;
+    text-decoration: none;
+    border-radius: 6px;
+    background-color: transparent;
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.user-menu a::before {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    background-color: #b8c4d1;
+    bottom: 0;
+    left: 0;
+    transition: width 0.7s;
+}
+
+.user-menu a:hover {
+    background-color: #5e6a77;
+    color: white;
+    border-color: #596877;
+}
+
+.user-menu a:hover::before {
+    width: 100%;
+}
+
+.user-menu a.active {
+    background-color: #4CAF50;
+    color: white;
+    border-color: #4CAF50;
+}
+
+.user-menu a:focus {
+    outline: none;
+    box-shadow: 0 0 5px rgba(140, 141, 218, 0.5);
 }
