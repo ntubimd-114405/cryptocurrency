@@ -3,90 +3,127 @@
 {% block title %}所有新聞{% endblock %}
 
 {% block content %}
+<style>
+    h1 {
+        font-size: 32px;
+        color: #2E6695; /* 標題使用深藍色 */
+        margin-bottom: 40px;
+        text-align: center;
+        }
+</style>
     <div class="container mt-4">
-        <h1 class="text-center mb-4">所有新聞</h1>
-        <!-- 使用 d-flex 和 justify-content-center 來水平居中 -->
-        <form method="GET" action="." class="d-flex justify-content-center align-items-center" style = "margin-left: 40%; margin-bottom: 10px;">
-            <div class="row w-100">
-                <!-- 左側：關鍵字搜尋和日期篩選 -->
-                <div class="col-md-4">
-                    <div class="form-group">
-                        <label for="q">搜尋新聞</label>
-                        <input type="text" name="q" id="q" class="form-control" placeholder="Search news..." value="{{ query }}">
-                    </div>
+        <h1 class="mb-4">所有新聞</h1>
 
-                    <div class="form-group">
-                        <label for="start_date">開始日期</label>
-                        <input type="date" name="start_date" id="start_date" class="form-control" value="{{ request.GET.start_date }}">
-                    </div>
-
-                    <div class="form-group">
-                        <label for="end_date">結束日期</label>
-                        <input type="date" name="end_date" id="end_date" class="form-control" value="{{ request.GET.end_date }}">
-                    </div>
-                </div>
-
-                <!-- 右側：提交按鈕 -->
-                <div class="col-md-1 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary" style = "margin-bottom: 160%;">Search</button>
-                </div>
+        <form method="GET" action="." class="d-flex justify-content-center align-items-end gap-3 flex-wrap mb-3">
+            <div class="form-group">
+                <label for="q" class="form-label">搜尋新聞</label>
+                <input type="text" name="q" id="q" class="form-control" placeholder="Search news..." value="{{ query }}">
             </div>
+            <div class="form-group">
+                <label for="start_date" class="form-label">開始日期</label>
+                <input type="date" name="start_date" id="start_date" class="form-control" value="{{ request.GET.start_date }}">
+            </div>
+            <div class="form-group">
+                <label for="end_date" class="form-label">結束日期</label>
+                <input type="date" name="end_date" id="end_date" class="form-control" value="{{ request.GET.end_date }}">
+            </div>
+            <button type="submit" class="button-bu">Search</button>
         </form>
 
         {% if error %}
-            <div class="alert alert-danger" role="alert">
-                {{ error }}
-            </div>
+            <div class="alert alert-danger" role="alert">{{ error }}</div>
         {% else %}
-            <!-- 文章列表 -->
-            <table class="table table-bordered table-striped table-hover">
-                <thead class="table-dark">
-                    <tr>
-                        <th style="width: 50px; text-align: center;">標題</th>
-                        <th style="width: 50px; text-align: center;">圖片</th>
-                        <th style="width: 50px; text-align: center;">來源網站</th>
-                        <th style="width: 50px; text-align: center;">網址</th>
-                        <th style="width: 50px; text-align: center;">時間</th>
-                        <th style="width: 50px; text-align: center;">評論</th>
-                        <th style="width: 50px; text-align: center;">情緒</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for article in all_articles %}
-                        <tr>
-                            <td><a href="{{ article.url }}" target="_blank">{{ article.title }}</a></td>
-                            <!-- 顯示圖片 -->
-                            <td style="text-align: center;">
-                                {% if article.image_url %}
-                                    <img src="{{ article.image_url }}" alt="新聞圖片" style="max-width: 1000px; max-height: 1000px;">
+            <div class="container mt-4">
+                {% for article in all_articles %}
+                    <div class="row align-items-center mb-4 border-bottom pb-3">
+                        <div class="col-md-3 text-center">
+                            {% if article.image_url %}
+                                <a href="{{ article.url }}" target="_blank">
+                                    <img src="{{ article.image_url }}" alt="新聞圖片" class="img-fluid rounded" style="max-height: 150px; width: 100%; object-fit: cover;">
+                                </a>
+                            {% elif article.website.icon_url %}
+                                <a href="{{ article.url }}" target="_blank">
+                                    <img src="{{ article.website.icon_url }}" alt="網站 Logo" class="img-fluid rounded" style="max-height: 80px; object-fit: contain;">
+                                </a>
+                            {% else %}
+                                無圖片
+                            {% endif %}
+                        </div>
+                        <div class="col-md-9">
+                            <h4 class="text-start">
+                                <a href="{{ article.url }}" target="_blank" class="text-dark text-decoration-none">{{ article.title }}</a>
+                            </h4>
+                            <p class="card-text flex-grow-1 text-start">
+                                {% if article.summary and article.summary != "" %}
+                                {{ article.summary|truncatewords:20 }}
                                 {% else %}
-                                    無圖片
+                                {{ article.content|truncatewords:20 }}
                                 {% endif %}
-                            </td>
-                            <td><a href="{{ article.website.name }}" target="_blank"><img src="{{ article.website.icon_url }}" alt="網站圖片" style="max-width: 220px;max-height: 100px;"></a></td>
-                            <td><a href="{{ article.url }}" target="_blank">閱讀更多</a></td>
-                            <td>{{ article.time|date:"Y-m-d H:i" }}</td>
-                            <td><a href="{% url 'news_detail' article_id=article.id %}">評論</a></td>
-                            <td>
-                                {% if article.sentiment == 'positive' %}
-                                    😄
-                                {% elif article.sentiment == 'neutral' %}
-                                    😐
-                                {% elif article.sentiment == 'negative' %}
-                                    😔
+                            </p>
+                            <br>
+                            <div class="d-flex justify-content-between align-items-end">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="me-2">情緒：</span>
+                                    {% if article.sentiment == 'positive' %}😄
+                                    {% elif article.sentiment == 'neutral' %}😐
+                                    {% elif article.sentiment == 'negative' %}😔
+                                    {% else %}❓
+                                    {% endif %}
+                                </div>
+                                <div class="d-flex align-items-center gap-2 text-muted small">
+                                    <p class="mb-0">{{ article.time|date:"Y-m-d H:i" }}</p>
+                                    <span class="mx-1">•</span>
+                                    <a href="{{ article.website.url }}" target="_blank" class="text-muted small d-flex align-items-center text-decoration-none">
+                                        <img src="{{ article.website.icon_url }}" alt="網站圖片" style="width: 20px; height: 20px; object-fit: contain; margin-right: 5px;">
+                                        {{ article.website.name }}
+                                    </a>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <a href="{% url 'news_detail' article_id=article.id %}" class="button-bu btn-sm">評論</a>
+                                    <a href="{{ article.url }}" target="_blank" class="button-bu btn-sm">閱讀更多</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="alert alert-warning text-center">沒有找到新聞</div>
+                {% endfor %}
+            </div>
+            {% if all_articles.has_other_pages %}
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center mt-4">
+                        {% if all_articles.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?q={{ query }}&start_date={{ request.GET.start_date }}&end_date={{ request.GET.end_date }}&page={{ all_articles.previous_page_number }}">❮</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">❮</span></li>
+                        {% endif %}
+                        {% if all_articles.number > 3 %}
+                            <li class="page-item"><a class="page-link" href="?page=1">1</a></li>
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                        {% for num in all_articles.paginator.page_range %}
+                            {% if num >= all_articles.number|add:-2 and num <= all_articles.number|add:2 %}
+                                {% if all_articles.number == num %}
+                                    <li class="page-item active"><span class="page-link bg-warning text-dark border-0">{{ num }}</span></li>
                                 {% else %}
-                                    ❓
+                                    <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
                                 {% endif %}
-                            </td>
-                        </tr>
-                    {% empty %}
-                        <tr>
-                            <td colspan="5" class="text-center">沒有找到新聞</td>
-                        </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                            {% endif %}
+                        {% endfor %}
+                        {% if all_articles.number < all_articles.paginator.num_pages|add:-2 %}
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                            <li class="page-item"><a class="page-link" href="?page={{ all_articles.paginator.num_pages }}">{{ all_articles.paginator.num_pages }}</a></li>
+                        {% endif %}
+                        {% if all_articles.has_next %}
+                            <li class="page-item"><a class="page-link" href="?page={{ all_articles.next_page_number }}">❯</a></li>
+                        {% else %}
+                            <li class="page-item disabled"><span class="page-link">❯</span></li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
         {% endif %}
-
     </div>
 {% endblock %}

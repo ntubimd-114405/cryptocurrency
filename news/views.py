@@ -35,7 +35,7 @@ def news_list(request):
         all_articles = all_articles.filter(time__lte=end_date)
     
     # 根據時間倒序排序
-    all_articles = all_articles.order_by('-time')[:10]
+    all_articles = all_articles.order_by('-time')
 
     return render(request, 'news_list.html', {'all_articles': all_articles, 'query': query})
 
@@ -84,3 +84,46 @@ def X_list(request):
     # 获取指定 id 的 XPost 对象
     xposts = XPost.objects.all()
     return render(request, 'x_list.html', {'xposts': xposts})
+
+# 新聞列表翻頁-----------------
+from django.core.paginator import Paginator
+from django.shortcuts import render, get_object_or_404, redirect
+from .models import Article, Website, Reply, Comment, XPost
+from datetime import datetime
+import re
+
+def news_list(request):
+    # 獲取搜尋關鍵字和篩選選項
+    query = request.GET.get('q', '')  # 搜尋關鍵字
+    start_date = request.GET.get('start_date', '')  # 開始日期
+    end_date = request.GET.get('end_date', '')  # 結束日期
+    page = request.GET.get('page', 1)  # 當前頁碼
+    
+    # 基本篩選邏輯
+    if query:
+        all_articles = Article.objects.filter(title__icontains=query)
+    else:
+        all_articles = Article.objects.all()
+    
+    # 如果提供了日期範圍，則進行日期篩選
+    if start_date:
+        start_date = datetime.strptime(start_date, '%Y-%m-%d')  # 解析日期格式
+        all_articles = all_articles.filter(time__gte=start_date)
+    if end_date:
+        end_date = datetime.strptime(end_date, '%Y-%m-%d')
+        all_articles = all_articles.filter(time__lte=end_date)
+    
+    # 根據時間倒序排序
+    all_articles = all_articles.order_by('-time')
+
+    # 分頁，每頁顯示 5 條新聞
+    paginator = Paginator(all_articles, 5)
+    paged_articles = paginator.get_page(page)
+
+    return render(request, 'news_list.html', {
+        'all_articles': paged_articles,
+        'query': query,
+        'start_date': start_date,
+        'end_date': end_date,
+    })
+# 新聞列表翻頁-----------------
