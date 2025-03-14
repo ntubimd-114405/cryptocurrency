@@ -14,25 +14,22 @@
                     <div class="accordion-item">
                         <h2 class="accordion-header" id="heading{{ forloop.counter }}">
                             <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}"
-                                    type="button"
-                                    data-bs-toggle="collapse"
-                                    data-bs-target="#collapse{{ forloop.counter }}"
-                                    aria-expanded="{{ forloop.first|yesno:'true,false' }}"
-                                    aria-controls="collapse{{ forloop.counter }}">
+                                type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ forloop.counter }}"
+                                aria-expanded="{{ forloop.first|yesno:'true,false' }}"
+                                aria-controls="collapse{{ forloop.counter }}">
                                 文字段落 {{ forloop.counter }}
                             </button>
                         </h2>
                         <div id="collapse{{ forloop.counter }}"
-                             class="accordion-collapse collapse {% if forloop.first %}show{% endif %}"
-                             aria-labelledby="heading{{ forloop.counter }}"
-                             data-bs-parent="#accordionExample">
+                            class="accordion-collapse collapse {% if forloop.first %}show{% endif %}"
+                            aria-labelledby="heading{{ forloop.counter }}" data-bs-parent="#accordionExample">
                             <div class="accordion-body">
                                 {{ paragraph }}
                             </div>
                         </div>
                     </div>
                     {% endfor %}
-                </div>                                
+                </div>
             </div>
         </div>
     </div>
@@ -44,45 +41,47 @@
         <div class="col-md-8 offset-md-2">
             <h2 class="text-center">Comments</h2>
             {% if comments %}
-                <ul class="list-group">
-                    {% for comment in comments %}
-                        <li class="list-group-item mb-4 shadow-sm rounded">
-                            <strong>{{ comment.user.username }}</strong>
-                            <span class="text-muted">{{ comment.created_at|date:"Y-m-d H:i" }}</span>
-                            <p>{{ comment.content }}</p>
-    
-                            <!-- 回覆按鈕 -->
-                            <button class="btn btn-sm btn-outline-primary reply-btn" data-parent-id="{{ comment.id }}">回覆</button>
-    
-                            <!-- 顯示此評論的回覆 -->
-                            {% for reply in comment.replies.all %}
-                                <div class="reply ms-4 mt-2">
-                                    <p><strong>{{ reply.user.username }}</strong>: {{ reply.content }}</p>
-                                    <small class="text-muted">{{ reply.created_at|date:"Y-m-d H:i" }}</small>
-                                </div>
-                            {% endfor %}
-                        </li>
-    
-                        <!-- 回覆表單 -->
-                        <div id="reply-form-container-{{ comment.id }}" class="row" style="display:none;">
-                            <div class="col-md-8 offset-md-2 bg-light p-3 rounded shadow-sm">
-                                <h3>Reply to {{ comment.user.username }}</h3>
-                                <form method="POST" class="reply-form" data-comment-id="{{ comment.id }}">
-                                    {% csrf_token %}
-                                    <textarea name="content" class="form-control mb-2" rows="4" placeholder="Add a reply..." required></textarea>
-                                    <input type="hidden" name="parent_id" value="{{ comment.id }}">
-                                    <div class="d-flex justify-content-between">
-                                        <button type="button" class="btn btn-secondary cancel-btn">取消</button>
-                                        <button type="submit" class="btn btn-primary">回覆訊息</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-    
+            <ul class="list-group">
+                {% for comment in comments %}
+                <li class="list-group-item mb-4 shadow-sm rounded">
+                    <strong>{{ comment.user.username }}</strong>
+                    <span class="text-muted">{{ comment.created_at|date:"Y-m-d H:i" }}</span>
+                    <p>{{ comment.content }}</p>
+
+                    <!-- 回覆按鈕 -->
+                    <button class="btn btn-sm btn-outline-primary reply-btn"
+                        data-parent-id="{{ comment.id }}">回覆</button>
+
+                    <!-- 顯示此評論的回覆 -->
+                    {% for reply in comment.replies.all %}
+                    <div class="reply ms-4 mt-2">
+                        <p><strong>{{ reply.user.username }}</strong>: {{ reply.content }}</p>
+                        <small class="text-muted">{{ reply.created_at|date:"Y-m-d H:i" }}</small>
+                    </div>
                     {% endfor %}
-                </ul>
+                </li>
+
+                <!-- 回覆表單 -->
+                <div id="reply-form-container-{{ comment.id }}" class="row" style="display:none;">
+                    <div class="col-md-8 offset-md-2 bg-light p-3 rounded shadow-sm">
+                        <h3>Reply to {{ comment.user.username }}</h3>
+                        <form method="POST" class="reply-form" data-comment-id="{{ comment.id }}">
+                            {% csrf_token %}
+                            <textarea name="content" class="form-control mb-2" rows="4" placeholder="Add a reply..."
+                                required></textarea>
+                            <input type="hidden" name="parent_id" value="{{ comment.id }}">
+                            <div class="d-flex justify-content-between">
+                                <button type="button" class="btn btn-secondary cancel-btn">取消</button>
+                                <button type="submit" class="btn btn-primary">回覆訊息</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                {% endfor %}
+            </ul>
             {% else %}
-                <p class="text-center">No comments yet.</p>
+            <p class="text-center">No comments yet.</p>
             {% endif %}
         </div>
     </div>
@@ -91,25 +90,26 @@
 
     <!-- 新增評論表單 -->
     {% if user.is_authenticated %}
-        <div class="row">
-            <div class="col-md-8 offset-md-2">
-                <h3>Add a comment</h3>
-                <form method="POST" id="comment-form" class="bg-light p-4 rounded shadow-sm">
-                    {% csrf_token %}
-                    <textarea name="content" class="form-control mb-2" rows="4" placeholder="Add a comment..." required></textarea>
-                    <div class="d-flex justify-content-between">
-                        <a href="{% url 'news_list' %}" class="btn btn-secondary">返回</a>
-                        <button type="submit" class="btn btn-primary">評論</button>
-                    </div>
-                </form>
-            </div>
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <h3>Add a comment</h3>
+            <form method="POST" id="comment-form" class="bg-light p-4 rounded shadow-sm">
+                {% csrf_token %}
+                <textarea name="content" class="form-control mb-2" rows="4" placeholder="Add a comment..."
+                    required></textarea>
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'news_list' %}" class="btn btn-secondary">返回</a>
+                    <button type="submit" class="btn btn-primary">評論</button>
+                </div>
+            </form>
         </div>
+    </div>
     {% else %}
-        <div class="row">
-            <div class="col-md-8 offset-md-2">
-                <p>You must be logged in to comment.</p>
-            </div>
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <p>You must be logged in to comment.</p>
         </div>
+    </div>
     {% endif %}
 
     <!-- 回覆表單 -->
@@ -118,7 +118,8 @@
             <h3>Reply to Comment</h3>
             <form method="POST" id="reply-form" class="bg-light p-4 rounded shadow-sm">
                 {% csrf_token %}
-                <textarea name="content" class="form-control mb-2" rows="4" placeholder="Add a reply..." required></textarea>
+                <textarea name="content" class="form-control mb-2" rows="4" placeholder="Add a reply..."
+                    required></textarea>
                 <input type="hidden" name="parent_id" id="parent-id">
                 <div class="d-flex justify-content-between">
                     <button type="button" class="btn btn-secondary cancel-btn">取消</button>
@@ -184,9 +185,9 @@
 <!-- 新增 JavaScript 來實現回覆功能 -->
 <script>
     document.querySelectorAll('.reply-btn').forEach(button => {
-        button.addEventListener('click', function() {
+        button.addEventListener('click', function () {
             const parentId = this.getAttribute('data-parent-id');
-            
+
             // 隱藏所有回覆表單
             document.querySelectorAll('.reply-form').forEach(form => {
                 form.closest('.row').style.display = 'none';
@@ -206,7 +207,7 @@
 
     // 取消回覆功能
     document.querySelectorAll('.cancel-btn').forEach(button => {
-        button.addEventListener('click', function() {
+        button.addEventListener('click', function () {
             // 隱藏回覆表單
             this.closest('.row').style.display = 'none';
         });
