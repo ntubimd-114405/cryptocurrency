@@ -201,7 +201,7 @@ def upload_profile_image(request):
                 request.user.profile.profile_image.save(image_name, user_profile_image)
 
             # 提交表單後，跳轉到主頁
-            return redirect('home')  # 或者你可以跳轉到其他頁面
+            return redirect('user_profile')  # 或者你可以跳轉到其他頁面
     else:
         form = UserProfileForm(instance=request.user.profile)
 
