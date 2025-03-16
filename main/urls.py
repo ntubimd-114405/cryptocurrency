@@ -7,7 +7,7 @@ from django.contrib.auth import views as auth_views
 urlpatterns = [
     path('', views.home, name='home'),  # 將路徑連結到視圖
     path('crypto/', views.crypto_list, name='crypto_list'),  # 用於展示虛擬貨幣價格的列表頁面（假設已經設置）
-    path('crypto/<int:pk>/', views.crypto_detail, name='crypto_detail'),
+    
     path('login/', views.login_view, name='login'),
     path('logout/', views.logout_view, name='logout'),
     path('user_profile/', views.upload_profile_image, name='user_profile'),
@@ -30,7 +30,9 @@ urlpatterns = [
     path('send-email/', views.send_email_news, name='send_email'),
 
     path("crypto_chart/", views.crypto_price_chart, name="crypto_chart"),
-
+    
+    path('coin-history/<int:coin_id>/', views.coin_history, name='coin_history'),
+    path('crypto/<int:coin_id>/', views.crypto_detail, name='crypto_detail'),
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

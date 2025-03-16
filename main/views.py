@@ -415,3 +415,46 @@ def crypto_price_chart(request):
 '''
 def crypto_price_chart(request):
     return HttpResponse("hello")
+
+
+from django.shortcuts import render
+from .models import CoinHistory
+from django.http import JsonResponse
+
+def crypto_detail(request, coin_id):
+    data = Coin.objects.get(id=coin_id)
+    return render(request, 'crypto_detail.html', {'coin_id': coin_id,'data':data})
+
+from django.db.models import Min, Max, Sum, Subquery, OuterRef
+from django.db.models.functions import TruncMinute, TruncHour, TruncDay, TruncWeek, TruncMonth
+from django.http import JsonResponse
+from .models import CoinHistory
+
+def coin_history(request, coin_id):
+    # 獲取請求參數，並設置預設值
+    end = int(request.GET.get('start', 0))  # 默認從第0條數據開始
+    limit = int(request.GET.get('limit', 1000))  # 默認最多返回 1000 條數據
+    timeframe = request.GET.get('timeframe', 'minute')  # 默認為分鐘級別
+    total_count = CoinHistory.objects.filter(coin_id=coin_id).count()
+    # 計算 start 位置
+    end = int(total_count * (end / 100))  # 轉換為數據索引位置
+    
+    # 時間聚合對應關係
+    time_mapping = {
+        'minute': TruncMinute('date'),
+        'hour': TruncHour('date'),
+        'day': TruncDay('date'),
+        'week': TruncWeek('date'),
+        'month': TruncMonth('date'),
+    }
+
+    time_trunc = time_mapping[timeframe]
+
+    # 查詢並聚合數據
+    history_data = CoinHistory.objects.filter(coin_id=coin_id) \
+    .values('date', 'open_price', 'high_price', 'low_price', 'close_price', 'volume') \
+    .order_by('date')[max(0, end-limit):end]  # 按日期升序排列
+    # 轉換為列表
+
+    data = list(history_data)
+    return JsonResponse({'data': data, 'total_count': total_count}, safe=False)
