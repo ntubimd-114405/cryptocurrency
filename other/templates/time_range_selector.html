@@ -87,8 +87,17 @@
 
 <script>
     function updateCharts() {
-        const startDate = allDates[startRange.value];
-        const endDate = allDates[endRange.value];
+        const startValue = parseInt(startRange.value);
+        let endValue = parseInt(endRange.value);
+        
+        // 確保結束時間不會小於開始時間
+        if (endValue < startValue) {
+            endRange.value = startValue;
+            endValue = startValue;
+        }
+
+        const startDate = allDates[startValue];
+        const endDate = allDates[endValue];
         startLabel.textContent = startDate;
         endLabel.textContent = endDate;
 
@@ -113,5 +122,4 @@
     // 當使用者調整時間範圍時，更新圖表
     startRange.addEventListener('input', updateCharts);
     endRange.addEventListener('input', updateCharts);
-    
 </script>
