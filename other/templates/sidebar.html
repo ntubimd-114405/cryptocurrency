@@ -68,6 +68,31 @@
         flex-grow: 1;
         transition: margin-left 0.3s;
     }
+
+    .sidebar a {
+        display: block;
+        padding: 10px 20px;
+        color: #007bff;
+        text-decoration: none;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .sidebar a::after {
+        content: "";
+        position: absolute;
+        left: 0;
+        width: 0;
+        height: 2px;
+        background-color: #007bff;
+        transition: width 0.7s ease-in-out;
+        bottom: 0;
+    }
+
+    .sidebar a:hover::after {
+        width: 100%;
+    }
+
 </style>
 
 <script>
