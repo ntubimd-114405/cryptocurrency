@@ -1,5 +1,5 @@
 /* 全域卡片樣式 */
-.card {
+.card-coin {
     max-width: 100%;
     margin: 20px auto;
     background-color: #ffffff;
@@ -7,6 +7,7 @@
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     overflow: hidden;
+    display: none;
 }
 
 .card:hover {
@@ -14,20 +15,11 @@
     box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
 }
 
-#c2{
-    background-color: #F5F8FF;
-}
-
-#c3{
-    background-color: #E0E8F8;
-}
-
 /* 卡片內部佈局 */
 .card .row {
     display: flex;
     align-items: center;
 }
-
 
 
 .card-body {
@@ -113,4 +105,248 @@
 .back-to-top:hover {
     background-color: #2589A3;
     transform: scale(1.1);
+}
+
+#nav1{
+    background-color: #37BCD8;
+    font-size: 20px;
+}
+#btn1{
+    font-size: 20px;
+    color: white;
+}
+img.profile-image{
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    image-rendering: smooth; /* 可選，嘗試此屬性來改善加載過程 */
+}
+
+.btn{
+    color: white;
+}
+
+.dropdown-item i {
+    margin-right: 8px;
+}
+
+.user-dropdown {
+    min-width: 320px;  /* 原本 220px，擴大到 320px */
+    max-width: 360px;  /* 避免過大 */
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+    padding: 15px;  /* 內距加大，讓內容更寬鬆 */
+}
+
+.username {
+    text-align: center;
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+/* 讓按鈕平均分布 */
+.button-container {
+    display: flex;
+    flex-wrap: wrap; /* 允許換行 */
+    gap: 8px; /* 按鈕間距 */
+    justify-content: center; /* 置中排列 */
+}
+
+/* 讓按鈕等寬 */
+.button-container a {
+    flex: 1;
+    text-align: center;
+    min-width: 100px; /* 最小寬度 */
+    padding: 8px 12px;
+}
+/* 按鈕 */
+.button-bu {
+    background-color: #37BCD8;
+    color: #FFFFFF;
+    border: none;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+.button-bu:hover {
+    background-color: #2AA4BF;
+}
+
+h1{
+    text-align: center;
+}
+
+.button {
+    margin: 5px;
+    padding: 8px 16px;
+    border-radius: 5px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+.button:hover {
+    background-color: #0056b3;
+}
+
+.active {
+    display: block;
+}
+
+.button-container {
+    display: flex;
+    justify-content: center;
+}
+
+#a{
+    margin-top: 20px;
+    margin-bottom: 25px;
+    display: flex;
+    justify-content: center;
+}
+
+.carousel {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background-color: rgb(50, 96, 239);
+    flex-direction: column; /* 垂直排列 */
+}
+
+.card-head {
+    margin: 50px;
+    text-align: center;
+    color: white;
+}
+
+.card-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.card_invent-container {
+    display: flex;
+    position: relative;
+    width: 900px;
+    height: 400px;
+    overflow: hidden;
+}
+
+.card_invent {
+    background-color: #ffffff;
+    width: 300px;
+    height: 250px;
+    margin: 0 10px;
+    border-radius: 20px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    padding: 20px;
+    position: relative;
+    transition: transform 0.5s ease, opacity 0.5s ease;
+    opacity: 0.7;
+    perspective: 1000px;
+    cursor: pointer;
+}
+
+.card_invent.active {
+    transform: scale(1); /* 取消放大效果 */
+    opacity: 1;
+    z-index: 2;
+}
+
+.card_invent.prev, .card_invent.next {
+    transform: scale(0.95); /* 適度縮小，避免影響佈局 */
+    opacity: 0.9;
+    z-index: 1;
+    pointer-events: none; /* 禁用非中間卡片點擊 */
+}
+
+
+.card_invent-inner {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transition: transform 0.6s;
+    transform-style: preserve-3d;
+}
+
+.card_invent.flip .card_invent-inner {
+    transform: rotateY(180deg);
+}
+
+.card_invent-face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    backface-visibility: hidden;
+    border-radius: 20px;
+}
+
+.card_invent-back {
+    transform: rotateY(180deg);
+}
+
+.arrow-btn {
+    margin-top: 20px;
+    background-color: #4285f4;
+    color: white;
+    border: none;
+    padding: 3px 0; /* 增加上下內距，去除左右內距 */
+    border-radius: 20px; /* 較小的圓角，接近長條形 */
+    cursor: pointer;
+    font-size: 16px;
+    position: absolute;
+    bottom: 5px; /* 固定在卡片底部 */
+    left: 50%; /* 水平居中 */
+    transform: translateX(-50%);
+    width: 50%; /* 長條型效果 */
+}
+
+.nav-btn {
+    position: absolute;
+    top: 50%; /* 垂直置中 */
+    background-color: transparent;
+    color: white;
+    border: none;
+    padding: 10px;
+    cursor: pointer;
+    font-size: 30px;
+}
+
+
+.prev-btn {
+    left: 250px; /* 向左移動 */
+}
+
+.next-btn {
+    right: 250px; /* 向右移動 */
+}
+
+.btc{
+    width: 65px;
+    height: 65px;
+    margin: 5px;
+}
+
+.new{
+    width: 65px;
+    height: 65px;
+    margin: 5px;
+}
+
+.point{
+    width: 65px;
+    height: 65px;
+    margin: 5px;
+}
+
+.ul{
+    text-align: left;
+    padding: 5px;
 }
