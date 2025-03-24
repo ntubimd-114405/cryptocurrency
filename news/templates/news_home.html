@@ -91,7 +91,7 @@
                 {% elif article.sentiment == 'negative' %}
                 😔 負面
                 {% else %}
-                ❓ 未知
+                ❓ 判斷中...
                 {% endif %}
                 <span class="mx-2">•</span>
                 {{ article.time|date:"Y-m-d H:i" }}
@@ -99,7 +99,7 @@
                 <a href="{{ article.website.url }}" target="_blank" class="text-muted small text-decoration-none">
                     資料來源：{{ article.website.name }}
                 </a>
-            </div>
+            </div>            
         </div>
     </div>
     {% endfor %}
