@@ -1,180 +1,286 @@
-{% extends 'base.html' %}
 {% load static %}
-{% block title %}虛擬貨幣首頁{% endblock %}
 
 {% block content %}
     {% load humanize %}
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="{% static 'css/home.css' %}">
+    
 
+    {% include 'header.html' %}
+    <h1>熱門加密貨幣</h1>
 
-    <div class="card mb-3" id="c1" style="max-width: 100%;">
+    <div class="button-container">
+        <button onclick="showContent('info1')" class = "button">資訊 1</button>
+        <button onclick="showContent('info2')" class = "button">資訊 2</button>
+        <button onclick="showContent('info3')" class = "button">資訊 3</button>
+        <button onclick="showContent('info4')" class = "button">資訊 4</button>
+    </div>
+    
+    <div class="card-coin mb-3" id="info1" style="max-width: 60%;">
+        
         <div class="row g-0">
-            <div class="col-md-4">
-                <img src="{% static 'images/btc-1.png' %}" alt="Bitcoin Logo" class="img-fluid my-3" style="max-width: 80%;">
+            {% if error %}
+        <div class="alert alert-danger" role="alert">
+            {{ error }}
+        </div>
+            {% else %}
+            <table class="table table-bordered table-hover">
+                {% include 'table_header.html' %}
+                <tbody>
+                    {% for price in top_coins %}
+                        <tr>
+                            <td style="text-align: center; vertical-align: middle;">
+                                <a href="{% url 'crypto_detail' price.pk %}">
+                                    <img src="{{ price.coin.logo_url }}" alt="logo"><br>{{ price.coin.coinname }}
+                                </a>
+                            </td>
+                            <td style="text-align: center; vertical-align: middle;">{{ price.usd|floatformat:2|intcomma }}</td>
+                            <td style="text-align: center; vertical-align: middle;">{{ price.twd|floatformat:2|intcomma }}</td>
+                            <td style="text-align: center; vertical-align: middle;">{{ price.jpy|floatformat:2|intcomma }}</td>
+                            <td style="text-align: center; vertical-align: middle;">{{ price.eur|floatformat:2|intcomma }}</td>
+                            <td style="text-align: center; vertical-align: middle;">{{ price.volume_24h|floatformat:2|intcomma }}</td>
+                            <td style="text-align: center; vertical-align: middle;">
+                                {% if price.change_24h > 0 %}
+                                    <span style="color: red;">{{ price.change_24h|floatformat:2 }}%</span>
+                                {% elif price.change_24h < 0 %}
+                                    <span style="color: green;">{{ price.change_24h|floatformat:2 }}%</span>
+                                {% else %}
+                                    <span style="color: black;">{{ price.change_24h|floatformat:2 }}%</span>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center; vertical-align: middle;">{{ price.timestamp }}</td>
+                            
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+        </div>
+        <a data-testid="Web_NewHomePage_HotCrypto_More" href="/ns/trading" class="sc-8bd51ba2-2 RBQIy" id = "a">探索更多</a>
+    </div>
+
+    <div class="card-coin mb-3" id="info2" style="max-width: 60%;">
+        
+        <div class="row g-0">
+            {% if error %}
+        <div class="alert alert-danger" role="alert">
+            {{ error }}
+        </div>
+            {% else %}
+            <table class="table table-bordered table-hover">
+                {% include 'table_header.html' %}
+                <tbody>
+                    {% for price in increase_coins %}
+                        <tr>
+                            <td style="text-align: center; vertical-align: middle;">
+                                <a href="{% url 'crypto_detail' price.pk %}">
+                                    <img src="{{ price.coin.logo_url }}" alt="logo"><br>{{ price.coin.coinname }}
+                                </a>
+                            </td>
+                            <td style="text-align: center; vertical-align: middle;">{{ price.usd|floatformat:2|intcomma }}</td>
+                            <td style="text-align: center; vertical-align: middle;">{{ price.twd|floatformat:2|intcomma }}</td>
+                            <td style="text-align: center; vertical-align: middle;">{{ price.jpy|floatformat:2|intcomma }}</td>
+                            <td style="text-align: center; vertical-align: middle;">{{ price.eur|floatformat:2|intcomma }}</td>
+                            <td style="text-align: center; vertical-align: middle;">{{ price.volume_24h|floatformat:2|intcomma }}</td>
+                            <td style="text-align: center; vertical-align: middle;">
+                                {% if price.change_24h > 0 %}
+                                    <span style="color: red;">{{ price.change_24h|floatformat:2 }}%</span>
+                                {% elif price.change_24h < 0 %}
+                                    <span style="color: green;">{{ price.change_24h|floatformat:2 }}%</span>
+                                {% else %}
+                                    <span style="color: black;">{{ price.change_24h|floatformat:2 }}%</span>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center; vertical-align: middle;">{{ price.timestamp }}</td>
+                            
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+        </div>
+        <a data-testid="Web_NewHomePage_HotCrypto_More" href="/ns/trading" class="sc-8bd51ba2-2 RBQIy" id = "a">探索更多</a>
+    </div>
+
+    <div class="card-coin mb-3" id="info3" style="max-width: 60%;">
+        
+        <div class="row g-0">
+            {% if error %}
+        <div class="alert alert-danger" role="alert">
+            {{ error }}
+        </div>
+            {% else %}
+            <table class="table table-bordered table-hover">
+                {% include 'table_header.html' %}
+                <tbody>
+                    {% for price in decline_coins %}
+                        <tr>
+                            <td style="text-align: center; vertical-align: middle;">
+                                <a href="{% url 'crypto_detail' price.pk %}">
+                                    <img src="{{ price.coin.logo_url }}" alt="logo"><br>{{ price.coin.coinname }}
+                                </a>
+                            </td>
+                            <td style="text-align: center; vertical-align: middle;">{{ price.usd|floatformat:2|intcomma }}</td>
+                            <td style="text-align: center; vertical-align: middle;">{{ price.twd|floatformat:2|intcomma }}</td>
+                            <td style="text-align: center; vertical-align: middle;">{{ price.jpy|floatformat:2|intcomma }}</td>
+                            <td style="text-align: center; vertical-align: middle;">{{ price.eur|floatformat:2|intcomma }}</td>
+                            <td style="text-align: center; vertical-align: middle;">{{ price.volume_24h|floatformat:2|intcomma }}</td>
+                            <td style="text-align: center; vertical-align: middle;">
+                                {% if price.change_24h > 0 %}
+                                    <span style="color: red;">{{ price.change_24h|floatformat:2 }}%</span>
+                                {% elif price.change_24h < 0 %}
+                                    <span style="color: green;">{{ price.change_24h|floatformat:2 }}%</span>
+                                {% else %}
+                                    <span style="color: black;">{{ price.change_24h|floatformat:2 }}%</span>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center; vertical-align: middle;">{{ price.timestamp }}</td>
+                            
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+        </div>
+        <a data-testid="Web_NewHomePage_HotCrypto_More" href="/ns/trading" class="sc-8bd51ba2-2 RBQIy" id = "a">探索更多</a>
+    </div>
+
+    <div class="card-coin mb-3" id="info4" style="max-width: 60%;">
+        
+        <div class="row g-0">
+            {% if error %}
+        <div class="alert alert-danger" role="alert">
+            {{ error }}
+        </div>
+            {% else %}
+            <table class="table table-bordered table-hover">
+                {% include 'table_header.html' %}
+                <tbody>
+                    {% for price in volume %}
+                        <tr>
+                            <td style="text-align: center; vertical-align: middle;">
+                                <a href="{% url 'crypto_detail' price.pk %}">
+                                    <img src="{{ price.coin.logo_url }}" alt="logo"><br>{{ price.coin.coinname }}
+                                </a>
+                            </td>
+                            <td style="text-align: center; vertical-align: middle;">{{ price.usd|floatformat:2|intcomma }}</td>
+                            <td style="text-align: center; vertical-align: middle;">{{ price.twd|floatformat:2|intcomma }}</td>
+                            <td style="text-align: center; vertical-align: middle;">{{ price.jpy|floatformat:2|intcomma }}</td>
+                            <td style="text-align: center; vertical-align: middle;">{{ price.eur|floatformat:2|intcomma }}</td>
+                            <td style="text-align: center; vertical-align: middle;">{{ price.volume_24h|floatformat:2|intcomma }}</td>
+                            <td style="text-align: center; vertical-align: middle;">
+                                {% if price.change_24h > 0 %}
+                                    <span style="color: red;">{{ price.change_24h|floatformat:2 }}%</span>
+                                {% elif price.change_24h < 0 %}
+                                    <span style="color: green;">{{ price.change_24h|floatformat:2 }}%</span>
+                                {% else %}
+                                    <span style="color: black;">{{ price.change_24h|floatformat:2 }}%</span>
+                                {% endif %}
+                            </td>
+                            <td style="text-align: center; vertical-align: middle;">{{ price.timestamp }}</td>
+                            
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% endif %}
+        </div>
+        <a data-testid="Web_NewHomePage_HotCrypto_More" href="/ns/trading" class="sc-8bd51ba2-2 RBQIy" id = "a">探索更多</a>
+    </div>
+
+    <div class="carousel">
+        <div class="card-head">
+            <h2>歡迎來到虛擬貨幣分析平台</h2>
+            <p>即時更新的加密貨幣價格與市場數據，助您做出明智的決策。</p>
+        </div>
+        
+        <button class="nav-btn prev-btn">◀</button>
+
+        <div class="card_invent-container">
+            <div class="card_invent active">
+                <div class="card_invent-inner">
+                    <div class="card_invent-face card_invent-front">
+                        <img src="{% static 'images/btc-1.png' %}" class = "btc" alt="">
+                        <h3>貨幣資料</h3>
+                        <p>歷史數據</p>
+                        <a href="{% url 'crypto_list' %}"><button class="arrow-btn">→</button></a>
+                    </div>
+                    <div class="card_invent-face card_invent-back">
+                        <section id="highlights" class="section">
+                            <h2>市場統計</h2>
+                            <p><strong>總市值 (USD):</strong>
+                                <span id="total_market_cap">載入中...</span>
+                            </p>
+        
+                            <p><strong>24 小時交易量 (USD):</strong>
+                                <span id="total_24h_volume">載入中...</span>
+                            </p>
+        
+                            <p><strong>市占率:</strong>
+                                <span id="btc_dominance">載入中...</span> |
+                                <span id="eth_dominance">載入中...</span> |
+                                <span id="other_dominance">載入中...</span>
+                            </p>
+                        </section>
+                    </div>
+                </div>
             </div>
-            <div class="col-md-8">
-                <div class="card-body">
-                    <h2>歡迎來到虛擬貨幣分析平台</h2>
-                    <p>即時更新的加密貨幣價格與市場數據，助您做出明智的決策。</p>
-                    <a href="{% url 'crypto_list' %}" class="p1">查看貨幣列表</a>
-                    <section id="highlights" class="section" style="margin-top: 10px;">
-                        <h2>市場統計</h2>
-                        <p><strong>總市值 (USD):</strong>
-                            <span id="total_market_cap">載入中...</span>
-                        </p>
-    
-                        <p><strong>24 小時交易量 (USD):</strong>
-                            <span id="total_24h_volume">載入中...</span>
-                        </p>
-    
-                        <p><strong>市占率:</strong>
-                            <span id="btc_dominance">載入中...</span> |
-                            <span id="eth_dominance">載入中...</span> |
-                            <span id="other_dominance">載入中...</span>
-                        </p>
+
+            <div class="card_invent next">
+                <div class="card_invent-inner">
+                    <div class="card_invent-face card_invent-front">
+                        <img src="{% static 'images/news.png' %}" class = "new" alt="">
+                        <h2>外部資訊</h2>
+                        <p>新聞資訊</p>  
+                        <a href="{% url 'news_home' %}"><button class="arrow-btn">→</button></a>
+                    </div>
+                    <div class="card_invent-face card_invent-back">   
+                        <h3>加密市場動態</h3>
+                        <div class = "ul">
+                            <ul>
+                                <li>即時新聞</li>
+                                <li>重要事件</li>
+                                <li>市場趨勢變化</li>
+                            </ul>
+                        </div> 
+                    </div>
+                </div>
+            </div>
+
+            <div class="card_invent">
+                <div class="card_invent-inner">
+                    <div class="card_invent-face card_invent-front">
+                        <img src="{% static 'images/pointer.png' %}" class = "point" alt="">
+                        <h3>經濟指標</h3>
+                        <p>投資工具</p>
+                        <a href="{% url 'other_home' %}"><button class="arrow-btn">→</button></a>
+                    </div>
+                    <div class="card_invent-face card_invent-back">
+                        <h3>關鍵經濟指標</h3>
+                        <div class = "ul">
+                            <ul>
+                                <li>提升決策精準度</li>
+                                <li>降低投資風險</li>
+                                <li>全面市場分析</li>
+                            </ul>
+                        </div> 
+                    </div>
                 </div>
             </div>
         </div>
+
+        <button class="nav-btn next-btn">▶</button>
     </div>
-    
-    <div class="card mb-3" id="c2" style="max-width: 100%;">
-        <div class="row g-0">
-            <div class="col-md-8">
-                <div class="card-body">
-                    <h2>外部資訊</h2>
-                    <p>在這裡，您可以輕鬆掌握全球加密貨幣市場的最新動態。無論是最新的新聞、重要事件，還是市場趨勢的變化，我們都為您提供最即時的資訊。</p>
-                    <p>點擊以下連結，隨時了解關於加密貨幣和其他相關議題的報導，幫助您作出更明智的投資決策。</p>
-                    <a href="{% url 'news_home' %}" class="p1">新聞</a>
-                    <a href="{% url 'X_list' %}" class="p1">川普</a>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <img src="{% static 'images/news.png' %}" alt="News" class="img-fluid my-3" style="max-width: 80%;">
-            </div>
-    
-        </div>
-    </div>
-    <div class="card mb-3" id="c3" style="max-width: 100%;">
-        <div class="row g-0">
-            <div class="col-md-4">
-                <img src="{% static 'images/pointer.png' %}" alt="Pointer" class="img-fluid my-3" style="max-width: 80%;">
-            </div>
-            <div class="col-md-8">
-                <div class="card-body">
-                    <h2>經濟指標</h2>
-                    <p>在這裡，我們為您提供一些重要的經濟指標，這些指標可以幫助您了解市場趨勢，作為投資決策的參考依據。</p>
-                    <p>您可以點擊以下連結，查看各類指標圖表，讓您更輕鬆掌握宏觀經濟、比特幣和金融市場的動態。</p>
-                    <a href="{% url 'macro_chart' %}" class="p1">宏觀經濟指標</a>
-                    <a href="{% url 'metric_chart' %}" class="p1">比特幣指標</a>
-                    <a href="{% url 'finance_chart' %}" class="p1">金融指標</a>
-                </div>
-            </div>
-        </div>
-    </div>
+
     
     <button id="backToTop" class="back-to-top">▲ 回到頂部</button>
 
-    <div class="container">
-        <script>
-            // 當網頁加載完畢時，從 CoinGecko API 獲取市場數據
-            window.onload = function() {
-                fetch('https://api.coingecko.com/api/v3/global')
-                    .then(response => response.json())
-                    .then(data => {
-                        const marketData = data.data;
-                        
-                        // 更新總市值和24小時交易量
-                        document.getElementById('total_market_cap').textContent = marketData.total_market_cap.usd.toLocaleString();
-                        document.getElementById('total_24h_volume').textContent = marketData.total_volume.usd.toLocaleString();
-        
-                        // 取得比特幣、以太坊和其他幣種的市占率
-                        const btcDominance = marketData.market_cap_percentage.btc.toFixed(2);
-                        const ethDominance = marketData.market_cap_percentage.eth.toFixed(2);
-                        const otherDominance = (100 - btcDominance - ethDominance).toFixed(2);
-        
-                        // 更新市占率顯示
-                        document.getElementById('btc_dominance').textContent = `比特幣: ${btcDominance}%`;
-                        document.getElementById('eth_dominance').textContent = `以太坊: ${ethDominance}%`;
-                        document.getElementById('other_dominance').textContent = `其他: ${otherDominance}%`;
-                    })
-                    .catch(error => {
-                        console.error('無法取得市場數據:', error);
-                        document.getElementById('total_market_cap').textContent = '無法取得';
-                        document.getElementById('total_24h_volume').textContent = '無法取得';
-                        document.getElementById('btc_dominance').textContent = '無法取得';
-                        document.getElementById('eth_dominance').textContent = '無法取得';
-                        document.getElementById('other_dominance').textContent = '無法取得';
-                    });
-            }
+    <script src = "{% static 'js/home.js' %}"></script>
 
-            let backToTopButton = document.getElementById("backToTop");
-
-            // 監聽滾動事件
-            window.onscroll = function () {
-                if (document.documentElement.scrollTop > 100) { 
-                    backToTopButton.style.display = "block"; // 滾動超過 500px 顯示按鈕
-                } else {
-                    backToTopButton.style.display = "none"; // 否則隱藏按鈕
-                }
-            };
-
-            // 點擊按鈕回到頂部
-            backToTopButton.onclick = function () {
-                window.scrollTo({
-                    top: 0,
-                    behavior: "smooth" // 平滑滾動效果
-                });
-            };
-        </script>
-    </section>
-
-        <!-- <section id="price-list" class="section">
-            <h2>幣種價格列表</h2>
-
-            {% if error %}
-                <p style="color:red;">{{ error }}</p>
-            {% else %}
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>幣種名稱</th>
-                            <th>價格 (USD)</th>
-                            <th>價格 (TWD)</th>
-                            <th>價格 (EUR)</th>
-                            <th>更新時間</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for price in all_prices %}
-                            <tr>
-                                <td>{{ forloop.counter }}</td>
-                                <td><img src="{{ price.coin.logo_url }}">{{ price.coin.coinname }}</td>
-
-                                {% if price.usd < 1 %}
-                                    <td>{{ price.usd|floatformat:7|intcomma }}</td>
-                                {% else %}
-                                    <td>{{ price.usd|floatformat:2|intcomma }}</td>
-                                {% endif %}
-
-                                {% if price.twd < 1 %}
-                                    <td>{{ price.twd|floatformat:7|intcomma }}</td>
-                                {% else %}
-                                    <td>{{ price.twd|floatformat:2|intcomma }}</td>
-                                {% endif %}
-
-                                {% if price.eur < 1 %}
-                                    <td>{{ price.eur|floatformat:7|intcomma }}</td>
-                                {% else %}
-                                    <td>{{ price.eur|floatformat:2|intcomma }}</td>
-                                {% endif %}
-
-                                <td>{{ price.timestamp }}</td>
-                            </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            {% endif %}
-        </section> -->
-    </div>
+    {% include 'footer.html' %}
 {% endblock %}
+

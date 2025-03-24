@@ -21,11 +21,17 @@ import re
 def home(request):
     try:
         # 取得資料庫中的所有價格，按 id 升序排列
-        all_prices = BitcoinPrice.objects.all().order_by('id')
-
+        top_coins = BitcoinPrice.objects.all().order_by('id')[:5]
+        increase_coins = BitcoinPrice.objects.all().order_by('-change_24h')[:5]
+        decline_coins = BitcoinPrice.objects.all().order_by('change_24h')[:5]
+        volume = BitcoinPrice.objects.all().order_by('-volume_24h')[:10]
+        
         # 渲染到模板
         return render(request, 'home.html', {
-            'all_prices': all_prices,
+            'top_coins': top_coins,
+            'increase_coins': increase_coins,
+            'decline_coins': decline_coins,
+            'volume': volume,
         })
 
     except Exception as e:
@@ -161,6 +167,7 @@ def crypto_list(request):
         'sort_order': sort_order,
         'favorite_coin_ids': favorite_coin_ids,
     })
+    
 
 
 from django.shortcuts import render, redirect
