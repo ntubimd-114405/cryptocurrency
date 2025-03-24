@@ -60,14 +60,13 @@
                                 {{ article.content|truncatewords:20 }}
                                 {% endif %}
                             </p>
-                            <br>
                             <div class="d-flex justify-content-between align-items-end">
                                 <div class="d-flex align-items-center gap-2">
                                     <span class="me-2">情緒：</span>
-                                    {% if article.sentiment == 'positive' %}😄
-                                    {% elif article.sentiment == 'neutral' %}😐
-                                    {% elif article.sentiment == 'negative' %}😔
-                                    {% else %}❓
+                                    {% if article.sentiment == 'positive' %}😄 正面
+                                    {% elif article.sentiment == 'neutral' %}😐 中立
+                                    {% elif article.sentiment == 'negative' %}😔 負面
+                                    {% else %}❓ 判斷中...
                                     {% endif %}
                                 </div>
                                 <div class="d-flex align-items-center gap-2 text-muted small">
