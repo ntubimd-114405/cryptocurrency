@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'main',
     'other',
     'news',
+    'ml_upload'
     
 ]
 
@@ -190,7 +191,7 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': 86400.0,
     },
     'fetch_trends_task-every-1-day': {
-        'task': 'other.tasks.fetch_trends',  
+        'task': 'other.tasks.fetch_trends_task',  
         'schedule': 86400.0,
     },
 }

@@ -24,6 +24,7 @@ urlpatterns = [
     path('', include('main.urls')),  # 將根路徑指向 myapp
     path('news/', include('news.urls')), 
     path('other/', include('other.urls')), 
+    path('model/', include('ml_upload.urls')), 
 ]
 
 if settings.DEBUG:
