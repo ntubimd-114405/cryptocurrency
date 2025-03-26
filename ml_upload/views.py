@@ -1,41 +1,65 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect, get_object_or_404
 from data_analysis.train import upload
 from data_analysis.train import download
 import os
 import pandas as pd
 import plotly.graph_objects as go
 from django.conf import settings
+from .models import *
+from .forms import DataLocationForm
 
 
 def home(request):
-    # 取得最新 3 則新聞
-    link = upload.create_kaggle_metadata(1, "testname")
+    # 查詢所有 DataLocation 物件
+    data_locations = DataLocation.objects.all()
+
+    # 傳遞到模板
+    return render(request, 'ml_home.html', {'data_locations': data_locations})
+
+
+def add_data_location(request):
+    if request.method == 'POST':
+        # 如果是 POST 請求，則表單提交
+        form = DataLocationForm(request.POST)
+        if form.is_valid():
+            # 在保存前手動填充 user 欄位
+            new_data_location = form.save(commit=False)
+            new_data_location.user = request.user  # 設置當前用戶為該資料的擁有者
+            new_data_location.save()  # 保存資料到資料庫
+            return redirect('ml_home')  # 重新導向到資料列表頁面
+    else:
+        # 如果是 GET 請求，則顯示空白表單
+        form = DataLocationForm()
+
+    return render(request, 'add_data_location.html', {'form': form})
+
+
+def data_location_detail(request, id):
+    # 使用 get_object_or_404 確保當資料不存在時返回 404 錯誤
+    data_location = get_object_or_404(DataLocation, id=id)
     
-    # 將 'a' 放入 context 字典中，傳遞到模板
+    status = None
+    if data_location.status != "wait":
+        status = download.check_notebook_status(id, data_location.name)
+    output_result = None
+    if status == "COMPLETE":
+        output_result = download.download_output(id, data_location.name)
+    folder_path = f"media/kaggle/{id}/output"
+    kaggle_username = os.getenv("KAGGLE_USERNAME")
+    link=f"https://www.kaggle.com/code/{kaggle_username}/crypto-{id}-{data_location.name}"
     context = {
-        'link': link
-    }
-
-    return render(request, 'ml_home.html', context)
-
-def notebook_status(request):
-    """Notebook 狀態頁面：顯示狀態，若完成則下載輸出"""
-    status = download.check_notebook_status(1, "testname")
-
-    output_result = download.download_output(1, "testname")
-
-    folder_path = f"media/kaggle/1/output"
-
-    context = {
+        'data_location': data_location,
         'status': status,
         'output_result': output_result,
-        'chart_html':plot_prediction_chart()
+        'chart_html':plot_prediction_chart(folder_path),
+        'link': link
     }
-    return render(request, 'notebook_status.html', context)
+    # 渲染 template，並傳遞 data_location 實例
+    return render(request, 'data_location_detail.html',context)
 
-def plot_prediction_chart():
+def plot_prediction_chart(folder_path):
     # 設定 CSV 路徑
-    csv_path = os.path.join(settings.BASE_DIR, "media/kaggle/1/output/pred.csv")
+    csv_path = os.path.join(settings.BASE_DIR, f"{folder_path}/pred.csv")
 
     # 讀取 CSV
     df = pd.read_csv(csv_path)
@@ -60,3 +84,12 @@ def plot_prediction_chart():
     chart_html = fig.to_html(full_html=False)
 
     return chart_html
+
+
+def run_program(request, id):
+    # 獲取對應的 DataLocation 實例
+    data_location = get_object_or_404(DataLocation, id=id)
+    link = upload.create_kaggle_metadata(id, data_location.name)
+    data_location.status = "Running"
+    data_location.save()  # 保存更改
+    return redirect('data_location_detail', id=id)
