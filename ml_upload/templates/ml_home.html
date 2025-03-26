@@ -4,6 +4,17 @@
 
 {% block content %}
 
-<h1>點擊以下連結訪問資料：<a href="{{ link }}">{{ link }}</a></h1>
+
+
+<h1>Kaggle Notebook 管理</h1>
+
+<h2>上傳 Notebook</h2>
+<p>上傳結果: <a href="{{ link }}"><strong>{{ link }}</strong></a></p>
+
+<a href="{% url 'notebook_status' %}">
+    <button>查看 Notebook 狀態</button>
+</a>
+
+
 
 {% endblock %}
