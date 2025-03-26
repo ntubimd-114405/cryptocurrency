@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+
+{% block title %}新增資料位置{% endblock %}
+
+{% block content %}
+<h1>新增 Data Location</h1>
+
+<form method="POST">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">提交</button>
+</form>
+
+<a href="{% url 'ml_home' %}">返回列表</a>
+{% endblock %}

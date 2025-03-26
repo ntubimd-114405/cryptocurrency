@@ -6,14 +6,40 @@
 
 
 
-<h1>Kaggle Notebook 管理</h1>
 
-<h2>上傳 Notebook</h2>
-<p>上傳結果: <a href="{{ link }}"><strong>{{ link }}</strong></a></p>
+<h1>Data Locations</h1>
+<a href="{% url 'add_data_location' %}" class="btn btn-primary">新增資料</a>
+<!-- 如果沒有資料，顯示提示訊息 -->
+{% if data_locations %}
+<table class="table table-bordered table-hover">
+    <thead class="table-light">
+            <tr>
+                <th style="width: 10%; text-align: center; vertical-align: middle;">User</th>
+                <th style="width: 10%; text-align: center; vertical-align: middle;">name</th>
+                <th style="width: 10%; text-align: center; vertical-align: middle;">Created At</th>
+                <th style="width: 10%; text-align: center; vertical-align: middle;">連結</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- 顯示每個 DataLocation 物件 -->
+            {% for data_location in data_locations %}
+                <tr>
+                    <td>{{ data_location.user.username }}</td>
+                    <td>{{ data_location.name }}</td>
+                    <td>{{ data_location.created_at }}</td>
+                    <td>
+                        <!-- 這裡新增一個連結到 detail 頁面 -->
+                        <a href="{% url 'data_location_detail' data_location.id %}">查看詳情</a>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <p>目前沒有資料</p>
+{% endif %}
 
-<a href="{% url 'notebook_status' %}">
-    <button>查看 Notebook 狀態</button>
-</a>
+
 
 
 
