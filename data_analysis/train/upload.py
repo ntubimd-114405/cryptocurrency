@@ -14,8 +14,8 @@ def create_kaggle_metadata(folder_id,name):
     kaggle_username = os.getenv("KAGGLE_USERNAME")
     # 測試用
     metadata = {
-        "id": f"{kaggle_username}/{folder_id}-{name}",
-        "title": f"{folder_id}-{name}",
+        "id": f"{kaggle_username}/crypto-{folder_id}-{name}",
+        "title": f"crypto-{folder_id}-{name}",
         "code_file": "1.ipynb",
         "language": "python",
         "kernel_type": "notebook",
@@ -38,11 +38,11 @@ def create_kaggle_metadata(folder_id,name):
     
     modify_and_save_notebook(new_notebook_path)
     push_kaggle_kernel(folder_id)
-    print(f"檔案已創建: {metadata_file}")
-    return f"https://www.kaggle.com/code/fgh09101010/{folder_id}-{name}"
+
+    return f"https://www.kaggle.com/code/fgh09101010/crypto-{folder_id}-{name}"
 
 def modify_and_save_notebook(new_path):
-    template_path = "test/2.ipynb"
+    template_path = "data_analysis/train/template/test.ipynb"
     # 先複製原始 notebook，確保原始檔案不受影響
     shutil.copy(template_path, new_path)
 
@@ -121,6 +121,8 @@ def feature_create():
     feature_str += "\n]"
     return feature_str
 
-print(create_kaggle_metadata(9,"abcdefg"))
+
+if __name__ == "__main__":
+    print(create_kaggle_metadata(9,"abcdefg"))
 
 
