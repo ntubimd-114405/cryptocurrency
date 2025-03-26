@@ -1,0 +1,257 @@
+<!-- templates/chat_widget.html -->
+<div class="checkbox-wrapper">
+    <div id="chat-toggle-btn" onclick="toggleChat()">
+        <label class="chat-btn">
+            <div class="tick_mark"></div>
+        </label>
+    </div>
+</div>
+<div class="chat-container" id="chatContainer">
+    <div class="chat-header">💬 AI 聊天助理</div>
+    <div class="chat-body" id="chatBody">歡迎來到客服聊天！</div>
+    <div class="chat-footer">
+        <input type="text" id="chatInput" placeholder="輸入訊息...">
+        <button onclick="sendMessage()">發送</button>
+    </div>
+</div>
+
+<style>
+    /* 聊天視窗和按鈕的樣式 */
+    .checkbox-wrapper {
+        position: fixed;
+        bottom: 95px;
+        right: 20px;
+    }
+    .chat-btn {
+        --size: 50px;
+        --shadow: calc(var(--size) * .07) calc(var(--size) * .1);
+        position: relative;
+        display: block;
+        width: var(--size);
+        height: var(--size);
+        margin: 0 auto;
+        background-color: #4158D0;
+        background-image: linear-gradient(43deg, #4158D0 0%, #C850C0 46%, #FFCC70 100%);
+        border-radius: 50%;
+        box-shadow: 0 var(--shadow) #ffbeb8;
+        cursor: pointer;
+        transition: 0.2s ease transform, 0.2s ease box-shadow;
+        overflow: hidden;
+        z-index: 1;
+    }
+    .chat-btn:before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        right: 0;
+        left: 0;
+        width: calc(var(--size) * .7);
+        height: calc(var(--size) * .7);
+        margin: 0 auto;
+        background-color: #fff;
+        transform: translateY(-50%);
+        border-radius: 50%;
+        box-shadow: inset 0 var(--shadow) #ffbeb8;
+        transition: 0.2s ease width, 0.2s ease height;
+    }
+    .chat-btn:hover:before {
+        width: calc(var(--size) * .55);
+        height: calc(var(--size) * .55);
+        box-shadow: inset 0 var(--shadow) #ff9d96;
+    }
+    .chat-btn:active {
+        transform: scale(0.9);
+    }
+    /* 激活狀態（聊天窗口打開時） */
+    .chat-btn.active {
+        box-shadow: rgba(0, 0, 0, 0.3) 0px 19px 38px, rgba(0, 0, 0, 0.22) 0px 15px 12px;
+    }
+    .chat-btn.active:before {
+        width: 0;
+        height: 0;
+    }
+    /* 小眼睛動畫 */
+    .tick_mark {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: calc(var(--size) * .9);
+        height: calc(var(--size) * .9);
+        transform: translate(-50%, -50%);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    .tick_mark.active {
+        opacity: 1;
+    }
+    .tick_mark:before,
+    .tick_mark:after {
+        content: "";
+        position: absolute;
+        background-color: #fff;
+        border-radius: 50% / 60%;
+        transition: 0.3s ease transform;
+    }
+    .tick_mark:before {
+        top: 10px;
+        left: 5px;
+        width: calc(var(--size) * .25);
+        height: calc(var(--size) * .35);
+        transform: translateY(15px);
+        box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.1);
+    }
+    .tick_mark:after {
+        top: 10px;
+        right: 5px;
+        width: calc(var(--size) * .25);
+        height: calc(var(--size) * .35);
+        transform: translateY(15px);
+        box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.1);
+    }
+    .tick_mark:before::after,
+    .tick_mark:after::after {
+        content: "";
+        position: absolute;
+        width: calc(var(--size) * .08);
+        height: calc(var(--size) * .12);
+        background-color: #333;
+        border-radius: 50% / 60%;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    .tick_mark.active:before,
+    .tick_mark.active:after {
+        transform: translateY(0);
+    }
+    .tick_mark.active:before::after,
+    .tick_mark.active:after::after {
+        opacity: 1;
+    }
+    @keyframes eyeBounce {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-2px); }
+    }
+    .tick_mark.active:before,
+    .tick_mark.active:after {
+        animation: eyeBounce 1.5s infinite ease-in-out;
+    }
+    .tick_mark.active:before {
+        animation-delay: 0s;
+    }
+    .tick_mark.active:after {
+        animation-delay: 0.2s;
+    }
+
+    /* 聊天窗口樣式 */
+    .chat-container {
+        position: fixed;
+        bottom: 158px;
+        right: 20px;
+        width: 350px;
+        height: 450px;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.2);
+        display: none;
+        flex-direction: column;
+        overflow: hidden;
+        opacity: 0;
+        transform: translateY(20px);
+        transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+    .chat-container.show {
+        display: flex;
+        opacity: 1;
+        transform: translateY(0);
+    }
+    .chat-header {
+        background: linear-gradient(135deg, #6e8efb, #a777e3);
+        color: white;
+        padding: 15px;
+        text-align: center;
+        font-weight: bold;
+    }
+    .chat-body {
+        flex: 1;
+        padding: 15px;
+        overflow-y: auto;
+        font-size: 14px;
+        background-color: #f9f9f9;
+    }
+    .chat-footer {
+        display: flex;
+        padding: 10px;
+        border-top: 1px solid #ddd;
+        background-color: #fff;
+    }
+    .chat-footer input {
+        flex: 1;
+        padding: 10px;
+        border: none;
+        border-radius: 20px;
+        outline: none;
+        font-size: 14px;
+        background: #f1f1f1;
+    }
+    .chat-footer button {
+        margin-left: 10px;
+        padding: 10px 15px;
+        background: #6e8efb;
+        color: white;
+        border: none;
+        border-radius: 20px;
+        cursor: pointer;
+        transition: background 0.3s ease;
+    }
+    .chat-footer button:hover {
+        background: #a777e3;
+    }
+</style>
+
+<script>
+    let isChatOpen = false; // 跟踪聊天窗口狀態
+    let lastToggleTime = 0; // 上次切換時間
+    const debounceTime = 400; // 防抖時間（毫秒）
+
+    function toggleChat() {
+        const currentTime = Date.now();
+        if (currentTime - lastToggleTime < debounceTime) return; // 防抖檢查
+
+        lastToggleTime = currentTime;
+        const chatContainer = document.getElementById("chatContainer");
+        const tickMark = document.querySelector(".tick_mark");
+        const chatBtn = document.querySelector(".chat-btn");
+
+        if (isChatOpen) {
+            chatContainer.classList.remove("show");
+            tickMark.classList.remove("active");
+            chatBtn.classList.remove("active"); // 移除背景動畫
+            setTimeout(() => {
+                chatContainer.style.display = "none";
+            }, 400); // 等待動畫完成
+            isChatOpen = false;
+        } else {
+            chatContainer.style.display = "flex";
+            requestAnimationFrame(() => {
+                chatContainer.classList.add("show");
+                tickMark.classList.add("active");
+                chatBtn.classList.add("active"); // 啟動背景動畫
+            });
+            isChatOpen = true;
+        }
+    }
+
+    function sendMessage() {
+        const chatInput = document.getElementById("chatInput");
+        const chatBody = document.getElementById("chatBody");
+        
+        if (chatInput.value.trim() !== "") {
+            chatBody.innerHTML += `<div><strong>你:</strong> ${chatInput.value}</div>`;
+            chatInput.value = "";
+            chatBody.scrollTop = chatBody.scrollHeight;
+        }
+    }
+</script>
