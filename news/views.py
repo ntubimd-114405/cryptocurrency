@@ -127,28 +127,3 @@ def news_list(request):
         'end_date': end_date,
     })
 # 新聞列表翻頁-----------------
-
-# 情緒分析
-import json
-from django.http import JsonResponse
-from data_analysis.sentiment.multi_model_voting import predict_sentiment
-
-# 建立數值轉換為文字的對應表
-SENTIMENT_MAP = {
-    "1": "positive",
-    "0": "neutral",
-    "-1": "negative"
-}
-
-def sentiment_analysis(request):
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        text = data.get('text', '')
-        sentiment = predict_sentiment(text)
-
-        # 轉換數字為對應的文字
-        sentiment_label = SENTIMENT_MAP.get(sentiment, "unknown")
-
-        return JsonResponse({'sentiment': sentiment_label})
-
-#情緒分析---------------
