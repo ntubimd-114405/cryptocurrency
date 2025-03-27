@@ -61,40 +61,62 @@ function showContent(id) {
     selectedContent.classList.add('active');
 }
 
-const cards = document.querySelectorAll('.card_invent');
-const prevBtn = document.querySelector('.prev-btn');
-const nextBtn = document.querySelector('.next-btn');
-let currentIndex = 0;
-
-    function updateActiveCard() {
-        cards.forEach((card, index) => {
-            card.classList.remove('active', 'prev', 'next', 'flip');
-            
-            if (index === currentIndex) {
-                card.classList.add('active');
-            } else if (index === (currentIndex - 1 + cards.length) % cards.length) {
-                card.classList.add('prev');
-            } else if (index === (currentIndex + 1) % cards.length) {
-                card.classList.add('next');
-            }
-        });
-    }
-
-    prevBtn.addEventListener('click', () => {
-        currentIndex = (currentIndex - 1 + cards.length) % cards.length;
-        updateActiveCard();
-    });
-
-    nextBtn.addEventListener('click', () => {
-        currentIndex = (currentIndex + 1) % cards.length;
-        updateActiveCard();
-    });
+document.addEventListener("DOMContentLoaded", function () {
+    const cards = document.querySelectorAll(".card_invent");
 
     cards.forEach(card => {
-        card.addEventListener('click', () => {
-            if (card.classList.contains('active'))
-                card.classList.toggle('flip');
+        card.addEventListener("click", function () {
+            // 先把所有已經翻轉的卡片恢復
+            cards.forEach(c => {
+                if (c !== card) {
+                    c.classList.remove("active");
+                }
+            });
+
+            // 切換當前卡片的翻轉狀態
+            card.classList.toggle("active");
         });
     });
+});
 
-updateActiveCard();
+// 監視 `.carousel` 是否進入視口
+const carousel = document.querySelector('.carousel');
+const ball = document.getElementById('ball');
+const path = document.getElementById('motionPath');
+let isInView = false;
+
+// 當 `.carousel` 進入視口時啟動滾動事件
+const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            isInView = true;  // `.carousel` 進入視口，開始處理滾動
+            // 計算初始位置，避免瞬移
+            updateBallPosition();
+        } else {
+            isInView = false; // `.carousel` 離開視口，停止滾動
+        }
+    });
+}, { threshold: 0.5 });  // 設定當元素至少一半進入視口時觸發
+
+observer.observe(carousel);
+
+// 計算球的位置，並設置初始位置
+const updateBallPosition = () => {
+    const scrollY = window.scrollY;
+    const pathLength = path.getTotalLength();
+    let scrollPercent = scrollY / (document.body.scrollHeight - window.innerHeight);
+    scrollPercent = Math.min(Math.max(scrollPercent, 0), 1);
+
+    const point = path.getPointAtLength(scrollPercent * pathLength);
+    ball.setAttribute('cx', point.x);
+    ball.setAttribute('cy', point.y);
+};
+
+// 滾動事件處理
+window.addEventListener('scroll', function() {
+    if (!isInView) return;  // 如果 `.carousel` 沒有進入視口，則不執行下面的代碼
+
+    // 更新球的位置
+    updateBallPosition();
+});
+
