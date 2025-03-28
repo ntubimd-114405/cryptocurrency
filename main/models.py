@@ -33,6 +33,11 @@ class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     profile_image = models.ImageField(upload_to='profile_images/', default='default/default.jpg', null=True)
     favorite_coin = models.ManyToManyField(Coin, blank=True)
+    MEMBERSHIP_CHOICES = [
+        ('free', 'Free'),
+        ('premium', 'Premium'),
+    ]
+    membership = models.CharField(max_length=10, choices=MEMBERSHIP_CHOICES, default='free')
 
     def __str__(self):
         return self.user.username
