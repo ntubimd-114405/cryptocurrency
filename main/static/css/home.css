@@ -159,7 +159,7 @@ h1{
     position: relative;
 }
 
-.carousel svg {
+.svg1 {
     margin: 0;
     padding: 0;
     position: absolute;
@@ -261,3 +261,116 @@ h1{
     text-align: left;
     padding: 5px;
 }
+
+.carousel1{
+    width: 100%;
+    background-color: #fff;
+}
+
+.carousel2{
+    width: 100%;
+    background-color: #1e3a8a;
+}
+
+#animation-container {
+    position: relative;
+    width: 100%;
+    height: 600px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* 水平置中 */
+    text-align: center; /* 確保文字也置中 */
+    padding: 10px;
+}
+
+/* 左下角管道 */
+#leftPipe {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 40%; /* 調整大小 */
+    height: auto;
+}
+
+/* 右上角管道 */
+#rightPipe {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 40%; /* 調整大小 */
+    height: auto;
+}
+
+/* From Uiverse.io by satyamchaudharydev */ 
+.register {
+    z-index: 10;
+    position: relative;
+    transition: all 0.3s ease-in-out;
+    box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.2);
+    padding-block: 0.5rem;
+    padding-inline: 1.25rem;
+    background-color: rgb(0 107 179);
+    border-radius: 9999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffff;
+    gap: 10px;
+    font-weight: bold;
+    border: 3px solid #ffffff4d;
+    outline: none;
+    overflow: hidden;
+    font-size: 15px;
+    cursor: pointer;
+  }
+  
+  .icon {
+    width: 24px;
+    height: 24px;
+    transition: all 0.3s ease-in-out;
+  }
+  
+  .register:hover {
+    transform: scale(1.05);
+    border-color: #fff9;
+  }
+  
+  .register:hover .icon {
+    transform: translate(4px);
+  }
+  
+  .register:hover::before {
+    animation: shine 1.5s ease-out infinite;
+  }
+  
+  .register::before {
+    content: "";
+    position: absolute;
+    width: 100px;
+    height: 100%;
+    background-image: linear-gradient(
+      120deg,
+      rgba(255, 255, 255, 0) 30%,
+      rgba(255, 255, 255, 0.8),
+      rgba(255, 255, 255, 0) 70%
+    );
+    top: 0;
+    left: -100px;
+    opacity: 0.6;
+  }
+  
+  @keyframes shine {
+    0% {
+      left: -100px;
+    }
+  
+    60% {
+      left: 100%;
+    }
+  
+    to {
+      left: 100%;
+    }
+  }
+  

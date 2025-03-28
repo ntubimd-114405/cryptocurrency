@@ -120,3 +120,39 @@ window.addEventListener('scroll', function() {
     updateBallPosition();
 });
 
+function animateBall(pathId, ballId, speed, callback) {
+    const path = document.getElementById(pathId);
+    const ball = document.getElementById(ballId);
+    const pathLength = path.getTotalLength();
+
+    let progress = 0;
+
+    function moveBall() {
+        progress += speed;
+        if (progress > 1) {
+            progress = 1;
+        }
+
+        const point = path.getPointAtLength(progress * pathLength);
+        ball.setAttribute('cx', point.x);
+        ball.setAttribute('cy', point.y);
+
+        if (progress < 1) {
+            requestAnimationFrame(moveBall);
+        } else if (callback) {
+            callback(); // 當動畫結束，執行 callback
+        }
+    }
+
+    moveBall();
+}
+
+function startAnimationSequence() {
+    animateBall("leftPath", "ballLeft", 0.005, () => {
+        animateBall("rightPath", "ballRight", 0.005, () => {
+            startAnimationSequence(); // 循環
+        });
+    });
+}
+
+startAnimationSequence(); // 啟動動畫
