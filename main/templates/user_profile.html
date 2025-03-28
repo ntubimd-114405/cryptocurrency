@@ -143,12 +143,24 @@
 
             <section id="other-settings" class="settings-section">
                 <h2>刪除帳號</h2>
-                <form method="post" action="" onsubmit="return confirm('確定要刪除帳號嗎？此操作無法恢復！');">
+                <form method="post" action="{% url 'delete_account' %}" onsubmit="return confirm('確定要刪除帳號嗎？此操作無法恢復！');">
                     {% csrf_token %}
+                    <div class="form-group">
+                        <label for="password_confirm">請輸入密碼確認：</label>
+                        <input type="password" id="password_confirm" name="password_confirm" required>
+                    </div>
                     <button type="submit" class="upload-delete-button">刪除帳號</button>
                 </form>
+                {% if messages %}
+                <ul class="message-list">
+                    {% for message in messages %}
+                    {% if message.level == DEFAULT_MESSAGE_LEVELS.ERROR %}
+                    <li class="message error">{{ message }}</li>
+                    {% endif %}
+                    {% endfor %}
+                </ul>
+                {% endif %}
             </section>
-            
 
             <div class="upload-back-button-container">
                 <a href="{% url 'home' %}" class="upload-back-button">返回上一頁</a>
@@ -160,21 +172,23 @@
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        // 取得所有選單連結
         const menuLinks = document.querySelectorAll(".user-menu a");
-        // 取得所有 section
         const sections = document.querySelectorAll(".settings-section");
-    
+
+        // 恢復上次選擇的區域，預設為 #profile-overview
+        const lastSection = localStorage.getItem("activeSection") || "profile-overview";
+        sections.forEach(section => section.classList.remove("active"));
+        document.getElementById(lastSection).classList.add("active");
+
+        // 點擊導航切換區域並保存狀態
         menuLinks.forEach(link => {
             link.addEventListener("click", function(e) {
-                e.preventDefault(); // 防止預設的跳轉行為
-                const targetId = this.getAttribute("href").substring(1); // 取得 href 去掉 #
-    
-                // 隱藏所有 section
+                e.preventDefault();
+                const targetId = this.getAttribute("href").substring(1);
+
                 sections.forEach(section => section.classList.remove("active"));
-    
-                // 顯示點擊對應的 section
                 document.getElementById(targetId).classList.add("active");
+                localStorage.setItem("activeSection", targetId); // 保存狀態
             });
         });
     });

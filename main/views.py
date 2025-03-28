@@ -465,3 +465,20 @@ def coin_history(request, coin_id):
 
     data = list(history_data)
     return JsonResponse({'data': data, 'total_count': total_count}, safe=False)
+
+@login_required
+def delete_account(request):
+    if request.method == "POST":
+        password = request.POST.get("password_confirm")
+        user = request.user
+
+        if not user.check_password(password):  # 驗證密碼是否正確
+            messages.error(request, "密碼錯誤，請重新輸入！")
+            return redirect("user_profile")
+
+        messages.success(request, "您的帳號已成功刪除！")
+        logout(request)
+        user.delete()
+        return redirect("home")
+
+    return redirect("user_profile")

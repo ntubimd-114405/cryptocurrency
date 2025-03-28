@@ -33,6 +33,9 @@ urlpatterns = [
     
     path('coin-history/<int:coin_id>/', views.coin_history, name='coin_history'),
     path('crypto/<int:coin_id>/', views.crypto_detail, name='crypto_detail'),
+
+    # 刪除帳號
+    path("delete_account/", views.delete_account, name="delete_account"),
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
