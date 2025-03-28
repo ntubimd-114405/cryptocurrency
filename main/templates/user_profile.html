@@ -30,7 +30,12 @@
                 <div class="upload-user-details">
                     <p><strong>使用者名稱：</strong>{{ user.first_name }}</p>
                     <p><strong>帳號：</strong>{{ user.username }}</p>
+                    <p><strong>會員等級：</strong>{{ user.profile.membership|title }}</p>
+                    {% if user.profile.membership == 'free' %}
+                    <a href="{% url 'membership_plans' %}" class="button-bu">加入會員</a>
+                    {% endif %}
                 </div>
+                <br>
                 <!-- 登入簽到遊戲畫面區域 -->
                 <h2>今日簽到</h2>
                 <div class="login-signin-game">

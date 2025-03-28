@@ -482,3 +482,56 @@ def delete_account(request):
         return redirect("home")
 
     return redirect("user_profile")
+from django.shortcuts import render
+from django.http import JsonResponse
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.csrf import csrf_exempt
+import json
+from .models import UserProfile
+
+@login_required
+def membership_plans(request):
+    return render(request, 'membership_plans.html')
+
+@login_required
+@csrf_exempt
+def process_payment(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            plan = data.get('plan')
+            card_number = data.get('cardNumber')
+            expiration_date = data.get('expirationDate')
+            cvv = data.get('cvv')
+
+            if not card_number or not expiration_date or not cvv:
+                return JsonResponse({'success': False, 'message': '支付資訊不完整'})
+
+            if plan not in ['monthly', 'yearly']:
+                return JsonResponse({'success': False, 'message': '無效的方案'})
+
+            # 假設支付成功（這裡應該整合 Stripe/PayPal 等）
+            if card_number.startswith("4242"):  
+                user_profile = request.user.profile
+                user_profile.membership = 'premium'
+                user_profile.save()
+                return JsonResponse({'success': True, 'message': '支付成功，已升級為 Premium 會員！'})
+            else:
+                return JsonResponse({'success': False, 'message': '支付失敗，請檢查信用卡資訊'})
+
+        except json.JSONDecodeError:
+            return JsonResponse({'success': False, 'message': '請求格式錯誤'})
+
+    return JsonResponse({'success': False, 'message': '無效的請求方式'})
+
+
+@login_required
+def upgrade_to_premium(request):
+    if request.method == 'POST':
+        user = request.user.profile
+        print(user)
+        user.membership = 'premium'
+        user.save()
+
+        return JsonResponse({'success': True})
+    return JsonResponse({'success': False})

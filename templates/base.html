@@ -67,7 +67,9 @@
                       
                 </ul>  
             </nav>
-            
+            {% if user.profile.membership == 'free' %}
+            <a href="{% url 'membership_plans' %}" class="button-ui1"><div><span>消除廣告</span></div></a>
+            {% endif %}
             <!-- User Authentication -->
             <div>
                 {% if user.is_authenticated %}
@@ -84,8 +86,10 @@
                         <!-- 頭像 + 使用者名稱 -->
                         <li class="dropdown-header text-center">
                             <img src="{{ user.profile.profile_image.url }}" class="profile-image">
-                            <div class="username">| {{ user.first_name }} |</div>
-                        </li>
+                            <div class="username">
+                                歡迎! {{ user.first_name }} <br>
+                                會員等級: {{ user.profile.membership|title }}
+                            </div>                        </li>
                         <li><hr class="dropdown-divider"></li>
                 
                         <!-- 功能按鈕 -->
@@ -93,6 +97,9 @@
                             <a href="{% url 'logout' %}" class="btn btn-outline-light btn-sm">登出</a>
                             <a href="{% url 'favorite_coins' %}" class="btn btn-outline-light btn-sm">我的最愛</a>
                             <a href="{% url 'user_profile' %}" class="btn btn-outline-light btn-sm">修改個人資料</a>
+                            {% if user.profile.membership == 'free' %}
+                            <a href="{% url 'membership_plans' %}" class="button-bu">加入會員</a>
+                            {% endif %}
                         </li>
                     </ul>
                 </div>

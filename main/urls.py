@@ -34,6 +34,10 @@ urlpatterns = [
     path('coin-history/<int:coin_id>/', views.coin_history, name='coin_history'),
     path('crypto/<int:coin_id>/', views.crypto_detail, name='crypto_detail'),
 
+    path('membership/', views.membership_plans, name='membership_plans'), # 會員頁面
+    path('upgrade_to_premium/', views.upgrade_to_premium, name='upgrade_to_premium'), #升級會員
+    
+
     # 刪除帳號
     path("delete_account/", views.delete_account, name="delete_account"),
 ]

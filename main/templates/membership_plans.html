@@ -1,0 +1,244 @@
+{% extends 'base.html' %}
+{% block title %}加入會員{% endblock %}
+{% load static %}
+{% block content %}
+<script src="https://js.stripe.com/v3/"></script>
+<div class="container mt-5">
+    <!-- 1------------------------------------------------------------------------------------------- -->
+    <div class="row align-items-center">
+        <!-- 左邊放圖片 -->
+        <div class="col-md-6">
+            <img src="{% static 'images/btc-1.png' %}" class="img-fluid" alt="會員方案圖片"
+                style="max-width: 100%; height: auto;">
+        </div>
+
+        <!-- 右邊放文字 -->
+        <div class="col-md-6 d-flex flex-column justify-content-center text-start">
+            <h1>升級您的加密貨幣之旅 - 使用 Premium 去除廣告幹擾。</h1>
+            <small>每月低至 10 美元。立即訂閱。適用 <a href="http://">相關條款及細則</a>。</small>
+            <br>
+            <!-- 新增按鈕，點擊後滾動到方案選擇區 -->
+            <button class="button-bu" id="scrollToPlansBtn">選擇方案</button>
+        </div>
+    </div>
+
+    <!-- 2------------------------------------------------------------------------------------------- -->
+    <h2 id="plansSection" class="text-center mt-5">選取您喜歡的方案</h2>
+
+    <div class="row d-flex justify-content-center">
+        <!-- 方案 A -->
+        <div class="col-md-4 mb-4">
+            <div class="card text-center shadow-lg">
+                <div class="card-body">
+                    <h5 class="card-title">月度</h5>
+                    <small class="card-text">按月收取，每月 $10。</small>
+                    <br><br>
+                    <h5 class="card-title">$10<small>/月</small></h5>
+                    <small class="card-text">或按年收取，折合每月 8.32 美元</small>
+                    <br><br>
+                    <button class="btn btn-primary upgrade-btn" data-plan="monthly" data-price="$10/月">升級到Premium</button>
+                </div>
+            </div>
+        </div>
+        <!-- 方案 B -->
+        <div class="col-md-4 mb-4">
+            <div class="card text-center shadow-lg">
+                <div class="card-body">
+                    <h5 class="card-title">每年</h5>
+                    <small class="card-text">每 12 個月收取 $120 $99.90。</small>
+                    <br><br>
+                    <h5 class="card-title">$99.90<small>/年</small></h5>
+                    <small class="card-text">$8.32/月</small>
+                    <br><br>
+                    <button class="btn btn-primary upgrade-btn" data-plan="yearly" data-price="$99.90/年">升級到Premium</button>
+                </div>
+            </div>
+        </div>
+        <small>價格不含稅費。結帳頁面將顯示適用的稅項</small>
+    </div>
+    
+    <!-- 支付方式表單 (模態框) -->
+    <div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="paymentModalLabel">選擇支付方式</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <h5 id="planPrice" class="text-center"></h5> <!-- 顯示選擇的金額 -->
+    
+                    <form id="paymentForm" action="/process-payment/" method="POST">
+                        {% csrf_token %}
+                        <div class="form-group mb-3">
+                            <label for="cardNumber" class="form-label">信用卡號碼</label>
+                            <input type="text" id="cardNumber" name="cardNumber" class="form-control" placeholder="1234 5678 9012 3456" maxlength="19" required>
+                        </div>
+    
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="expirationDate" class="form-label">有效日期</label>
+                                <input type="text" id="expirationDate" name="expirationDate" class="form-control" placeholder="MM/YY" maxlength="5" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="cvv" class="form-label">CVV</label>
+                                <input type="text" id="cvv" name="cvv" class="form-control" placeholder="123" maxlength="3" required>
+                            </div>
+                        </div>
+    
+                        <button type="submit" class="btn btn-success w-100">確認支付</button>
+                        <button type="button" class="btn btn-secondary w-100 mt-2" data-bs-dismiss="modal">取消</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- JavaScript: 表單控制 -->
+    <script>
+        document.querySelectorAll('.upgrade-btn').forEach(function (button) {
+        button.addEventListener('click', function () {
+            const plan = button.getAttribute('data-plan');
+            const price = button.getAttribute('data-price');
+    
+            document.getElementById('planPrice').textContent = `選擇的方案金額：${price}`;
+            document.getElementById('paymentForm').dataset.plan = plan; // 存方案類型
+    
+            const paymentModal = new bootstrap.Modal(document.getElementById('paymentModal'));
+            paymentModal.show();
+        });
+    });
+
+    document.getElementById('paymentForm').addEventListener('submit', function (event) {
+        event.preventDefault();
+        
+        const plan = event.target.dataset.plan;
+        const cardNumber = document.getElementById('cardNumber').value;
+        const expirationDate = document.getElementById('expirationDate').value;
+        const cvv = document.getElementById('cvv').value;
+        console.log(cardNumber)
+        fetch('/upgrade_to_premium/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'  // 確保 CSRF token 傳遞
+            },
+            body: JSON.stringify({ plan, cardNumber, expirationDate, cvv })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert("升級成功！");
+                window.location.reload();
+            } else {
+                alert(data.message);
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    });
+
+        // 當升級按鈕被點擊時，顯示模態框並更新金額
+        document.querySelectorAll('.upgrade-btn').forEach(function (button) {
+            button.addEventListener('click', function () {
+                const plan = button.getAttribute('data-plan');  // 例如 'monthly' 或 'yearly'
+                const price = button.getAttribute('data-price');  // 例如 '$10/月'
+    
+                // 顯示選擇的金額
+                document.getElementById('planPrice').textContent = `選擇的方案金額：${price}`;
+    
+                // 顯示支付模態框
+                const paymentModal = new bootstrap.Modal(document.getElementById('paymentModal'));
+                paymentModal.show();
+            });
+        });
+    
+        // 信用卡號格式化
+        const cardNumberInput = document.getElementById('cardNumber');
+        cardNumberInput.addEventListener('input', function (event) {
+            let value = event.target.value.replace(/\D/g, ''); // 移除非數字
+            if (value.length > 16) {
+                value = value.slice(0, 16); // 限制最多16位數字
+            }
+            value = value.match(/.{1,4}/g)?.join(' ') ?? value; // 每4位數加空格
+            event.target.value = value;
+        });
+    
+        // 有效日期格式化
+        const expirationDateInput = document.getElementById('expirationDate');
+        expirationDateInput.addEventListener('input', function (event) {
+            let value = event.target.value.replace(/\D/g, ''); // 移除非數字
+            if (value.length === 1 && parseInt(value) > 1) {
+                value = "0" + value; // 自動補0
+            }
+            if (value.length > 4) {
+                value = value.slice(0, 4); // 最多4位數
+            }
+            if (value.length >= 3) {
+                value = value.slice(0, 2) + '/' + value.slice(2);
+            }
+            event.target.value = value;
+        });
+    
+        // 僅允許數字輸入
+        document.querySelectorAll('#cardNumber, #expirationDate, #cvv').forEach(input => {
+            input.addEventListener('keypress', function (event) {
+                if (!/[0-9]/.test(event.key)) {
+                    event.preventDefault();
+                }
+            });
+        });
+    
+
+    </script>    
+
+    <!-- 3------------------------------------------------------------------------------------------- -->
+    <h2 class="text-center mt-5">會員方案比較</h2>
+    <p class="text-center mb-5">您能享受什麼?無干擾的觀測加密市場並持續領先於曲線。支持加密空間的獨立資料！😎</p>
+    <div class="container mt-5">
+
+        <table class="table table-bordered text-center">
+            <thead class="table-dark">
+                <tr>
+                    <th>功能</th>
+                    <th>一般會員</th>
+                    <th>高級會員</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>即時市場追蹤</td>
+                    <td>✔️</td>
+                    <td>✔️</td>
+                </tr>
+                <tr>
+                    <td>無廣告體驗</td>
+                    <td>❌</td>
+                    <td>✔️</td>
+                </tr>
+                <tr>
+                    <td>即時價格警報</td>
+                    <td>❌</td>
+                    <td>✔️</td>
+                </tr>
+                <tr>
+                    <td>多幣種支持</td>
+                    <td>❌</td>
+                    <td>✔️</td>
+                </tr>
+                <tr>
+                    <td>高級資料分析</td>
+                    <td>❌</td>
+                    <td>✔️</td>
+                </tr>
+                <tr>
+                    <td>加密貨幣報告</td>
+                    <td>❌</td>
+                    <td>✔️</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+
+{% endblock %}
