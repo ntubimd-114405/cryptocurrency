@@ -13,21 +13,20 @@
         color: #333;
     }
 
-    .nav-link {
-        color: #37BCD8; /* 使用你指定的顏色 */
+    .nav-linka {
         text-decoration: none;
         font-weight: bold;
         transition: color 0.3s;
     }
 
-    .nav-link:hover {
-        color: #2E6695; /* 深藍色，當鼠標懸停時變色 */
+    .nav-linka:hover {
+        color: #ffffff; /* 深藍色，當鼠標懸停時變色 */
         text-decoration: underline;
     }
 
     h1 {
         font-size: 32px;
-        color: #2E6695; /* 標題使用深藍色 */
+        color: #2E6695;
         margin-bottom: 40px;
         text-align: center;
     }
@@ -42,7 +41,6 @@
     }
 
     .section:hover {
-        transform: translateY(-5px);
         box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
     }
 
@@ -78,23 +76,28 @@
 
     .section a {
         display: inline-block;
-        padding: 12px 25px;
-        background-color: #37BCD8; /* 亮藍色按鈕 */
-        color: white;
+        padding: 12px 20px;
+        font-size: 18px;
+        font-weight: bold;
         text-decoration: none;
-        font-size: 16px;
-        border-radius: 5px;
-        transition: background-color 0.3s ease, transform 0.3s ease;
+        color: white;
+        background: linear-gradient(145deg, #2E6695, #1C3D63); /* 3D 漸變效果 */
+        border: 2px solid #1C3D63;
+        border-radius: 8px;
+        box-shadow: 0 6px 0px #1C3D63, 0 8px 15px rgba(0, 0, 0, 0.2);
+        transition: all 0.2s ease-in-out;
     }
 
     .section a:hover {
-        background-color: #2E6695; /* 深藍色按鈕懸停效果 */
-        transform: translateY(-2px);
+        background: linear-gradient(145deg, #3A7AB8, #2E6695); /* 淺色增加立體感 */
+        transform: translateY(-4px);
+        box-shadow: 0 8px 0px #1C3D63, 0 12px 20px rgba(0, 0, 0, 0.25);
     }
 
     .section a:active {
-        background-color: #3A9EC2; /* 中藍色按鈕點擊效果 */
-        transform: translateY(1px);
+        background: linear-gradient(145deg, #2E6695, #1C3D63);
+        transform: translateY(2px);
+        box-shadow: 0 4px 0px #1C3D63, 0 6px 10px rgba(0, 0, 0, 0.2);
     }
 
     @media (max-width: 768px) {
@@ -126,7 +129,7 @@
         <li><strong>美元指數</strong>: 衡量美元相對於一籃子貨幣的強弱。</li>
         <li><strong>VIX 波動率指數</strong>: 反映市場對未來30天波動的預期。</li>
     </ul>
-    <a href="{% url 'finance_chart' %}" class="nav-link">查看財務圖表</a>
+    <a href="{% url 'finance_chart' %}" class="nav-linka">查看財務圖表</a>
 </div>
 
 <!-- Macro Chart Section -->
@@ -144,7 +147,7 @@
         <li><strong>生產者物價指數 (PPI)</strong>: 衡量生產者價格變動的指標。</li>
         <li><strong>消費者信心指數 (CCI)</strong>: 衡量消費者對經濟的信心。</li>
     </ul>
-    <a href="{% url 'macro_chart' %}" class="nav-link">查看宏觀經濟指標圖表</a>
+    <a href="{% url 'macro_chart' %}" class="nav-linka">查看宏觀經濟指標圖表</a>
 </div>
 
 <!-- Metric Chart Section -->
@@ -159,7 +162,7 @@
         <li><strong>Mempool Size</strong>: 反映網絡中的交易積壓情況。</li>
         <li><strong>Difficulty</strong>: 衡量挖礦難度的指標。</li>
     </ul>
-    <a href="{% url 'metric_chart' %}" class="nav-link">查看加密貨幣指標圖表</a>
+    <a href="{% url 'metric_chart' %}" class="nav-linka">查看加密貨幣指標圖表</a>
 </div>
 
 <!-- Trend Data Chart Section -->
@@ -169,7 +172,7 @@
     <ul>
         <li><strong>Trend Data</strong>: 各種經濟或市場的長期趨勢數據。</li>
     </ul>
-    <a href="{% url 'trend_data_chart' %}" class="nav-link">查看趨勢數據圖表</a>
+    <a href="{% url 'trend_data_chart' %}" class="nav-linka">查看趨勢數據圖表</a>
 </div>
 
 {% endblock %}
