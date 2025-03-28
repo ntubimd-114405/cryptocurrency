@@ -4,13 +4,11 @@
     margin: 20px auto;
     background-color: #ffffff;
     border-radius: 15px;
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
     overflow: hidden;
     display: none;
 }
 
-.card:hover {
+.card:hover, .card-coin:hover {
     transform: translateY(-5px);
     box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
 }
@@ -38,18 +36,20 @@
     font-size: 1rem;
 }
 
-.card-body a.p1 {
-    display: inline-block;
-    padding: 8px 16px;
-    margin: 5px;
+.button, .button-bu, .card-body a.p1 {
     background-color: #007bff;
     color: white;
+    border: none;
+    padding: 8px 16px;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 5px;
     text-decoration: none;
-    border-radius: 8px;
     transition: background-color 0.3s;
+    margin-bottom: 5px;
 }
 
-.card-body a.p1:hover {
+.button:hover, .button-bu:hover, .card-body a.p1:hover {
     background-color: #0056b3;
 }
 
@@ -59,11 +59,9 @@
     color: #fff;
 }
 
-.card-dark .card-body h2 {
-    color: #fff;
-}
-
+.card-dark .card-body h2,
 .card-dark .card-body a.p1 {
+    color: #fff;
     background-color: #555;
 }
 
@@ -115,36 +113,10 @@
     font-size: 20px;
     color: white;
 }
-img.profile-image{
-    width: 50px;
-    height: 50px;
-    object-fit: cover;
-    image-rendering: smooth; /* 可選，嘗試此屬性來改善加載過程 */
-}
+
 
 .btn{
     color: white;
-}
-
-.dropdown-item i {
-    margin-right: 8px;
-}
-
-.user-dropdown {
-    min-width: 320px;  /* 原本 220px，擴大到 320px */
-    max-width: 360px;  /* 避免過大 */
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
-    padding: 15px;  /* 內距加大，讓內容更寬鬆 */
-}
-
-.username {
-    text-align: center;
-    color: white;
-    font-size: 16px;
-    font-weight: bold;
-    margin-bottom: 10px;
 }
 
 /* 讓按鈕平均分布 */
@@ -162,45 +134,13 @@ img.profile-image{
     min-width: 100px; /* 最小寬度 */
     padding: 8px 12px;
 }
-/* 按鈕 */
-.button-bu {
-    background-color: #37BCD8;
-    color: #FFFFFF;
-    border: none;
-    padding: 10px 20px;
-    font-size: 16px;
-    cursor: pointer;
-    border-radius: 5px;
-}
-
-.button-bu:hover {
-    background-color: #2AA4BF;
-}
 
 h1{
     text-align: center;
 }
 
-.button {
-    margin: 5px;
-    padding: 8px 16px;
-    border-radius: 5px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    cursor: pointer;
-}
-.button:hover {
-    background-color: #0056b3;
-}
-
 .active {
     display: block;
-}
-
-.button-container {
-    display: flex;
-    justify-content: center;
 }
 
 #a{
@@ -216,7 +156,19 @@ h1{
     gap: 10px;
     background-color: rgb(50, 96, 239);
     flex-direction: column; /* 垂直排列 */
+    position: relative;
 }
+
+.carousel svg {
+    margin: 0;
+    padding: 0;
+    position: absolute;
+    left: 0;
+    width: auto; /* 或者設置固定寬度 */
+    height: 100%;
+    opacity: 0.3;
+}
+
 
 .card-head {
     margin: 50px;
@@ -249,36 +201,23 @@ h1{
     padding: 20px;
     position: relative;
     transition: transform 0.5s ease, opacity 0.5s ease;
-    opacity: 0.7;
+    opacity: 1;
     perspective: 1000px;
     cursor: pointer;
 }
 
-.card_invent.active {
-    transform: scale(1); /* 取消放大效果 */
-    opacity: 1;
-    z-index: 2;
-}
-
-.card_invent.prev, .card_invent.next {
-    transform: scale(0.95); /* 適度縮小，避免影響佈局 */
-    opacity: 0.9;
-    z-index: 1;
-    pointer-events: none; /* 禁用非中間卡片點擊 */
-}
-
-
 .card_invent-inner {
-    position: relative;
     width: 100%;
     height: 100%;
-    transition: transform 0.6s;
+    position: relative;
     transform-style: preserve-3d;
+    transition: transform 0.6s;
 }
 
-.card_invent.flip .card_invent-inner {
+.card_invent.active .card_invent-inner {
     transform: rotateY(180deg);
 }
+
 
 .card_invent-face {
     position: absolute;
@@ -286,6 +225,10 @@ h1{
     height: 100%;
     backface-visibility: hidden;
     border-radius: 20px;
+}
+
+.card_invent-front {
+    background: #fff;
 }
 
 .card_invent-back {
@@ -308,39 +251,7 @@ h1{
     width: 50%; /* 長條型效果 */
 }
 
-.nav-btn {
-    position: absolute;
-    top: 50%; /* 垂直置中 */
-    background-color: transparent;
-    color: white;
-    border: none;
-    padding: 10px;
-    cursor: pointer;
-    font-size: 30px;
-}
-
-
-.prev-btn {
-    left: 250px; /* 向左移動 */
-}
-
-.next-btn {
-    right: 250px; /* 向右移動 */
-}
-
-.btc{
-    width: 65px;
-    height: 65px;
-    margin: 5px;
-}
-
-.new{
-    width: 65px;
-    height: 65px;
-    margin: 5px;
-}
-
-.point{
+.btc, .new, .point{
     width: 65px;
     height: 65px;
     margin: 5px;

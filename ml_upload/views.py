@@ -1,13 +1,95 @@
-from django.shortcuts import render
-from data_analysis.train import kaggle
+from django.shortcuts import render, redirect, get_object_or_404
+from data_analysis.train import upload
+from data_analysis.train import download
+import os
+import pandas as pd
+import plotly.graph_objects as go
+from django.conf import settings
+from .models import *
+from .forms import DataLocationForm
+
 
 def home(request):
-    # 取得最新 3 則新聞
-    link = kaggle.create_kaggle_metadata(1, "testname")
+    # 查詢所有 DataLocation 物件
+    data_locations = DataLocation.objects.all()
+
+    # 傳遞到模板
+    return render(request, 'ml_home.html', {'data_locations': data_locations})
+
+
+def add_data_location(request):
+    if request.method == 'POST':
+        # 如果是 POST 請求，則表單提交
+        form = DataLocationForm(request.POST)
+        if form.is_valid():
+            # 在保存前手動填充 user 欄位
+            new_data_location = form.save(commit=False)
+            new_data_location.user = request.user  # 設置當前用戶為該資料的擁有者
+            new_data_location.save()  # 保存資料到資料庫
+            return redirect('ml_home')  # 重新導向到資料列表頁面
+    else:
+        # 如果是 GET 請求，則顯示空白表單
+        form = DataLocationForm()
+
+    return render(request, 'add_data_location.html', {'form': form})
+
+
+def data_location_detail(request, id):
+    # 使用 get_object_or_404 確保當資料不存在時返回 404 錯誤
+    data_location = get_object_or_404(DataLocation, id=id)
     
-    # 將 'a' 放入 context 字典中，傳遞到模板
+    status = None
+    if data_location.status != "wait":
+        status = download.check_notebook_status(id, data_location.name)
+    output_result = None
+    if status == "COMPLETE":
+        output_result = download.download_output(id, data_location.name)
+    folder_path = f"media/kaggle/{id}/output"
+    kaggle_username = os.getenv("KAGGLE_USERNAME")
+    link=f"https://www.kaggle.com/code/{kaggle_username}/crypto-{id}-{data_location.name}"
     context = {
+        'data_location': data_location,
+        'status': status,
+        'output_result': output_result,
+        'chart_html':plot_prediction_chart(folder_path),
         'link': link
     }
+    # 渲染 template，並傳遞 data_location 實例
+    return render(request, 'data_location_detail.html',context)
 
-    return render(request, 'ml_home.html', context)
+def plot_prediction_chart(folder_path):
+    # 設定 CSV 路徑
+    csv_path = os.path.join(settings.BASE_DIR, f"{folder_path}/pred.csv")
+
+    # 讀取 CSV
+    df = pd.read_csv(csv_path)
+    df["Date"] = pd.to_datetime(df["Date"])  # 確保 Date 欄位為 datetime 格式
+
+    # 建立 Plotly 圖表
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=df["Date"], y=df["Actual Price"], mode="lines+markers", name="Actual Price"))
+    fig.add_trace(go.Scatter(x=df["Date"], y=df["Predicted Price"], mode="lines+markers", name="Predicted Price", line=dict(dash="dash")))
+
+    # 設定標題與座標軸
+    fig.update_layout(
+        title="Actual vs Predicted Price",
+        xaxis_title="Date",
+        yaxis_title="Price",
+        xaxis=dict(showgrid=False),
+        yaxis=dict(showgrid=True),
+        template="plotly_dark",  # 可改成 "plotly" (白底) 或 "plotly_dark" (黑底)
+    )
+
+    # 轉換圖表為 HTML
+    chart_html = fig.to_html(full_html=False)
+
+    return chart_html
+
+
+def run_program(request, id):
+    # 獲取對應的 DataLocation 實例
+    data_location = get_object_or_404(DataLocation, id=id)
+    link = upload.create_kaggle_metadata(id, data_location.name)
+    data_location.status = "Running"
+    data_location.save()  # 保存更改
+    return redirect('data_location_detail', id=id)

@@ -128,11 +128,13 @@
 
     <!-- Main Content -->
     <main>
+        {% block main %}
         <div class="container mt-4">
             {% block content %} 
-            <!-- Content will be inserted here -->
+            <!-- 預設內容區塊 -->
             {% endblock %}
         </div>
+        {% endblock %}
     </main>
 
     <!-- Footer -->
