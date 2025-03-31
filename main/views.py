@@ -538,6 +538,7 @@ def upgrade_to_premium(request):
 
 
 
+
 from django.utils import timezone
 from .models import SignIn
 @login_required
@@ -566,3 +567,10 @@ def sign_in(request):
 def user_profile(request):
     today = timezone.now().date()
     return render(request, 'myapp/user_profile.html', {'today': today})
+
+#使用者條款
+from django.shortcuts import render
+
+def user_terms(request):
+    return render(request, 'user_terms.html')
+
