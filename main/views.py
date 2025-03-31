@@ -16,6 +16,7 @@ from django.contrib import messages
 from django.contrib.auth.hashers import make_password
 from django.utils.safestring import mark_safe
 import plotly.graph_objects as go
+from django.templatetags.static import static
 import re
 
 def home(request):
@@ -25,6 +26,7 @@ def home(request):
         increase_coins = BitcoinPrice.objects.all().order_by('-change_24h')[:5]
         decline_coins = BitcoinPrice.objects.all().order_by('change_24h')[:5]
         volume = BitcoinPrice.objects.all().order_by('-volume_24h')[:10]
+        image_url = request.build_absolute_uri(static('images/crypto.png')) 
         
         # 渲染到模板
         return render(request, 'home.html', {
@@ -32,6 +34,7 @@ def home(request):
             'increase_coins': increase_coins,
             'decline_coins': decline_coins,
             'volume': volume,
+            'image_url': image_url,
         })
 
     except Exception as e:
