@@ -140,19 +140,44 @@ function animateBall(pathId, ballId, speed, callback) {
         if (progress < 1) {
             requestAnimationFrame(moveBall);
         } else if (callback) {
-            callback(); // 當動畫結束，執行 callback
+            callback(); // 動畫結束後執行 callback
         }
     }
 
     moveBall();
 }
 
+function animateImage() {
+    const image = document.querySelector(".moving-image");
+    let positionY = 100; // 圖片初始 y 位置，從水管底部（畫面外）開始
+    const targetPositionY = -50; // 圖片最終 y 位置，水管的頂端
+    const speed = 2; // 移動速度
+
+    function moveImage() {
+        positionY -= speed; // 圖片向上移動，減少 y 值
+        image.setAttribute("y", positionY); // 設置圖片的 y 位置
+        console.log("Image position Y:", positionY); // 輸出當前 y 值
+
+        // 如果圖片還未到達頂端，繼續動畫
+        if (positionY > targetPositionY) {
+            requestAnimationFrame(moveImage);
+        } else {
+            console.log("Animation finished. Restarting...");
+            setTimeout(startAnimationSequence, 1000); // 停留 1 秒後重新開始
+        }
+    }
+
+    moveImage(); // 開始移動
+}
+
+
+
 function startAnimationSequence() {
     animateBall("leftPath", "ballLeft", 0.005, () => {
         animateBall("rightPath", "ballRight", 0.005, () => {
-            startAnimationSequence(); // 循環
+            animateImage(); // 圖片動畫
         });
     });
 }
 
-startAnimationSequence(); // 啟動動畫
+startAnimationSequence();
