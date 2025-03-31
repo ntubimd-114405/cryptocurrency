@@ -3,6 +3,10 @@ import requests
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 import re
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
+import time
 
 class YahooWebsite(BaseWebsite):
     def __init__(self):
@@ -84,33 +88,51 @@ class YahooArticle(BaseArticle):
 
 
     def get_news_details(self):
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        }
-        response = requests.get(self.url, headers=headers)
-        soup = BeautifulSoup(response.text, 'html.parser')
+        options = Options()
+        options.add_argument("--headless")  # 不開啟瀏覽器視窗
+        options.add_argument("--disable-gpu")
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-dev-shm-usage")
+        options.add_argument("--ignore-certificate-errors")  # 忽略 SSL 錯誤
+        options.add_argument("--allow-insecure-localhost")  # 允許不安全的連線
+        options.add_argument("--disable-logging")  # 減少日誌輸出
+        options.add_argument("--log-level=3")  # 設定 Chrome 最低日誌級別
+        options.add_argument("--disable-webgl")
+        options.add_argument("--disable-software-rasterizer")
+        options.add_experimental_option("excludeSwitches", ["enable-logging"])  # 隱藏 DevTools 訊息
+        service = Service("data_collector/new_scraper/chromedriver.exe")  # 設定 ChromeDriver 路徑
+        driver = webdriver.Chrome(service=service, options=options)
+        driver.get(self.url)
         
+        # 等待網頁載入
+        time.sleep(3)
+        
+        # 取得頁面內容
+        soup = BeautifulSoup(driver.page_source, 'html.parser')
+        
+        # 獲取新聞內容
         content = soup.find('div', class_='atoms-wrapper')
         if content:
-            content=content.get_text(strip=True)
-            self.content=convert_emoji_to_text(content)
+            self.content = content.get_text(strip=True)
+        
+        # 獲取圖片
 
-        img_tag = soup.find('img',class_="yf-g633g8")
+        img_tag = soup.find("img", class_="yf-g633g8")
         if img_tag:
-            img_url=img_tag.get('src')
-            if  not "data:image/gif;" in img_url:
-                self.image_url=img_url
-            
+            img_url = img_tag.get("src") or img_tag.get("data-src") or img_tag.get("srcset")
+            self.image_url=img_url
 
-
+        
+        # 獲取標題
         title = soup.find('div', class_='cover-title')
         if title:
-            self.title=title.get_text(strip=True)
-
+            self.title = title.get_text(strip=True)
+        
+        # 獲取時間
         time_tag = soup.find("time", class_="byline-attr-meta-time")
-
         if time_tag:
-            # 獲取 datetime 屬性
             self.time = time_tag.get("datetime")
+        
+        driver.quit()
 
 
