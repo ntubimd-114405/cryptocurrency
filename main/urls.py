@@ -40,6 +40,9 @@ urlpatterns = [
 
     # 刪除帳號
     path("delete_account/", views.delete_account, name="delete_account"),
+
+    path('sign_in/', views.sign_in, name='sign_in'),
+    path('user_profile/', views.user_profile, name='user_profile'),  # 个人资料页面
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

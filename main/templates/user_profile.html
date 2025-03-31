@@ -36,20 +36,40 @@
                     {% endif %}
                 </div>
                 <br>
-                <!-- 登入簽到遊戲畫面區域 -->
-                <h2>今日簽到</h2>
-                <div class="login-signin-game">
-                    <!-- 遊戲區塊 -->
-                    <div class="game-box">
-                        <div class="game-screen">
-                            <p id="signin-status">歡迎回來！請點擊下方按鈕簽到。</p>
-                            <button id="signin-button" class="signin-btn">簽到</button>
-                            <div id="confetti" class="confetti"></div>
-                        </div>
-                    </div>
-                </div>
-            </section>
+            
+                <h2 class="section-title">今日簽到</h2>
 
+                <div class="sign-in-details">
+                    {% if user.signin.last_sign_in_date %}
+                        <p><strong>上次簽到日期：</strong>{{ user.signin.last_sign_in_date }}</p>
+                    {% else %}
+                        <p><strong>尚未簽到過</strong></p>
+                    {% endif %}
+                    <p><strong>簽到次數：</strong>{{ user.signin.sign_in_count }}</p>
+                    <p><strong>連續簽到次數：</strong>{{ user.signin.consecutive_sign_in_count }}</p>  <!-- 新增字段 -->
+                </div>
+
+                <div class="sign-in-form">
+                    {% if user.signin.last_sign_in_date != today %}
+                        <form action="{% url 'sign_in' %}" method="POST">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-sign-in">簽到</button>
+                        </form>
+                    {% endif %}
+                </div>
+
+                <!-- 显示消息 -->
+                {% if messages %}
+                    <div class="messages">
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }}" style="margin-top: 10px;">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </section>
+    
             <section id="account-settings" class="settings-section">
                 <h2>修改使用者名稱</h2>
                 <form method="post" action="{% url 'update_firstname' %}" class="settings-form">
@@ -197,47 +217,7 @@
             });
         });
     });
-
-    document.addEventListener("DOMContentLoaded", function() {
-        const signinButton = document.getElementById("signin-button");
-        const signinStatus = document.getElementById("signin-status");
-        const confetti = document.getElementById("confetti");
-
-        signinButton.addEventListener("click", function() {
-            // 顯示簽到成功的訊息
-            signinStatus.textContent = "簽到成功！獲得 10 點經驗！";
-            
-            // 禁用簽到按鈕
-            signinButton.disabled = true;
-            signinButton.style.background = "#ccc";
-            signinButton.textContent = "已簽到";
-
-            // 顯示彩帶動畫
-            showConfetti();
-        });
-
-        // 顯示彩帶動畫效果
-        function showConfetti() {
-            confetti.style.display = "block";
-            
-            // 隨機生成彩帶
-            for (let i = 0; i < 50; i++) {
-                const confettiPiece = document.createElement('div');
-                confettiPiece.classList.add('confetti-piece');
-                confettiPiece.style.left = `${Math.random() * 100}%`;
-                confettiPiece.style.animationDelay = `${Math.random() * 2}s`;
-                confetti.appendChild(confettiPiece);
-            }
-
-            // 3秒後隱藏彩帶
-            setTimeout(function() {
-                confetti.style.display = "none";
-                confetti.innerHTML = ""; // 清除彩帶元素
-            }, 3000);
-        }
-    });
-
-
+    
     </script>
     
 

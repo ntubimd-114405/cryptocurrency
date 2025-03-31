@@ -128,3 +128,20 @@ class DepthData(models.Model):
         return f"Last Update ID: {self.last_update_id}"
     
 
+class SignIn(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    last_sign_in_date = models.DateField(null=True, blank=True)
+    sign_in_count = models.PositiveIntegerField(default=0)
+    consecutive_sign_in_count = models.PositiveIntegerField(default=0)  # 新增字段
+
+    def __str__(self):
+        return f'{self.user.username} SignIn'
+
+    def update_consecutive_sign_in(self):
+        # 判断今天是否是连续签到的一天
+        today = timezone.now().date()
+        if self.last_sign_in_date == today - timezone.timedelta(days=1):
+            self.consecutive_sign_in_count += 1
+        else:
+            self.consecutive_sign_in_count = 1  # 重置连续签到为1
+        self.save()

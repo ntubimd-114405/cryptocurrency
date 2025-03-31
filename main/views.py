@@ -17,7 +17,7 @@ from django.contrib.auth.hashers import make_password
 from django.utils.safestring import mark_safe
 import plotly.graph_objects as go
 import re
- 
+
 def home(request):
     try:
         # 取得資料庫中的所有價格，按 id 升序排列
@@ -535,3 +535,34 @@ def upgrade_to_premium(request):
 
         return JsonResponse({'success': True})
     return JsonResponse({'success': False})
+
+
+
+from django.utils import timezone
+from .models import SignIn
+@login_required
+def sign_in(request):
+    user = request.user
+    today = timezone.now().date()
+
+    # 确保每个用户在数据库中都有一条签到记录，如果没有则自动创建
+    sign_in_record, created = SignIn.objects.get_or_create(user=user)
+
+    # 如果今天已经签到过了
+    if sign_in_record.last_sign_in_date == today:
+        messages.info(request, "今天已簽到過，請明天再來！")
+        return redirect('user_profile')
+
+    # 否则，进行签到
+    sign_in_record.last_sign_in_date = today
+    sign_in_record.sign_in_count += 1
+    sign_in_record.update_consecutive_sign_in()  # 更新连续签到次数
+    sign_in_record.save()
+
+    messages.success(request, "簽到成功！")
+    return redirect('user_profile')
+
+@login_required
+def user_profile(request):
+    today = timezone.now().date()
+    return render(request, 'myapp/user_profile.html', {'today': today})
