@@ -36,6 +36,7 @@ urlpatterns = [
 
     path('membership/', views.membership_plans, name='membership_plans'), # 會員頁面
     path('upgrade_to_premium/', views.upgrade_to_premium, name='upgrade_to_premium'), #升級會員
+    path('terms/', views.user_terms, name='user_terms'), # 使用者條款
     
 
     # 刪除帳號

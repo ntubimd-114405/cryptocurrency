@@ -535,3 +535,9 @@ def upgrade_to_premium(request):
 
         return JsonResponse({'success': True})
     return JsonResponse({'success': False})
+
+#使用者條款
+from django.shortcuts import render
+
+def user_terms(request):
+    return render(request, 'user_terms.html')

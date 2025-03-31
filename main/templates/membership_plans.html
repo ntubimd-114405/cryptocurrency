@@ -8,14 +8,14 @@
     <div class="row align-items-center">
         <!-- 左邊放圖片 -->
         <div class="col-md-6">
-            <img src="{% static 'images/btc-1.png' %}" class="img-fluid" alt="會員方案圖片"
+            <img src="{% static 'images/logo_icon2-1.png' %}" class="img-fluid" alt="會員方案圖片"
                 style="max-width: 100%; height: auto;">
         </div>
 
         <!-- 右邊放文字 -->
         <div class="col-md-6 d-flex flex-column justify-content-center text-start">
             <h1>升級您的加密貨幣之旅 - 使用 Premium 去除廣告幹擾。</h1>
-            <small>每月低至 10 美元。立即訂閱。適用 <a href="http://">相關條款及細則</a>。</small>
+            <small>每月低至 10 美元。立即訂閱。適用<a href="{% url 'user_terms' %}">相關條款及細則</a></small>
             <br>
             <!-- 新增按鈕，點擊後滾動到方案選擇區 -->
             <button class="button-bu" id="scrollToPlansBtn">選擇方案</button>
@@ -45,7 +45,7 @@
             <div class="card text-center shadow-lg">
                 <div class="card-body">
                     <h5 class="card-title">每年</h5>
-                    <small class="card-text">每 12 個月收取 $120 $99.90。</small>
+                    <small class="card-text">每 12 個月收取 <del>$120</del> $99.90。</small>
                     <br><br>
                     <h5 class="card-title">$99.90<small>/年</small></h5>
                     <small class="card-text">$8.32/月</small>
@@ -188,7 +188,17 @@
             });
         });
     
+        // 確保模態框關閉時移除背景遮罩
+        document.getElementById('paymentModal').addEventListener('hidden.bs.modal', function () {
+                document.querySelector('.modal-backdrop')?.remove(); // 手動移除背景遮罩
+                document.body.style.overflow = 'auto'; // 恢復滾動
+                document.body.classList.remove('modal-open'); // 移除 Bootstrap 的類別
+            });
 
+        // 選擇方案跳轉
+        document.getElementById("scrollToPlansBtn").addEventListener("click", function() {
+        document.getElementById("plansSection").scrollIntoView({ behavior: "smooth" });
+    });   
     </script>    
 
     <!-- 3------------------------------------------------------------------------------------------- -->
