@@ -51,7 +51,8 @@ INSTALLED_APPS = [
     'news',
     'ml_upload'
     
-]
+    ]
+    
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
