@@ -380,7 +380,7 @@ h1{
 }
 
 .carousel1 {
-    max-width: 700px;
+    max-width: 800px;
     margin: 0 auto;
     padding: 20px;
     background-color: #fff;
@@ -400,7 +400,7 @@ ol ol {
     margin: 0 0 0 2em; /* Add some left margin for inner lists */
 }
 
-li{
+.li{
     margin: 50px;
 }
 
@@ -429,7 +429,6 @@ li{
     height: 2em;
     width: 2em;
     line-height: 2em;
-    border: .3em solid #fff;
     text-align: center;
     font-weight: bold;
     border-radius: 2em;
@@ -448,3 +447,39 @@ li{
     word-wrap: break-word;
     line-height: 1.6;
 }
+
+.fourth-step {
+    position: relative; /* 這是定位的參考點 */
+}
+
+.svg-container {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 240px;
+    height: 160px;
+}
+
+.container-home {
+    display: flex;
+    flex: 1;
+}
+
+.left,.right{
+    flex: 2;
+}
+
+.right{
+    background-color: #162e66;
+}
+
+@media (max-width: 992px) {
+    .container-home {
+      flex-direction: column;
+      height: auto;
+    }
+
+    .svg-corner {
+      width: 180px;
+    }
+  }
