@@ -37,7 +37,7 @@ def news_crawler():
         Q(content__isnull=True) | Q(content__exact="") |
         Q(title__isnull=True) | Q(title__exact="") |  
         Q(time__isnull=True) | Q(image_url__isnull=True)
-    ).order_by('-id')
+    ).order_by('-id')[:10]
     #articles_empty = NewsArticle.objects.all()
     print(len(articles_empty))
     for article in articles_empty:

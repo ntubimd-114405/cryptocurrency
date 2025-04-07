@@ -1,9 +1,14 @@
 from .base_site import BaseArticle,BaseWebsite,convert_emoji_to_text
 import requests
 from bs4 import BeautifulSoup
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import re
-
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
+from bs4 import BeautifulSoup
+import time
 
 class InvestingWebsite(BaseWebsite):
     def __init__(self):
@@ -13,28 +18,55 @@ class InvestingWebsite(BaseWebsite):
     
 
     def fetch_page(self):
-        headers = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36 Edg/132.0.0.0",
-    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
-    "Content-Type": "text/html; charset=utf-8",
-    "DNT": "1",  # Do Not Track request
-    "Cookie": "udid=d493f81db9fce5947411f0ce1b9968c4; _fbp=fb.1.1732502866741.823854017412798344; _ga_FVWZ0RM4DH=GS1.1.1733228501.3.1.1733229857.60.0.0; _ga=GA1.1.643577121.1732502879",  # Cookie值
-}
-
-
-        response = requests.get(self.url, headers=headers)
-        #print(response.text)
-        soup = BeautifulSoup(response.text, 'html.parser')
-        print(soup)
-        data=[]
-        articles = soup.find_all('article', class_="article-item")
-        for article in articles:
-            title = article.find('a').get_text(strip=True)
-            link = article.find('a')['href']  # 相對路徑
-            time = article.find('time')['datetime']+"+00:00"
-            data.append({"title":convert_emoji_to_text(title),"url":link, "time":time,"image_url":None})
+        try:
+            options = Options()
+            #options.add_argument("--headless")  # 不開啟瀏覽器視窗
+            options.add_argument("--disable-gpu")
+            options.add_argument("--no-sandbox")
+            options.add_argument("--disable-dev-shm-usage")
+            options.add_argument("--ignore-certificate-errors")  # 忽略 SSL 錯誤
+            options.add_argument("--allow-insecure-localhost")  # 允許不安全的連線
+            options.add_argument("--disable-logging")  # 減少日誌輸出
+            options.add_argument("--log-level=3")  # 設定 Chrome 最低日誌級別
+            options.add_argument("--disable-webgl")
+            options.add_argument("--disable-software-rasterizer")
+            options.add_experimental_option("excludeSwitches", ["enable-logging"])  # 隱藏 DevTools 訊息
+            service = Service("data_collector/new_scraper/chromedriver.exe")  # 設定 ChromeDriver 路徑
+            driver = webdriver.Chrome(service=service, options=options)
             
-        return data
+            driver.get(self.url)
+            time.sleep(15)  # 等待 JavaScript 加載
+            try:
+                driver.find_element(By.XPATH,u"(.//*[normalize-space(text()) and normalize-space(.)='完全同步APP應用程式'])[1]/following::*[name()='svg'][1]").click()
+            except:
+                pass
+            time.sleep(3)
+            soup = BeautifulSoup(driver.page_source, 'html.parser')
+            driver.quit()
+            
+            data = []
+            articles = soup.find_all("article", {"data-test": "article-item"})
+            for article in articles:
+                title_element = article.find("a", {"data-test": "article-title-link"})
+                title = title_element.get_text(strip=True) if title_element else "N/A"
+
+                # 找連結
+                link = title_element["href"] if title_element else "#"
+
+                # 找時間
+                time_element = article.find("time", {"data-test": "article-publish-date"})
+                time_text = time_element["datetime"] + "+00:00" if time_element else "N/A"
+
+                data.append({
+                    "title": title,
+                    "url": link,
+                    "time": time_text,
+                    "image_url": None
+                })
+            return data
+        except Exception as e:
+            print(f"錯誤: {e}")
+
 
 
 class InvestingArticle(BaseArticle):
@@ -45,27 +77,73 @@ class InvestingArticle(BaseArticle):
         self.image_url = data.image_url
         self.time = data.time
         self.website = data.website
+        self.summary = data.summary
 
-    
 
     def get_news_details(self):
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        }
-        response = requests.get(self.url, headers=headers)
-        soup = BeautifulSoup(response.text, 'html.parser')
-        # 定位內頁中的圖片標籤
-        
-        img = soup.find('img', class_='h-full w-full object-contain')
-        if not img is None:img=img["src"]
-        content_div = soup.find('div', class_='article_WYSIWYG__O0uhw article_articlePage__UMz3q text-[18px] leading-8')
+        options = Options()
+        #options.add_argument("--headless")  # 不開啟瀏覽器視窗
+        options.add_argument("--disable-gpu")
+        options.add_argument("--no-sandbox")
+        options.add_argument("--disable-dev-shm-usage")
+        options.add_argument("--ignore-certificate-errors")  # 忽略 SSL 錯誤
+        options.add_argument("--allow-insecure-localhost")  # 允許不安全的連線
+        options.add_argument("--disable-logging")  # 減少日誌輸出
+        options.add_argument("--log-level=3")  # 設定 Chrome 最低日誌級別
+        options.add_argument("--disable-webgl")
+        options.add_argument("--disable-software-rasterizer")
+        options.add_experimental_option("excludeSwitches", ["enable-logging"])  # 隱藏 DevTools 訊息
+        service = Service("data_collector/new_scraper/chromedriver.exe")  # 設定 ChromeDriver 路徑
+        driver = webdriver.Chrome(service=service, options=options)
+        driver.get(self.url)
+        # 等待頁面加載完成
+        time.sleep(3)
         try:
-            content = content_div.get_text(strip=True)
+            driver.find_element(By.XPATH,u"(.//*[normalize-space(text()) and normalize-space(.)='完全同步APP應用程式'])[1]/following::*[name()='svg'][1]").click()
         except:
-            content= None
-        
-        self.content=convert_emoji_to_text(content)
-        self.image_url = img
+            pass
+        time.sleep(3)
+        soup = BeautifulSoup(driver.page_source, "html.parser")
+        driver.quit()
+
+        # 取得標題
+        title_element = soup.find(id="articleTitle")
+
+        if title_element:
+            self.title = title_element.get_text(strip=True)
+
+        # 取得內容
+        content_element = soup.find('div', class_="article_WYSIWYG__O0uhw article_articlePage__UMz3q text-[18px] leading-8")
+        if content_element:
+            paragraphs = content_element.find_all('p')
+            # 提取所有 p 標籤的文本
+            if paragraphs:
+                self.content = "\n".join([p.get_text(strip=True) for p in paragraphs])
+
+        # 取得發佈時間
+        time_element = soup.find("div", class_="flex flex-col gap-2 text-warren-gray-700 md:flex-row md:items-center md:gap-0")
+        if time_element:
+            time_str = time_element.find("span")
+            time_str = time_str.get_text(strip=True)
+
+            time_str = time_str.replace("發布", "").strip()
+            time_str = time_str.replace("下午", "PM").replace("上午", "AM")
+
+            # 假設時間格式為 '2025-4-2 下午05:43'
+            # 轉換成 datetime 物件，先處理中文 "下午" 和時間格式
+            time_hk = datetime.strptime(time_str, "%Y-%m-%d %p%I:%M")
+
+            # 設定香港時間是 UTC+8，將時間減去 8 小時以轉換成 UTC 時間
+            time_utc = time_hk - timedelta(hours=8)
+            # 格式化 UTC 時間
+
+            self.time = time_utc.replace(tzinfo=timezone.utc)
+
+        # 取得圖片
+        img_element = soup.find("img", class_="h-full w-full object-contain")
+        if img_element:
+            self.image_url = img_element.get("src")
+
 
 
 

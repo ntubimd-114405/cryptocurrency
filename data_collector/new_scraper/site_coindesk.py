@@ -48,7 +48,7 @@ def parse_relative_time(relative_time):
     
 
 def parse_relative_time2(text):
-    pattern = r"([A-Za-z]+\s+\d{1,2},\s+\d{4},\s+\d{1,2}:\d{2}\s*[ap]\.m\.\s+UTC)"
+    pattern = r"([A-Za-z]+\s+\d{1,2},\s+\d{4},\s+\d{1,2}:\d{2}\s*[ap]\.?m\.?)"
     match = re.search(pattern, text)
     if match:
         time_str = match.group(1)
@@ -165,7 +165,15 @@ class CoindeskArticle(BaseArticle):
             if t:
                 self.time = t
         else:
-            t = None
+            outer_div = soup.find("div", class_="font-metadata flex gap-4 text-charcoal-600 flex-col md:block")
+            # 再從這個 div 找到 <span>
+            if outer_div:
+                time_tag = outer_div.find("span")
+                if time_tag:
+                    t = time_tag.get_text().strip()
+                    t = parse_relative_time2(t)
+                    if t:
+                        self.time = t
         
         
         
