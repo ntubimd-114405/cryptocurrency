@@ -558,9 +558,9 @@ def sign_in(request):
         return redirect('user_profile')
 
     # 否则，进行签到
+    sign_in_record.update_consecutive_sign_in()  # 更新连续签到次数
     sign_in_record.last_sign_in_date = today
     sign_in_record.sign_in_count += 1
-    sign_in_record.update_consecutive_sign_in()  # 更新连续签到次数
     sign_in_record.save()
 
     messages.success(request, "簽到成功！")

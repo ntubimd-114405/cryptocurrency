@@ -27,6 +27,7 @@
                 <div class="upload-avatar-section">
                     <img src="{{ user.profile.profile_image.url }}" alt="Profile Image" class="upload-profile-avatar">
                 </div>
+                <div class="divider-line"></div>
                 <div class="upload-user-details">
                     <p><strong>使用者名稱：</strong>{{ user.first_name }}</p>
                     <p><strong>帳號：</strong>{{ user.username }}</p>
@@ -36,17 +37,19 @@
                     {% endif %}
                 </div>
                 <br>
-            
-                <h2 class="section-title">今日簽到</h2>
-
-                <div class="sign-in-details">
-                    {% if user.signin.last_sign_in_date %}
-                        <p><strong>上次簽到日期：</strong>{{ user.signin.last_sign_in_date }}</p>
-                    {% else %}
-                        <p><strong>尚未簽到過</strong></p>
-                    {% endif %}
-                    <p><strong>簽到次數：</strong>{{ user.signin.sign_in_count }}</p>
-                    <p><strong>連續簽到次數：</strong>{{ user.signin.consecutive_sign_in_count }}</p>  <!-- 新增字段 -->
+                
+                <h2>簽到</h2>
+                <div class="sign-in-container">
+                    <h2 class="section-title">簽到紀錄</h2>
+                    <div class="sign-in-details">
+                        {% if user.signin.last_sign_in_date %}
+                            <p><span class="label">上次簽到日期：</span><span class="value">{{ user.signin.last_sign_in_date }}</span></p>
+                        {% else %}
+                            <p><span class="label">尚未簽到過</span></p>
+                        {% endif %}
+                        <p><span class="label">簽到次數：</span><span class="value">{{ user.signin.sign_in_count }}</span></p>
+                        <p><span class="label">連續簽到次數：</span><span class="value">{{ user.signin.consecutive_sign_in_count }}</span></p>
+                    </div>
                 </div>
 
                 <div class="sign-in-form">
