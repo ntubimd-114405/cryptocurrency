@@ -181,3 +181,59 @@ function startAnimationSequence() {
 }
 
 startAnimationSequence();
+
+document.addEventListener("DOMContentLoaded", function () {
+    const target = document.querySelector('.carousel1');
+    const line = document.getElementById('line');
+  
+    const flatPoints = "40,180 80,180 120,180 160,180 200,180 240,180 280,180 320,180";
+    const risePoints = "40,180 80,140 120,160 160,120 200,100 240,130 280,90 320,110";
+  
+    let animationFrame;
+  
+    function animateLine(fromPoints, toPoints, duration = 600) {
+      const start = fromPoints.split(" ").map(p => p.split(",").map(Number));
+      const end = toPoints.split(" ").map(p => p.split(",").map(Number));
+      const startTime = performance.now();
+  
+      cancelAnimationFrame(animationFrame);
+  
+      function animate(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+  
+        const currentPoints = start.map((pt, i) => {
+          const [x0, y0] = pt;
+          const [x1, y1] = end[i];
+          const y = y0 + (y1 - y0) * progress;
+          return `${x0},${y.toFixed(1)}`;
+        }).join(" ");
+  
+        line.setAttribute("points", currentPoints);
+  
+        if (progress < 1) {
+          animationFrame = requestAnimationFrame(animate);
+        }
+      }
+  
+      animationFrame = requestAnimationFrame(animate);
+    }
+  
+    // 使用 IntersectionObserver 偵測是否進入畫面
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          animateLine(flatPoints, risePoints); // 進入畫面：上升
+        } else {
+          animateLine(risePoints, flatPoints); // 離開畫面：下降
+        }
+      });
+    }, {
+      threshold: 0.9 // 當有一半進入畫面就觸發
+    });
+  
+    observer.observe(target);
+  
+    // 初始狀態為平線
+    line.setAttribute("points", flatPoints);
+  });
