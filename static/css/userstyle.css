@@ -62,7 +62,18 @@
 .upload-user-details p {
     font-size: 16px;
     color: #333;
-    margin: 5px 0;
+    margin: 15px 0;
+    position: relative; /* 用於定位灰線 */
+    padding-bottom: 5px; /* 給灰線留空間 */
+}
+
+/* 800px 分隔線 */
+.divider-line {
+    width: 800px;
+    max-width: 90%; /* 適應窄螢幕 */
+    height: 1px;
+    background: linear-gradient(to right, transparent, #d1d5db, transparent); /* 漸變效果 */
+    margin: 20px auto;
 }
 
 /* 設定區塊 */
@@ -265,39 +276,88 @@ input[type="file"]:focus {
 }
 
 /* 样式设置 */
-#sign-in-section {
-    background-color: #f9f9f9;
+/* 整體容器樣式 */
+.sign-in-container {
+    max-width: 400px;
+    margin: 40px auto;
     padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    max-width: 600px;
-    margin: 0 auto;
+    background: linear-gradient(135deg, #e3e8f0, #c9d3e4, #accaf0, #b2c7e9); /* 多色漸層 */
+    background-size: 200% 200%; /* 放大背景尺寸以便動畫移動 */
+    border-radius: 15px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1); /* 柔和陰影 */
+    font-family: 'Arial', sans-serif;
+    transition: transform 0.3s ease; /* 滑鼠懸停動畫 */
+    animation: gradientFlow 2.5s ease infinite; /* 背景動畫 */
 }
 
+/* 定義背景漸層動畫 */
+@keyframes gradientFlow {
+    0% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+    100% {
+        background-position: 0% 50%;
+    }
+}
+
+/* 標題樣式 */
 .section-title {
-    font-size: 24px;
-    font-weight: bold;
-    color: #333;
     text-align: center;
+    font-size: 28px;
+    color: #333;
     margin-bottom: 20px;
+    position: relative;
+    padding-bottom: 10px;
 }
 
+.section-title::after {
+    content: '';
+    width: 50px;
+    height: 3px;
+    background: #6a82fb; /* 底線顏色 */
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 2px;
+}
+
+/* 簽到詳情樣式 */
 .sign-in-details {
-    background-color: #ffffff;
     padding: 15px;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    margin-bottom: 20px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05); /* 內陰影增加層次感 */
 }
 
 .sign-in-details p {
+    display: flex;
+    justify-content: space-between;
+    margin: 12px 0;
     font-size: 16px;
     color: #555;
-    margin: 5px 0;
+    transition: color 0.3s ease;
 }
 
-.sign-in-form {
-    text-align: center;
+.sign-in-details p:hover {
+    color: #6a82fb; /* 懸停時變色 */
+}
+
+/* 標籤和值的區分 */
+.label {
+    font-weight: bold;
+    color: #333;
+}
+
+.value {
+    color: #888;
+    font-weight: normal;
+    background: #f0f2f5; /* 值的背景色 */
+    padding: 4px 10px;
+    border-radius: 12px;
 }
 
 /* 新按钮样式 */
@@ -314,6 +374,7 @@ input[type="file"]:focus {
     box-shadow: 0 6px 0px #1C3D63, 0 8px 15px rgba(0, 0, 0, 0.2);
     transition: all 0.2s ease-in-out;
     cursor: pointer;
+    margin-top: -25px;
 }
 
 .btn-sign-in:hover {
