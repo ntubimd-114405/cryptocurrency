@@ -138,6 +138,27 @@ from django.db.models import F
 from django.core.paginator import Paginator
 from django.shortcuts import render
 
+def format_crypto_price(value):
+    """格式化虛擬貨幣價格，根據數值大小顯示適當的小數位數"""
+    try:
+        value = float(value)
+        if value == 0:
+            return "0.00"
+        elif value >= 1:
+            # 大於等於 1，顯示 3 位小數，並移除多餘的零和小數點
+            return f"{value:.3f}".rstrip("0").rstrip(".")
+        else:
+            # 小於 1，找到第一個非零數字後取兩位小數
+            str_value = f"{value:.10f}"  # 先轉為 10 位小數的字串，避免精度問題
+            decimal_part = str_value.split('.')[1]  # 取小數部分
+            non_zero_index = next((i for i, digit in enumerate(decimal_part) if digit != '0'), len(decimal_part))
+            # 非零數字後取兩位（從 non_zero_index + 1 開始，共取 2 位）
+            end_index = non_zero_index + 3  # 非零數字位置 + 2 位小數 + 1（包含非零數字本身）
+            formatted = f"0.{decimal_part[:end_index]}".rstrip("0").rstrip(".")
+            return formatted
+    except (ValueError, TypeError):
+        return str(value)
+
 def crypto_list(request):
     query = request.GET.get('query', '') 
     sort_by = request.GET.get('sort_by')  # 排序欄位
@@ -153,25 +174,31 @@ def crypto_list(request):
         all_prices = all_prices.order_by(sort_by)  # A-Z 排序
     elif sort_by and sort_order == 'desc':
         all_prices = all_prices.order_by(F(sort_by).desc())  # Z-A 排序
-    # "default" 狀態下不進行排序，保持自然順序
 
     paginator = Paginator(all_prices, 10)  # 每頁顯示10條數據
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
+
+    # 格式化價格數據
+    for price in page_obj.object_list:
+        price.usd_display = format_crypto_price(price.usd)
+        price.twd_display = format_crypto_price(price.twd)
+        price.jpy_display = format_crypto_price(price.jpy)
+        price.eur_display = format_crypto_price(price.eur)
+        price.volume_24h_display = format_crypto_price(price.volume_24h)
+
     if request.user.is_authenticated:
         user_profile = request.user.profile
         favorite_coin_ids = list(user_profile.favorite_coin.values_list('id', flat=True))
     else:
         favorite_coin_ids = []
-    
+
     return render(request, 'crypto_list.html', {
         'page_obj': page_obj,
         'sort_by': sort_by,
         'sort_order': sort_order,
         'favorite_coin_ids': favorite_coin_ids,
     })
-    
-
 
 from django.shortcuts import render, redirect
 from .forms import UserProfileForm
