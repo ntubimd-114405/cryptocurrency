@@ -1,17 +1,18 @@
 from data_collector.new_scraper.site_yahoo import YahooWebsite,YahooArticle
 from data_collector.new_scraper.site_investing import InvestingWebsite,InvestingArticle
 from data_collector.new_scraper.site_coindesk import CoindeskWebsite,CoindeskArticle
-
+from urllib.parse import urlparse
 
 
 def website():
-    return [YahooWebsite(),CoindeskWebsite()]
-    #InvestingWebsite()無法使用
+    return [YahooWebsite(),CoindeskWebsite(),InvestingWebsite()]
+
 
 def article(a):
-    if "finance.yahoo.com" in a.url:
+    hostname = urlparse(a.url).hostname
+    if hostname == "finance.yahoo.com":
         return YahooArticle(a)
-    elif "hk.investing.com" in a.url:
+    elif hostname == "hk.investing.com":
         return InvestingArticle(a)
-    elif "www.coindesk.com" in a.url:
+    elif hostname == "www.coindesk.com":
         return CoindeskArticle(a)

@@ -84,7 +84,7 @@ class YahooArticle(BaseArticle):
         self.image_url = data.image_url
         self.time = data.time
         self.website = data.website
-        self.summary = ""
+        self.summary = data.summary
 
 
     def get_news_details(self):
