@@ -83,6 +83,18 @@
                         {% endif %}
                     </a>
                 </th>
+                <th style="width: 10%; text-align: center; vertical-align: middle;">
+                    <a href="?sort_by=market_cap&sort_order={% if sort_by == 'market_cap' and sort_order == 'asc' %}desc{% elif sort_by == 'market_cap' and sort_order == 'desc' %}default{% else %}asc{% endif %}&page={{ page_obj.number }}">
+                        市值
+                        {% if sort_by == 'market_cap' %}
+                            {% if sort_order == 'asc' %}
+                                &#8593;
+                            {% elif sort_order == 'desc' %}
+                                &#8595;
+                            {% endif %}
+                        {% endif %}
+                    </a>
+                </th>                
                 <th style="width: 15%; text-align: center; vertical-align: middle;">
                     <a href="?sort_by=volume_24h&sort_order={% if sort_by == 'volume_24h' and sort_order == 'asc' %}desc{% elif sort_by == 'volume_24h' and sort_order == 'desc' %}default{% else %}asc{% endif %}&page={{ page_obj.number }}">
                         24小時交易量
@@ -136,6 +148,7 @@
                     <td style="text-align: center; vertical-align: middle;">{{ price.twd_display }}</td>
                     <td style="text-align: center; vertical-align: middle;">{{ price.jpy_display }}</td>
                     <td style="text-align: center; vertical-align: middle;">{{ price.eur_display }}</td>
+                    <td style="text-align: center; vertical-align: middle;">{{ price.market_cap_display }}</td>
                     <td style="text-align: center; vertical-align: middle;">{{ price.volume_24h_display }}</td>
                     <td style="text-align: center; vertical-align: middle;">
                         {% if price.change_24h > 0 %}
