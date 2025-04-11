@@ -1,8 +1,7 @@
-from django.urls import path
+from django.urls import path,include
 from . import views
 from django.conf import settings
 from django.conf.urls.static import static
-from django.contrib.auth import views as auth_views
 
 urlpatterns = [
     path('', views.home, name='home'),  # 將路徑連結到視圖
@@ -37,6 +36,7 @@ urlpatterns = [
     path('membership/', views.membership_plans, name='membership_plans'), # 會員頁面
     path('upgrade_to_premium/', views.upgrade_to_premium, name='upgrade_to_premium'), #升級會員
     path('terms/', views.user_terms, name='user_terms'), # 使用者條款
+    path('accounts/', include('allauth.urls')),#登入帳號(google驗證)
     
 
     # 刪除帳號

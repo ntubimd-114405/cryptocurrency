@@ -17,11 +17,7 @@ p {
     color: #333333;
     font-size: 18px;
 }
-.login_form {
-    max-width: 300px; /* 設置表單的寬度 */
-    margin: 0 auto; /* 將表單置中 */
-    font-family: Arial, sans-serif; /* 字體 */
-}
+
 .form_input{
     width:100%;
     padding: 8px;
