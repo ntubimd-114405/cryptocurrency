@@ -22,7 +22,7 @@ class BitcoinPrice(models.Model):
     eur = models.FloatField()
     market_cap = models.DecimalField(max_digits=30, decimal_places=2, null=True)  # 市值
     volume_24h = models.DecimalField(max_digits=30, decimal_places=2, null=True)  # 24小時交易量
-    change_24h = models.DecimalField(max_digits=5, decimal_places=2, null=True)  # 24小時變動百分比
+    change_24h = models.DecimalField(max_digits=10, decimal_places=2, null=True)  # 24小時變動百分比
     timestamp = models.DateTimeField()
 
     def __str__(self):

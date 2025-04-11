@@ -139,25 +139,26 @@ from django.core.paginator import Paginator
 from django.shortcuts import render
 
 def format_crypto_price(value):
-    """格式化虛擬貨幣價格，根據數值大小顯示適當的小數位數"""
+    """格式化虛擬貨幣價格，根據數值大小顯示適當的小數位數，並加上千分位符號"""
     try:
         value = float(value)
         if value == 0:
             return "0.00"
         elif value >= 1:
-            # 大於等於 1，顯示 3 位小數，並移除多餘的零和小數點
-            return f"{value:.3f}".rstrip("0").rstrip(".")
-        else:
-            # 小於 1，找到第一個非零數字後取兩位小數
-            str_value = f"{value:.10f}"  # 先轉為 10 位小數的字串，避免精度問題
-            decimal_part = str_value.split('.')[1]  # 取小數部分
-            non_zero_index = next((i for i, digit in enumerate(decimal_part) if digit != '0'), len(decimal_part))
-            # 非零數字後取兩位（從 non_zero_index + 1 開始，共取 2 位）
-            end_index = non_zero_index + 3  # 非零數字位置 + 2 位小數 + 1（包含非零數字本身）
-            formatted = f"0.{decimal_part[:end_index]}".rstrip("0").rstrip(".")
+            # 大於等於 1：顯示最多 3 位小數，然後加上千分位符號
+            formatted = f"{value:,.3f}".rstrip("0").rstrip(".")
             return formatted
+        else:
+            # 小於 1：找第一個非零後的兩位小數（最多 10 位精度）
+            str_value = f"{value:.10f}"
+            decimal_part = str_value.split('.')[1]
+            non_zero_index = next((i for i, digit in enumerate(decimal_part) if digit != '0'), len(decimal_part))
+            end_index = non_zero_index + 3  # 非零數字 + 後兩位小數
+            formatted_decimal = decimal_part[:end_index].rstrip("0").rstrip(".")
+            return f"0.{formatted_decimal}"
     except (ValueError, TypeError):
         return str(value)
+
 
 def crypto_list(request):
     query = request.GET.get('query', '') 
@@ -174,6 +175,9 @@ def crypto_list(request):
         all_prices = all_prices.order_by(sort_by)  # A-Z 排序
     elif sort_by and sort_order == 'desc':
         all_prices = all_prices.order_by(F(sort_by).desc())  # Z-A 排序
+    else:
+        # 預設根據 market_cap 由大到小排序
+        all_prices = all_prices.order_by('-market_cap')
 
     paginator = Paginator(all_prices, 10)  # 每頁顯示10條數據
     page_number = request.GET.get('page')
@@ -186,6 +190,7 @@ def crypto_list(request):
         price.jpy_display = format_crypto_price(price.jpy)
         price.eur_display = format_crypto_price(price.eur)
         price.volume_24h_display = format_crypto_price(price.volume_24h)
+        price.market_cap_display = format_crypto_price(price.market_cap)
 
     if request.user.is_authenticated:
         user_profile = request.user.profile
