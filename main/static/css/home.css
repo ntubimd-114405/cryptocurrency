@@ -265,6 +265,9 @@ h1{
 .carousel1{
     width: 100%;
     background-color: #fff;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
 }
 
 .carousel2{
@@ -379,13 +382,6 @@ h1{
     bottom: 0;
 }
 
-.carousel1 {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 20px;
-    background-color: #fff;
-}
-
 ol {
     counter-reset: li; /* Initiate a counter */
     list-style: none; /* Remove default numbering */
@@ -482,4 +478,139 @@ ol ol {
     .svg-corner {
       width: 180px;
     }
-  }
+}
+
+.right {
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+  
+.replica-svg {
+    aspect-ratio: 285 / 766;
+    max-width: 100%;
+    max-height: 100%;
+}
+  
+.replica-svg svg {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+}
+
+
+.card-container {
+    display: flex;
+    justify-content: space-around;  /* Evenly space the cards */
+    gap: 20px;  /* Space between cards */
+    flex-wrap: wrap;  /* Allow cards to wrap to the next line if space is tight */
+    padding: 20px;
+    margin: 100px;
+}
+
+/* Card styles */
+.card {
+    width: 325px;
+    height: 275px;
+    border-radius: 15px;
+    background: rgba(105, 13, 197, 0.103);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+    justify-content: center;
+    align-items: center;
+}
+
+.card::before {
+    content: "";
+    height: 100px;
+    width: 100px;
+    position: absolute;
+    top: -40%;
+    left: -20%;
+    border-radius: 50%;
+    border: 35px solid rgba(255, 255, 255, 0.102);
+    transition: all .8s ease;
+    filter: blur(.5rem);
+}
+
+.text {
+    flex-grow: 1;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    color: rgb(0, 0, 0);
+    font-weight: 900;
+    font-size: 1.4em;
+}
+
+.subtitle {
+    font-size: 0.75em;
+    font-weight: 300;
+    color: rgb(0, 0, 0);
+}
+
+.card:hover::before {
+    width: 140px;
+    height: 140px;
+    top: -30%;
+    left: 50%;
+    filter: blur(0rem);
+}
+
+/* From Uiverse.io by Ali-Tahmazi99 */ 
+/* From uiverse.io by @Ali-Tahmazi99 */
+.more {
+    display: inline-block;
+    width: 150px;
+    height: 50px;
+    border-radius: 10px;
+    border: 1px solid #03045e;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.5s ease-in;
+    z-index: 1;
+   }
+   
+   .more::before,
+   .more::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    width: 0;
+    height: 100%;
+    transform: skew(15deg);
+    transition: all 0.5s;
+    overflow: hidden;
+    z-index: -1;
+   }
+   
+   .more::before {
+    left: -10px;
+    background: #240046;
+   }
+   
+   .more::after {
+    right: -10px;
+    background: #5a189a;
+   }
+   
+   .more:hover::before,
+   .more:hover::after {
+    width: 58%;
+   }
+   
+   .more:hover span {
+    color: #e0aaff;
+    transition: 0.3s;
+   }
+   
+   .more span {
+    color: #03045e;
+    font-size: 18px;
+    transition: all 0.3s ease-in;
+   }
