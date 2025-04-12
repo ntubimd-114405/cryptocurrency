@@ -16,7 +16,9 @@ python manage.py flush
 python -Xutf8 manage.py loaddata --ignorenonexistent data.json
 
 # Cuda
-https://developer.nvidia.com/cuda-11-8-0-download-archive
+https://developer.nvidia.com/cuda-11.2.2-download-archive
+
+# Download cuDNN v8.1.1 (Feburary 26th, 2021), for CUDA 11.0,11.1 and 11.2
 https://developer.nvidia.com/rdp/cudnn-archive
 # 創建虛擬環境
 python -m venv env
