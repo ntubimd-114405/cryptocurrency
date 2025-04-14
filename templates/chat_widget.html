@@ -248,11 +248,55 @@
     function sendMessage() {
         const chatInput = document.getElementById("chatInput");
         const chatBody = document.getElementById("chatBody");
+        const text = chatInput.value.trim();
         
-        if (chatInput.value.trim() !== "") {
-            chatBody.innerHTML += `<div><strong>你:</strong> ${chatInput.value}</div>`;
+        if (text !== "") {
+            // 顯示使用者訊息
+            chatBody.innerHTML += `<div><strong>你:</strong> ${text}</div>`;
             chatInput.value = "";
             chatBody.scrollTop = chatBody.scrollHeight;
+
+            const waitMsgId = "wait-msg-" + Date.now();
+            chatBody.innerHTML += `<div id="${waitMsgId}"><strong>AI:</strong> 117正在思考中...</div>`;
+            chatBody.scrollTop = chatBody.scrollHeight;
+
+            // 發送 POST 請求到 Django 的 chat_api
+            fetch("/chat_api/", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": getCookie("csrftoken")
+                },
+                body: JSON.stringify({ text: text })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const waitMsg = document.getElementById(waitMsgId);
+                if (waitMsg) {
+                    waitMsg.innerHTML = `<strong>AI:</strong> ${data.response}`;
+                }
+                chatBody.scrollTop = chatBody.scrollHeight;
+            })
+            .catch(error => {
+                console.error("錯誤:", error);
+                chatBody.innerHTML += `<div><strong>AI:</strong> 發生錯誤，請稍後再試。</div>`;
+            });
         }
+    }
+
+    // 取得 CSRF Token 用來通過 Django 安全驗證
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== "") {
+            const cookies = document.cookie.split(";");
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + "=")) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
     }
 </script>

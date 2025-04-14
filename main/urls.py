@@ -44,6 +44,8 @@ urlpatterns = [
 
     path('sign_in/', views.sign_in, name='sign_in'),
     path('user_profile/', views.user_profile, name='user_profile'),  # 个人资料页面
+
+    path("chat_api/", views.chat_api, name="chat_api"), #機器人
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

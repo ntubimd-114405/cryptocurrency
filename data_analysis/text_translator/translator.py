@@ -1,5 +1,5 @@
 from googletrans import Translator
-
+import time
 # 建立翻譯器實例（共用）
 translator = Translator()
 
@@ -18,10 +18,16 @@ def translate_to_chinese(text):
     :param text: 英文句子
     :return: 中文翻譯結果
     """
+    translated_text = translator.translate(text, src='en', dest='zh-tw')
     lines = text.split("\n")
-    
     # 翻譯每行
-    translated_lines = [translator.translate(line, src='en', dest='zh-tw').text for line in lines]
+    translated_lines = []
+    for line in lines:
+        if line.strip():
+            translated_lines.append(translator.translate(line, src='en', dest='zh-tw').text)
+            time.sleep(0.5)  # 避免被封鎖
+        else:
+            translated_lines.append('')
     
     # 將翻譯結果重新合併，使用換行符分隔
     translated_text = "\n".join(translated_lines)
