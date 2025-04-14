@@ -3,38 +3,392 @@
 {% block title %}虛擬貨幣價格詳情{% endblock %}
 
 {% block content %}
-    <h2>Register</h2>
+<style>
+/* 整體容器：使用Bootstrap row/col */
+.form-container {
+  box-shadow: 0px 187px 75px rgba(0, 0, 0, 0.01), 0px 105px 63px rgba(0, 0, 0, 0.05), 0px 47px 47px rgba(0, 0, 0, 0.09), 0px 12px 26px rgba(0, 0, 0, 0.1);
+  border-radius: 9px;
+  margin-top: 30px;
+  margin-bottom: 30px;
+  padding: 0px;
+}
 
-    <form method="POST" class="login_form">
-        {% csrf_token %}
-        <div>
-            <label for="username">Username:</label>
-            <input type="text" id="username" name="username" required>
-        </div>
-        <div>
-            <label for="password">Password:</label>
-            <input type="password" id="password" name="password" required>
-        </div>
-        <div>
-            <label for="email">Goo Email:</label>
-            <input type="email" id="email" name="email" class="form_input" required>
-        </div>
-        <div>
-            <label for="first_name">First Name:</label>
-            <input type="text" id="first_name" name="first_name">
-        </div>
-        <div>
-            <label for="last_name">Last Name:</label>
-            <input type="text" id="last_name" name="last_name">
-        </div>
-        <button type="submit">Register</button>
-    </form>
+/* 原表單樣式，調整間距 */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background-color: #fff;
+  padding: 40px;
+  border-radius: 9px 0 0 9px;
+  position: relative;
+}
 
-    {% if messages %}
-        <ul>
-            {% for message in messages %}
-                <li>{{ message }}</li>
-            {% endfor %}
-        </ul>
-    {% endif %}
+.title {
+  font-size: 28px;
+  color: #000000;
+  font-weight: 600;
+  letter-spacing: -1px;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.message, .signin {
+  color: rgba(88, 87, 87, 0.822);
+  font-size: 14px;
+}
+
+.signin {
+  text-align: center;
+}
+
+.signin a {
+  color: #000000;
+}
+
+.signin a:hover {
+  text-decoration: underline #000000;
+}
+
+.flex {
+  display: flex;
+  width: 100%;
+  gap: 6px;
+}
+
+/* 調整名字和姓氏欄位的寬度 */
+.flex label {
+  flex: 1; /* 均分可用空間 */
+}
+
+/* 確保名字和姓氏的 input 寬度減去間距後與用戶名一致 */
+.flex label .input {
+  width: 100%;
+  padding: 10px 10px 20px 10px;
+  outline: 0;
+  border: 1px solid rgba(105, 105, 105, 0.397);
+  border-radius: 10px;
+}
+
+.form label {
+  position: relative;
+}
+
+.form label .input {
+  width: 100%;
+  padding: 10px 10px 20px 10px;
+  outline: 0;
+  border: 1px solid rgba(105, 105, 105, 0.397);
+  border-radius: 10px;
+}
+
+.form label .input + span {
+  position: absolute;
+  left: 10px;
+  top: 15px;
+  color: grey;
+  font-size: 0.9em;
+  cursor: text;
+  transition: 0.3s ease;
+}
+
+.form label .input:placeholder-shown + span {
+  top: 15px;
+  font-size: 0.9em;
+}
+
+.form label .input:focus + span, .form label .input:valid + span {
+  top: 0px;
+  font-size: 0.7em;
+  font-weight: 600;
+}
+
+.form label .input:valid + span {
+  color: green;
+}
+
+.submit {
+  border: none;
+  outline: none;
+  background-color: #000000;
+  padding: 10px;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 16px;
+  transform: .3s ease;
+}
+
+.submit:hover {
+  background-color: #333333;
+  cursor: pointer;
+}
+
+/* 額外樣式：訊息顯示 */
+.messages {
+  list-style: none;
+  padding: 0;
+  margin-top: 15px;
+  text-align: center;
+}
+
+.messages li {
+  color: #dc3545;
+  font-size: 14px;
+}
+
+/* 條款勾選框樣式 */
+.terms-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.terms-container input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.terms-container label {
+  font-size: 14px;
+  color: rgba(88, 87, 87, 0.822);
+}
+
+.terms-container label a {
+  color: #000000;
+  text-decoration: none;
+}
+
+.terms-container label a:hover {
+  text-decoration: underline;
+}
+
+/* 條款錯誤提示樣式 */
+.terms-error, .password-error {
+  color: #dc3545;
+  font-size: 14px;
+  text-align: center;
+  margin-top: 10px;
+  display: none;
+}
+
+/* 選填和必填標籤樣式 */
+.optional::after {
+  content: " (選填)";
+  color: #6c757d;
+  font-size: 0.8em;
+}
+
+.required::after {
+  content: " (必填)";
+  color: #dc3545;
+  font-size: 0.8em;
+}
+
+/* 推薦區塊樣式（來自 zanina-yassine） */
+.testimonial {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  padding: 0;
+  background: linear-gradient(358.31deg, #fff -24.13%, hsla(0,0%,100%,0) 338.58%), linear-gradient(89.84deg, rgba(230,36,174,.15) .34%, rgba(94,58,255,.15) 16.96%, rgba(10,136,255,.15) 34.66%, rgba(75,191,80,.15) 50.12%, rgba(137,206,0,.15) 66.22%, rgba(239,183,0,.15) 82%, rgba(246,73,0,.15) 99.9%);
+  border-radius: 0 9px 9px 0;
+  height: 100%;
+}
+
+.testimonial p {
+  color: #4d4c6d;
+  font-size: 11px;
+  text-align: center;
+  font-weight: 600;
+  margin: 0;
+  padding: 0;
+}
+
+.user-profile-picture {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background-color: #00000011;
+  margin: 0;
+}
+
+.user {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  margin: 0;
+}
+
+.username {
+  color: #4d4c6d;
+  font-size: 11px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.occupation {
+  color: rgb(141, 140, 161);
+  font-size: 10px;
+  text-align: center;
+  font-weight: 600;
+}
+
+/* 響應式設計：調整Bootstrap斷點下的樣式 */
+@media (max-width: 767px) {
+  .form {
+    border-radius: 9px;
+    padding: 20px;
+  }
+
+  .testimonial {
+    border-radius: 9px;
+    padding: 20px;
+  }
+}
+
+@media (max-width: 400px) {
+  .form {
+    margin: 0;
+    padding: 15px;
+  }
+
+  .title {
+    font-size: 24px;
+  }
+
+  .submit {
+    font-size: 14px;
+    padding: 8px;
+  }
+
+  .terms-container label {
+    font-size: 12px;
+  }
+}
+
+.padding-0 {
+  padding-left: 0;
+  padding-right: 0;
+  margin-left: 0;
+  margin-right: 0;
+}
+</style>
+
+<div class="container form-container">
+  <div class="row justify-content-center">
+    <div class="col-md-6 order-md-2 padding-0">
+      <div class="testimonial">
+          <p>"我已經使用這個平台幾天了，真的很滿意！介面直觀且易於使用。"</p>
+          <div class="user-profile-picture"></div>
+          <div class="user">
+              <span class="username">Yassine Zanina</span>
+              <span class="occupation">創意設計師與開發者</span>
+          </div>
+      </div>
+    </div>
+    <div class="col-md-6 order-md-1 padding-0">
+      <form method="POST" class="form" id="register-form">
+          {% csrf_token %}
+          <p class="title">註冊</p>
+          <p class="message">立即註冊，享受我們平台的所有功能。</p>
+          
+          <div class="flex">
+              <label>
+                  <input class="input" type="text" id="first_name" name="first_name" placeholder="">
+                  <span class="optional">名字</span>
+              </label>
+
+              <label>
+                  <input class="input" type="text" id="last_name" name="last_name" placeholder="">
+                  <span class="optional">姓氏</span>
+              </label>
+          </div>  
+
+          <label>
+              <input class="input" type="text" id="username" name="username" placeholder="" required>
+              <span class="required">用戶名</span>
+          </label>
+
+          <label>
+              <input class="input" type="email" id="email" name="email" placeholder="" required>
+              <span class="required">Google 電子郵件</span>
+          </label> 
+              
+          <label>
+              <input class="input" type="password" id="password" name="password" placeholder="" required
+                     pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}"
+                     title="密碼必須至少8個字元，包含一個大寫字母、一個小寫字母、一個數字和一個特殊字元（例如 !@#$%^&*）。">
+              <span class="required">密碼</span>
+          </label>
+
+          <label>
+              <input class="input" type="password" id="confirm_password" name="confirm_password" placeholder="" required>
+              <span class="required">確認密碼</span>
+          </label>
+
+          <div class="terms-container">
+              <input type="checkbox" id="terms_agreement" name="terms_agreement" required>
+              <label for="terms_agreement">我同意<a href="{% url 'user_terms' %}">使用條款</a><span class="required"></span></label>
+          </div>
+
+          <button type="submit" class="submit">註冊</button>
+          <p class="signin">已經有帳戶？<a href="{% url 'login' %}">登入</a></p>
+
+          <p class="terms-error" id="terms-error">請同意使用條款。</p>
+          <p class="password-error" id="password-error">兩次輸入的密碼不一致。</p>
+
+          {% if messages %}
+              <ul class="messages">
+                  {% for message in messages %}
+                      <li>{{ message }}</li>
+                  {% endfor %}
+              </ul>
+          {% endif %}
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+// 表單提交驗證
+document.getElementById('register-form').addEventListener('submit', function(event) {
+    const termsCheckbox = document.getElementById('terms_agreement');
+    const termsError = document.getElementById('terms-error');
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirm_password').value;
+    const passwordError = document.getElementById('password-error');
+
+    // 檢查條款是否勾選
+    if (!termsCheckbox.checked) {
+        event.preventDefault();
+        termsError.style.display = 'block';
+    } else {
+        termsError.style.display = 'none';
+    }
+
+    // 檢查兩次密碼是否一致
+    if (password !== confirmPassword) {
+        event.preventDefault();
+        passwordError.style.display = 'block';
+    } else {
+        passwordError.style.display = 'none';
+    }
+
+    // 假設表單驗證通過，模擬註冊成功
+    if (termsCheckbox.checked && password === confirmPassword) {
+        event.preventDefault();
+        alert('註冊成功');
+        window.location.href = "{% url 'login' %}";
+    }
+});
+</script>
 {% endblock %}
