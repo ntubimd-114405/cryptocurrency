@@ -611,6 +611,7 @@ def chat_api(request):
     if request.method == "POST":
         data = json.loads(request.body)
         text = data.get("text", "")
+        print(text)
         response = finance_LLM_api(text)
         print(response)
         return JsonResponse({"response": response})

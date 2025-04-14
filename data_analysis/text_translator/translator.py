@@ -3,6 +3,14 @@ import time
 # 建立翻譯器實例（共用）
 translator = Translator()
 
+
+def clean_text(text):
+    text = text.replace('\\n', '\n')
+    text = text.replace('\\r\\n', '\n')
+    text = text.replace('\r\n', '\n')
+    text = text.replace('\r', '\n')
+    return text
+
 def translate_to_english(text):
     """
     將中文翻譯成英文
@@ -18,6 +26,7 @@ def translate_to_chinese(text):
     :param text: 英文句子
     :return: 中文翻譯結果
     """
+    text = clean_text(text)
     translated_text = translator.translate(text, src='en', dest='zh-tw')
     lines = text.split("\n")
     # 翻譯每行
