@@ -609,3 +609,15 @@ from django.shortcuts import render
 def user_terms(request):
     return render(request, 'user_terms.html')
 
+
+from data_analysis.text_generation.api import finance_LLM_api
+@csrf_exempt
+def chat_api(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        text = data.get("text", "")
+        response = finance_LLM_api(text)
+        print(response)
+        return JsonResponse({"response": response})
+    return JsonResponse({"error": "Invalid request"}, status=400)
+
