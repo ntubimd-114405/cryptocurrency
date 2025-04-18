@@ -79,6 +79,8 @@ def crypto_detail(request, pk):
     price = get_object_or_404(BitcoinPrice, pk=pk)  # 獲取單一對象，若不存在則返回404
     return render(request, 'crypto_detail.html', {'price':price,'graph': graph})
 
+#註冊
+from django.db import IntegrityError
 def register_view(request):
     if request.method == 'POST':
         username = request.POST['username']
@@ -87,29 +89,35 @@ def register_view(request):
         first_name = request.POST.get('first_name', '')
         last_name = request.POST.get('last_name', '')
 
+        # 檢查用戶名是否已經存在
+        if User.objects.filter(username=username).exists():
+            messages.error(request, '這個用戶名已經被使用')
+            return render(request, 'register.html')
+
         # 檢查郵箱是否已經註冊
         if User.objects.filter(email=email).exists():
             messages.error(request, '這個email已經被使用')
-            return render(request, 'register.html')  # 若郵箱已被使用，返回註冊頁面
+            return render(request, 'register.html')
 
         try:
-            # 使用 create_user 方法來創建用戶，這會自動加密密碼
+            # 使用 create_user 方法創建用戶，自動加密密碼
             user = User.objects.create_user(
                 username=username,
-                password=password,  # 這裡傳遞原始密碼即可
+                password=password,
                 email=email,
                 first_name=first_name,
                 last_name=last_name
             )
-            user.save()
+            # 註冊成功後返回註冊頁面以顯示彈跳頁面
+            messages.success(request, '您的帳戶已創建成功！請登入。')
+            return render(request, 'register.html')
 
-            # 註冊成功後跳轉到 'login' 頁面
-            messages.success(request, 'Your account has been created! Please log in.')
-            return redirect('login')
-
+        except IntegrityError:
+            messages.error(request, '用戶名或郵箱已存在，請選擇其他值')
+            return render(request, 'register.html')
         except Exception as e:
-            messages.error(request, f'Error creating user: {e}')
-            return render(request, 'register.html')  # 出現錯誤時返回註冊頁面
+            messages.error(request, f'創建用戶時發生錯誤：{e}')
+            return render(request, 'register.html')
 
     return render(request, 'register.html')
 
@@ -126,7 +134,7 @@ def login_view(request):
             login(request, user)
             return redirect('home')  # 登入成功後跳轉到首頁
         else:
-            return render(request, 'login.html', {'error': 'Invalid username or password'})
+            return render(request, 'login.html', {'error': '使用者名稱或密碼錯誤，請重新輸入一次'})
     return render(request, 'login.html')
 
 # 登出功能

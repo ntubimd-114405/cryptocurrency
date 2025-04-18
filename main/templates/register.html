@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}虛擬貨幣價格詳情{% endblock %}
 
@@ -10,7 +11,6 @@
   border-radius: 9px;
   margin-top: 30px;
   margin-bottom: 30px;
-  padding: 0px;
 }
 
 /* 原表單樣式，調整間距 */
@@ -67,7 +67,7 @@
 /* 確保名字和姓氏的 input 寬度減去間距後與用戶名一致 */
 .flex label .input {
   width: 100%;
-  padding: 10px 10px 20px 10px;
+  padding: 15px 10px 20px 10px;
   outline: 0;
   border: 1px solid rgba(105, 105, 105, 0.397);
   border-radius: 10px;
@@ -79,7 +79,7 @@
 
 .form label .input {
   width: 100%;
-  padding: 10px 10px 20px 10px;
+  padding: 15px 10px 20px 10px;
   outline: 0;
   border: 1px solid rgba(105, 105, 105, 0.397);
   border-radius: 10px;
@@ -88,25 +88,21 @@
 .form label .input + span {
   position: absolute;
   left: 10px;
-  top: 15px;
+  top: 20px;
   color: grey;
   font-size: 0.9em;
   cursor: text;
   transition: 0.3s ease;
 }
 
-.form label .input:placeholder-shown + span {
-  top: 15px;
-  font-size: 0.9em;
-}
-
-.form label .input:focus + span, .form label .input:valid + span {
+.form label .input:not(:placeholder-shown) + span,
+.form label .input:focus + span {
   top: 0px;
   font-size: 0.7em;
   font-weight: 600;
 }
 
-.form label .input:valid + span {
+.form label .input:not(:placeholder-shown) + span {
   color: green;
 }
 
@@ -189,22 +185,25 @@
   font-size: 0.8em;
 }
 
-/* 推薦區塊樣式（來自 zanina-yassine） */
+/* 推薦區塊樣式 */
 .testimonial {
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
+  align-items: center;
   gap: 20px;
   padding: 0;
-  background: linear-gradient(358.31deg, #fff -24.13%, hsla(0,0%,100%,0) 338.58%), linear-gradient(89.84deg, rgba(230,36,174,.15) .34%, rgba(94,58,255,.15) 16.96%, rgba(10,136,255,.15) 34.66%, rgba(75,191,80,.15) 50.12%, rgba(137,206,0,.15) 66.22%, rgba(239,183,0,.15) 82%, rgba(246,73,0,.15) 99.9%);
+  background: linear-gradient(358.31deg, #e6f0fa -24.13%, hsla(0,0%,90%,0) 338.58%), 
+              linear-gradient(89.84deg, rgba(102,204,255,.2) .34%, rgba(153,102,255,.2) 16.96%, 
+              rgba(255,102,204,.2) 34.66%, rgba(102,255,178,.2) 50.12%, rgba(255,204,102,.2) 66.22%, 
+              rgba(255,153,102,.2) 82%, rgba(178,102,255,.2) 100%);
   border-radius: 0 9px 9px 0;
   height: 100%;
 }
 
 .testimonial p {
   color: #4d4c6d;
-  font-size: 11px;
+  font-size: 40px;
   text-align: center;
   font-weight: 600;
   margin: 0;
@@ -242,6 +241,54 @@
   font-weight: 600;
 }
 
+/* 彈跳頁面樣式 */
+.modal-content {
+  border-radius: 10px;
+  box-shadow: 0px 12px 26px rgba(0, 0, 0, 0.1);
+}
+
+.modal-header {
+  border-bottom: none;
+  padding: 20px;
+}
+
+.modal-title {
+  font-size: 24px;
+  color: #000000;
+  font-weight: 600;
+  text-align: center;
+  width: 100%;
+}
+
+.modal-body {
+  padding: 20px;
+  text-align: center;
+  color: rgba(88, 87, 87, 0.822);
+  font-size: 16px;
+}
+
+.modal-footer {
+  border-top: none;
+  padding: 20px;
+  justify-content: center;
+}
+
+.btn-login {
+  border: none;
+  outline: none;
+  background-color: #000000;
+  padding: 10px 20px;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 16px;
+  transform: .3s ease;
+}
+
+.btn-login:hover {
+  background-color: #333333;
+  cursor: pointer;
+}
+
 /* 響應式設計：調整Bootstrap斷點下的樣式 */
 @media (max-width: 767px) {
   .form {
@@ -273,6 +320,19 @@
   .terms-container label {
     font-size: 12px;
   }
+
+  .modal-title {
+    font-size: 20px;
+  }
+
+  .modal-body {
+    font-size: 14px;
+  }
+
+  .btn-login {
+    font-size: 14px;
+    padding: 8px 16px;
+  }
 }
 
 .padding-0 {
@@ -283,23 +343,36 @@
 }
 </style>
 
+<!-- 彈跳頁面（Modal） -->
+<div class="modal fade" id="successModal" tabindex="-1" aria-labelledby="successModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="successModalLabel">註冊成功</h5>
+      </div>
+      <div class="modal-body">
+        您的帳戶已創建成功！請點擊下方按鈕前往登入頁面。
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-login" onclick="window.location.href='{% url 'login' %}'">前往登入</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="container form-container">
   <div class="row justify-content-center">
     <div class="col-md-6 order-md-2 padding-0">
       <div class="testimonial">
-          <p>"我已經使用這個平台幾天了，真的很滿意！介面直觀且易於使用。"</p>
-          <div class="user-profile-picture"></div>
-          <div class="user">
-              <span class="username">Yassine Zanina</span>
-              <span class="occupation">創意設計師與開發者</span>
-          </div>
+          <p>立即註冊</p>
+          <p>享受我們平台的所有功能</p>
+          <div><img src="{% static 'images/crypto.png' %}" alt="Logo" class="user-profile-picture" style="width: auto; height: 300px;"></div>
       </div>
     </div>
     <div class="col-md-6 order-md-1 padding-0">
       <form method="POST" class="form" id="register-form">
           {% csrf_token %}
           <p class="title">註冊</p>
-          <p class="message">立即註冊，享受我們平台的所有功能。</p>
           
           <div class="flex">
               <label>
@@ -325,8 +398,11 @@
               
           <label>
               <input class="input" type="password" id="password" name="password" placeholder="" required
-                     pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}"
-                     title="密碼必須至少8個字元，包含一個大寫字母、一個小寫字母、一個數字和一個特殊字元（例如 !@#$%^&*）。">
+              >
+              <!-- <input class="input" type="password" id="password" name="password" placeholder="" required
+                     pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{8,}" 
+                     title="密碼必須至少8個字元，包含一個大寫字母、一個小寫字母、一個數字和一個特殊字元（例如 !@#$%^&*）。"
+              > -->
               <span class="required">密碼</span>
           </label>
 
@@ -369,26 +445,43 @@ document.getElementById('register-form').addEventListener('submit', function(eve
 
     // 檢查條款是否勾選
     if (!termsCheckbox.checked) {
-        event.preventDefault();
         termsError.style.display = 'block';
+        event.preventDefault();
+        return;
     } else {
         termsError.style.display = 'none';
     }
 
     // 檢查兩次密碼是否一致
     if (password !== confirmPassword) {
-        event.preventDefault();
         passwordError.style.display = 'block';
+        event.preventDefault();
+        return;
     } else {
         passwordError.style.display = 'none';
     }
+});
 
-    // 假設表單驗證通過，模擬註冊成功
-    if (termsCheckbox.checked && password === confirmPassword) {
-        event.preventDefault();
-        alert('註冊成功');
-        window.location.href = "{% url 'login' %}";
-    }
+// 動態處理輸入框的標籤行為，確保有值時標籤不遮擋
+document.querySelectorAll('.form .input').forEach(input => {
+    input.addEventListener('input', function() {
+        if (this.value) {
+            this.classList.add('has-value');
+        } else {
+            this.classList.remove('has-value');
+        }
+    });
+});
+
+// 頁面加載時檢查後端訊息，顯示彈跳頁面
+document.addEventListener('DOMContentLoaded', function() {
+    const messages = document.querySelectorAll('.messages li');
+    messages.forEach(msg => {
+        if (msg.textContent.includes('您的帳戶已創建成功')) {
+            const successModal = new bootstrap.Modal(document.getElementById('successModal'));
+            successModal.show();
+        }
+    });
 });
 </script>
 {% endblock %}
