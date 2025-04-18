@@ -53,7 +53,7 @@ function showContent(id) {
     var contents = document.querySelectorAll('.card-coin');
     contents.forEach(function(content) {
         content.classList.remove('active');
-        console.log("123");
+        
     });
 
     // 顯示選中的內容區塊
@@ -156,13 +156,13 @@ function animateImage() {
     function moveImage() {
         positionY -= speed; // 圖片向上移動，減少 y 值
         image.setAttribute("y", positionY); // 設置圖片的 y 位置
-        console.log("Image position Y:", positionY); // 輸出當前 y 值
+        
 
         // 如果圖片還未到達頂端，繼續動畫
         if (positionY > targetPositionY) {
             requestAnimationFrame(moveImage);
         } else {
-            console.log("Animation finished. Restarting...");
+           
             setTimeout(startAnimationSequence, 1000); // 停留 1 秒後重新開始
         }
     }
