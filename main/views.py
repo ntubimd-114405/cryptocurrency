@@ -21,6 +21,21 @@ import re
 
 def home(request):
     try:
+        user = request.user
+        today = timezone.now().date()
+
+        # 取得該使用者的簽到資料（如果沒有就不傳）
+        sign_in_record = SignIn.objects.filter(user=user).first()
+
+        progress_percentage = 0
+        if sign_in_record:
+            progress_days = sign_in_record.consecutive_sign_in_count % 7
+            progress_percentage = int((progress_days / 7) * 100)
+
+            # 特別處理剛好 7 的情況
+            if progress_days == 0 and sign_in_record.consecutive_sign_in_count > 0:
+                progress_percentage = 100
+
         # 取得資料庫中的所有價格，按 id 升序排列
         top_coins = BitcoinPrice.objects.all().order_by('id')[:5]
         increase_coins = BitcoinPrice.objects.all().order_by('-change_24h')[:5]
@@ -35,6 +50,9 @@ def home(request):
             'decline_coins': decline_coins,
             'volume': volume,
             'image_url': image_url,
+            'sign_in_record': sign_in_record,
+            'today': today,
+            'progress_percentage': progress_percentage,
         })
 
     except Exception as e:

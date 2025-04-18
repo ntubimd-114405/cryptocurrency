@@ -18,7 +18,7 @@
         <button onclick="showContent('info4')" class = "button">24h成交量</button>
     </div>
     
-    <div class="card-coin mb-3" id="info1" style="max-width: 60%;">
+    <div class="card-coin mb-3 active" id="info1" style="max-width: 60%;">
         
         <div class="row g-0">
             {% if error %}
@@ -276,12 +276,35 @@
     </div>
     <div class="container-home">
         <div class="left">
-            
-        </div>
+            <div class="signin-card">
+              <h2>🎁 每日簽到拿獎勵！</h2>
+                {% if sign_in_record %}
+                
+                    <p>今天日期：{{ today }}</p>
+                    <p>上次簽到：{{ sign_in_record.last_sign_in_date }}</p>
+                    <p>連續簽到天數：{{ sign_in_record.consecutive_sign_in_count }}</p>
+                    <p>總簽到次數：{{ sign_in_record.sign_in_count }}</p>
+
+                {% if sign_in_record.last_sign_in_date == today %}
+                    <p class="text-success">✅ 今天已簽到</p>
+                {% else %}
+                    <p class="text-danger">❌ 今天尚未簽到</p>
+                {% endif %}
+                
+                {% else %}
+                    <p>尚未有簽到紀錄。</p>
+                {% endif %}
+                <div class="progress-bar">
+                    <div class="progress" style="height: 100%; width: {{ progress_percentage }}%; background-color: #4caf50; transition: width 0.5s;"></div>
+                </div>
+          
+              <a href="{% url 'user_profile' %}"><button class="signin-btn">立即簽到</button></a>
+            </div>
+          </div>
         
         <div class="carousel1">
             <h1>投資比特幣，幾分鐘就能開啟未來！</h1>
-            <p>按照以下簡單步驟，立即註冊並開始您的比特幣投資之旅。</p>
+            <p style = "text-align: center;">按照以下簡單步驟，立即註冊並開始您的比特幣投資之旅。</p>
     
             <ol class="rounded-list">
                 <li class = "li"><h3 class="step-title">註冊成為會員</h3> <span class="step-description">在我們的網站上註冊一個帳戶，並填寫基本資料以完成註冊。</span></li>
@@ -317,23 +340,29 @@
         </div>
 
         <div class="right">
-            <div class="replica-svg">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 285 766" preserveAspectRatio="xMidYMid meet">
-                <defs>
-                  <clipPath id="__lottie_element_44">
-                    <rect width="285" height="766" x="0" y="0"></rect>
-                  </clipPath>
-                </defs>
-                <g clip-path="url(#__lottie_element_44)">
-                  <g id = "g" transform="matrix(-0.3826833665370941,0.9238795638084412,-0.9238795638084412,-0.3826833665370941,403.4136047363281,175.7218475341797)" opacity="1" style="display: block;">
-                    <g opacity="1" transform="matrix(1,0,0,1,382.9700012207031,382.52801513671875)">
-                      <path stroke-linecap="round" stroke-linejoin="round" fill-opacity="0" stroke="rgb(73,117,242)" stroke-opacity="1" stroke-width="148.477" d="M-168.5290069580078,-258.1159973144531 C-25.97599983215332,-351.1919860839844 165.0399932861328,-311.0820007324219 258.1159973144531,-168.5290069580078 C351.1919860839844,-25.97599983215332 311.0820007324219,165.0399932861328 168.5290069580078,258.1159973144531 C25.97599983215332,351.1919860839844 -165.03900146484375,311.08099365234375 -258.114990234375,168.5279998779297 C-351.1910095214844,25.975000381469727 -311.0820007324219,-165.0399932861328 -168.5290069580078,-258.1159973144531z"></path>
-                    </g>
-                    
-                  </g>
+            <div class="coin">
+                <div class="side heads">
+                  <svg xmlns="http://www.w3.org/2000/svg" xml:space="preserve" width="100%" height="100%" version="1.1" shape-rendering="geometricPrecision" text-rendering="geometricPrecision" image-rendering="optimizeQuality" fill-rule="evenodd" clip-rule="evenodd" viewBox="0 0 4091.27 4091.73" xmlns:xlink="http://www.w3.org/1999/xlink">
+               <g id="Layer_x0020_1">
+                <metadata id="CorelCorpID_0Corel-Layer"></metadata>
+                <g id="_1421344023328">
+                 <path fill="#F7931A" fill-rule="nonzero" d="M4030.06 2540.77c-273.24,1096.01 -1383.32,1763.02 -2479.46,1489.71 -1095.68,-273.24 -1762.69,-1383.39 -1489.33,-2479.31 273.12,-1096.13 1383.2,-1763.19 2479,-1489.95 1096.06,273.24 1763.03,1383.51 1489.76,2479.57l0.02 -0.02z"></path>
+                 <path fill="white" fill-rule="nonzero" d="M2947.77 1754.38c40.72,-272.26 -166.56,-418.61 -450,-516.24l91.95 -368.8 -224.5 -55.94 -89.51 359.09c-59.02,-14.72 -119.63,-28.59 -179.87,-42.34l90.16 -361.46 -224.36 -55.94 -92 368.68c-48.84,-11.12 -96.81,-22.11 -143.35,-33.69l0.26 -1.16 -309.59 -77.31 -59.72 239.78c0,0 166.56,38.18 163.05,40.53 90.91,22.69 107.35,82.87 104.62,130.57l-104.74 420.15c6.26,1.59 14.38,3.89 23.34,7.49 -7.49,-1.86 -15.46,-3.89 -23.73,-5.87l-146.81 588.57c-11.11,27.62 -39.31,69.07 -102.87,53.33 2.25,3.26 -163.17,-40.72 -163.17,-40.72l-111.46 256.98 292.15 72.83c54.35,13.63 107.61,27.89 160.06,41.3l-92.9 373.03 224.24 55.94 92 -369.07c61.26,16.63 120.71,31.97 178.91,46.43l-91.69 367.33 224.51 55.94 92.89 -372.33c382.82,72.45 670.67,43.24 791.83,-303.02 97.63,-278.78 -4.86,-439.58 -206.26,-544.44 146.69,-33.83 257.18,-130.31 286.64,-329.61l-0.07 -0.05zm-512.93 719.26c-69.38,278.78 -538.76,128.08 -690.94,90.29l123.28 -494.2c152.17,37.99 640.17,113.17 567.67,403.91zm69.43 -723.3c-63.29,253.58 -453.96,124.75 -580.69,93.16l111.77 -448.21c126.73,31.59 534.85,90.55 468.94,355.05l-0.02 0z"></path>
                 </g>
-              </svg>
-            </div>
+               </g>
+                  </svg>
+                </div>
+                <div class="side tails">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="svg_back" xml:space="preserve" width="100%" height="100%" version="1.1" shape-rendering="geometricPrecision" text-rendering="geometricPrecision" image-rendering="optimizeQuality" fill-rule="evenodd" clip-rule="evenodd" viewBox="0 0 4091.27 4091.73" xmlns:xlink="http://www.w3.org/1999/xlink">
+               <g id="Layer_x0020_1">
+                <metadata id="CorelCorpID_0Corel-Layer"></metadata>
+                <g id="_1421344023328">
+                 <path fill="#F7931A" fill-rule="nonzero" d="M4030.06 2540.77c-273.24,1096.01 -1383.32,1763.02 -2479.46,1489.71 -1095.68,-273.24 -1762.69,-1383.39 -1489.33,-2479.31 273.12,-1096.13 1383.2,-1763.19 2479,-1489.95 1096.06,273.24 1763.03,1383.51 1489.76,2479.57l0.02 -0.02z"></path>
+                 <path fill="white" fill-rule="nonzero" d="M2947.77 1754.38c40.72,-272.26 -166.56,-418.61 -450,-516.24l91.95 -368.8 -224.5 -55.94 -89.51 359.09c-59.02,-14.72 -119.63,-28.59 -179.87,-42.34l90.16 -361.46 -224.36 -55.94 -92 368.68c-48.84,-11.12 -96.81,-22.11 -143.35,-33.69l0.26 -1.16 -309.59 -77.31 -59.72 239.78c0,0 166.56,38.18 163.05,40.53 90.91,22.69 107.35,82.87 104.62,130.57l-104.74 420.15c6.26,1.59 14.38,3.89 23.34,7.49 -7.49,-1.86 -15.46,-3.89 -23.73,-5.87l-146.81 588.57c-11.11,27.62 -39.31,69.07 -102.87,53.33 2.25,3.26 -163.17,-40.72 -163.17,-40.72l-111.46 256.98 292.15 72.83c54.35,13.63 107.61,27.89 160.06,41.3l-92.9 373.03 224.24 55.94 92 -369.07c61.26,16.63 120.71,31.97 178.91,46.43l-91.69 367.33 224.51 55.94 92.89 -372.33c382.82,72.45 670.67,43.24 791.83,-303.02 97.63,-278.78 -4.86,-439.58 -206.26,-544.44 146.69,-33.83 257.18,-130.31 286.64,-329.61l-0.07 -0.05zm-512.93 719.26c-69.38,278.78 -538.76,128.08 -690.94,90.29l123.28 -494.2c152.17,37.99 640.17,113.17 567.67,403.91zm69.43 -723.3c-63.29,253.58 -453.96,124.75 -580.69,93.16l111.77 -448.21c126.73,31.59 534.85,90.55 468.94,355.05l-0.02 0z"></path>
+                </g>
+               </g>
+              </svg></div>
+              </div>
           </div>       
     </div>
     <div class="section">
