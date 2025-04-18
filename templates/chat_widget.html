@@ -359,8 +359,8 @@
         .then(data => {
             const waitMsg = document.getElementById(waitMsgId);
             if (waitMsg) {
-                waitMsg.innerHTML = `
-                    <div class="message ai">${data.response}</div>`;
+                const responseWithBreaks = data.response.replace(/\n/g, "<br>");
+                waitMsg.innerHTML = `<div class="message ai">${responseWithBreaks}</div>`;
             }
             chatBody.scrollTop = chatBody.scrollHeight;
         })

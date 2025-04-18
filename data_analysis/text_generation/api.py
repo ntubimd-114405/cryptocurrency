@@ -3,7 +3,7 @@ from data_analysis.text_translator import translator
 
 def finance_LLM_api(user_question):
 
-    url = 'https://4805-34-59-107-92.ngrok-free.app/predict'  # 請替換為 Ngrok 顯示的 URL
+    url = 'https://1aaf-34-148-5-244.ngrok-free.app/predict'  # 請替換為 Ngrok 顯示的 URL
 
     # 中文翻譯成英文
     translated_question = translator.translate_to_english(user_question)
@@ -14,6 +14,5 @@ def finance_LLM_api(user_question):
 
     # 英文翻譯回中文
     translated_answer = translator.translate_to_chinese(generated_answer)
-    print(translated_answer)
 
     return translated_answer
