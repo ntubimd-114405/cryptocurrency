@@ -1,214 +1,259 @@
 {% extends 'base.html' %}
-{% load socialaccount %}
+{% load socialaccount static %}
 
 {% block title %}虛擬貨幣價格詳情{% endblock %}
 
 {% block content %}
 <style>
-/* 調整後的 CSS */
-.login-container {
-    background-color: #ffffff;
-    padding: 30px;
-    border-radius: 20px;
-    width: 100%;
-    max-width: 600px; /* 最大寬度限制 */
-    min-width: 300px; /* 最小寬度，防止過小 */
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    margin: 0 auto; /* 居中 */
-    box-sizing: border-box; /* 確保寬度計算包含邊框和內邊距 */
+/* 整體容器：使用Bootstrap row/col */
+.form-container {
+  box-shadow: 0px 187px 75px rgba(0, 0, 0, 0.01), 0px 105px 63px rgba(0, 0, 0, 0.05), 0px 47px 47px rgba(0, 0, 0, 0.09), 0px 12px 26px rgba(0, 0, 0, 0.1);
+  border-radius: 9px;
+  margin-top: 30px;
+  margin-bottom: 30px;
 }
 
-.login-form, .google-form {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-    width: 100%; /* 確保表單佔滿容器 */
-    box-sizing: border-box;
+/* 表單樣式 */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background-color: #fff;
+  padding: 40px;
+  border-radius: 0 9px 9px 0; /* 右側圓角 */
+  position: relative;
 }
 
-::placeholder {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+.title {
+  font-size: 28px;
+  color: #000000;
+  font-weight: 600;
+  letter-spacing: -1px;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
 }
 
-.login-form button {
-    align-self: flex-end;
+.message, .signin {
+  color: rgba(88, 87, 87, 0.822);
+  font-size: 14px;
 }
 
-.login-flex-column > label {
-    color: #151717;
-    font-weight: 600;
+.signin {
+  text-align: center;
 }
 
-.login-inputForm {
-    border: 1.5px solid #ecedec;
-    border-radius: 10px;
-    height: 50px;
-    display: flex;
-    align-items: center;
-    padding-left: 10px;
-    transition: 0.2s ease-in-out;
-    width: 100%; /* 確保輸入框佔滿父容器 */
-    box-sizing: border-box;
+.signin a {
+  color: #000000;
 }
 
-.login-input {
-    margin-left: 10px;
-    border-radius: 10px;
-    border: none;
-    width: 100%; /* 讓輸入框填滿剩餘空間 */
-    height: 100%;
-    box-sizing: border-box;
+.signin a:hover {
+  text-decoration: underline #000000;
 }
 
-.login-input:focus {
-    outline: none;
+/* 輸入框樣式 */
+.form label {
+  position: relative;
 }
 
-.login-inputForm:focus-within {
-    border: 1.5px solid #2d79f3;
+.form label .input {
+  width: 100%;
+  padding: 15px 10px 20px 10px; /* 增加 padding-top 至 15px */
+  outline: 0;
+  border: 1px solid rgba(105, 105, 105, 0.397);
+  border-radius: 10px;
 }
 
-.login-span {
+.form label .input + span {
+  position: absolute;
+  left: 10px;
+  top: 20px; /* 增加初始 top 至 20px */
+  color: grey;
+  font-size: 0.9em;
+  cursor: text;
+  transition: 0.3s ease;
+}
+
+.form label .input:placeholder-shown + span {
+  top: 20px; /* 保持初始 top 為 20px */
+  font-size: 0.9em;
+}
+
+.form label .input:focus + span, .form label .input:valid + span {
+  top: 0px;
+  font-size: 0.7em;
+  font-weight: 600;
+}
+
+.form label .input:valid + span {
+  color: green;
+}
+
+.submit {
+  border: none;
+  outline: none;
+  background-color: #000000;
+  padding: 10px;
+  border-radius: 10px;
+  color: #fff;
+  font-size: 16px;
+  transform: .3s ease;
+}
+
+.submit:hover {
+  background-color: #333333;
+  cursor: pointer;
+}
+
+/* Google 登入按鈕 */
+.google-btn {
+  border: 1px solid rgba(105, 105, 105, 0.397);
+  outline: none;
+  background-color: #fff;
+  padding: 10px;
+  border-radius: 10px;
+  color: #000;
+  font-size: 16px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  transform: .3s ease;
+}
+
+.google-btn:hover {
+  background-color: #f8f9fa;
+  border: 1px solid #4285f4;
+  cursor: pointer;
+}
+
+/* 錯誤訊息 */
+.messages {
+  list-style: none;
+  padding: 0;
+  margin-top: 15px;
+  text-align: center;
+}
+
+.messages li {
+  color: #dc3545;
+  font-size: 14px;
+}
+
+/* 推薦區塊 */
+.testimonial {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  padding: 0;
+  background: linear-gradient(358.31deg, #e6f0fa -24.13%, hsla(0,0%,90%,0) 338.58%), 
+              linear-gradient(89.84deg, rgba(102,204,255,.2) .34%, rgba(153,102,255,.2) 16.96%, 
+              rgba(255,102,204,.2) 34.66%, rgba(102,255,178,.2) 50.12%, rgba(255,204,102,.2) 66.22%, 
+              rgba(255,153,102,.2) 82%, rgba(178,102,255,.2) 100%);
+  border-radius: 9px 0 0 9px; /* 左側圓角 */
+  height: 100%;
+}
+
+.testimonial p {
+  color: #4d4c6d;
+  font-size: 40px;
+  text-align: center;
+  font-weight: 600;
+  margin: 0;
+  padding: 0;
+}
+
+/* 響應式設計 */
+@media (max-width: 767px) {
+  .form {
+    border-radius: 9px;
+    padding: 20px;
+    order: 2; /* 表單在推薦區下方 */
+  }
+
+  .testimonial {
+    border-radius: 9px;
+    padding: 20px;
+    order: 1; /* 推薦區在上方 */
+  }
+}
+
+@media (max-width: 400px) {
+  .form {
+    margin: 0;
+    padding: 15px;
+  }
+
+  .title {
+    font-size: 24px;
+  }
+
+  .submit, .google-btn {
     font-size: 14px;
-    margin-left: 5px;
-    color: #2d79f3;
-    font-weight: 500;
-    cursor: pointer;
+    padding: 8px;
+  }
 }
 
-.login-button-submit {
-    margin: 20px 0 10px 0;
-    background-color: #151717;
-    border: none;
-    color: white;
-    font-size: 15px;
-    font-weight: 500;
-    border-radius: 10px;
-    height: 50px;
-    width: 100%; /* 確保按鈕與輸入框同寬 */
-    cursor: pointer;
-    box-sizing: border-box;
-}
-
-.login-button-submit:hover {
-    background-color: #252727;
-}
-
-.login-p {
-    text-align: center;
-    color: black;
-    font-size: 14px;
-    margin: 15px 0;
-}
-
-.google-form {
-    width: 100%; /* 確保 Google 表單與 .login-form 同寬 */
-}
-
-.login-btn.google {
-    margin-top: 10px;
-    width: 100%; /* 確保與輸入框同寬 */
-    height: 50px;
-    border-radius: 10px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-weight: 500;
-    gap: 10px;
-    border: 1px solid #ededef;
-    background-color: white;
-    cursor: pointer;
-    transition: 0.2s ease-in-out;
-    box-sizing: border-box;
-}
-
-.login-btn.google:hover {
-    border: 1px solid #4285f4;
-    background-color: #f8f9fa;
-}
-
-/* 響應式調整 */
-@media (max-width: 768px) {
-    .login-container {
-        padding: 20px;
-        max-width: 90%; /* 在小螢幕上佔據更多空間 */
-    }
-
-    .login-inputForm,
-    .login-button-submit,
-    .login-btn.google {
-        height: 45px; /* 稍微減小高度 */
-    }
-}
-
-@media (max-width: 480px) {
-    .login-container {
-        padding: 15px;
-        max-width: 95%;
-    }
-
-    .login-inputForm,
-    .login-button-submit,
-    .login-btn.google {
-        height: 40px; /* 更小螢幕進一步減小 */
-    }
-
-    .login-p {
-        font-size: 12px;
-        margin: 10px 0;
-    }
+.padding-0 {
+  padding-left: 0;
+  padding-right: 0;
+  margin-left: 0;
+  margin-right: 0;
 }
 </style>
 
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-12 col-md-8 col-lg-6">
-            <h2>Login</h2>
-            {% if error %}
-                <p style="color: red;">{{ error }}</p>
-            {% endif %}
-            <!-- 統一背景容器 -->
-            <div class="login-container">
-                <!-- 帳號密碼登入表單 -->
-                <form method="post" class="login-form">
-                    {% csrf_token %}
-                    <div class="login-flex-column">
-                        <label for="username">Username:</label>
-                    </div>
-                    <div class="login-inputForm">
-                        <svg height="20" viewBox="0 0 32 32" width="20" xmlns="http://www.w3.org/2000/svg"><g id="Layer_3" data-name="Layer 3"><path d="m30.853 13.87a15 15 0 0 0 -29.729 4.082 15.1 15.1 0 0 0 12.876 12.918 15.6 15.6 0 0 0 2.016.13 14.85 14.85 0 0 0 7.715-2.145 1 1 0 1 0 -1.031-1.711 13.007 13.007 0 1 1 5.458-6.529 2.149 2.149 0 0 1 -4.158-.759v-10.856a1 1 0 0 0 -2 0v1.726a8 8 0 1 0 .2 10.325 4.135 4.135 0 0 0 7.83.274 15.2 15.2 0 0 0 .823-7.455zm-14.853 8.13a6 6 0 1 1 6-6 6.006 6.006 0 0 1 -6 6z"></path></g></svg>
-                        <input type="text" name="username" id="username" class="login-input" placeholder="Enter your Username" required>
-                    </div>
-
-                    <div class="login-flex-column">
-                        <label for="password">Password:</label>
-                    </div>
-                    <div class="login-inputForm">
-                        <svg height="20" viewBox="-64 0 512 512" width="20" xmlns="http://www.w3.org/2000/svg"><path d="m336 512h-288c-26.453125 0-48-21.523438-48-48v-224c0-26.476562 21.546875-48 48-48h288c26.453125 0 48 21.523438 48 48v224c0 26.476562-21.546875 48-48 48zm-288-288c-8.8125 0-16 7.167969-16 16v224c0 8.832031 7.1875 16 16 16h288c8.8125 0 16-7.167969 16-16v-224c0-8.832031-7.1875-16-16-16zm0 0"></path><path d="m304 224c-8.832031 0-16-7.167969-16-16v-80c0-52.929688-43.070312-96-96-96s-96 43.070312-96 96v80c0 8.832031-7.167969 16-16 16s-16-7.167969-16-16v-80c0-70.59375 57.40625-128 128-128s128 57.40625 128 128v80c0 8.832031-7.167969 16-16 16zm0 0"></path></svg>
-                        <input type="password" name="password" id="password" class="login-input" placeholder="Enter your Password" required>
-                    </div>
-
-                    <button type="submit" class="login-button-submit">Login</button>
-                    <a href="{% url 'password_reset' %}" class="login-span">忘記密碼?</a>
-                </form>
-
-                <!-- Google 登入表單 -->
-                <p class="login-p line">試試其他登入：</p>
-                <form action="{% provider_login_url 'google' method='POST' %}" method="post" class="google-form">
-                    {% csrf_token %}
-                    <button type="submit" class="login-btn google">
-                        <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-1.04.69-2.37 1.1-3.71 1.1-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C4.01 20.36 7.77 23 12 23z"/>
-                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
-                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.77 1 4.01 3.64 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                        </svg>
-                        Google
-                    </button>
-                </form>
-            </div>
-        </div>
+<div class="container form-container">
+  <div class="row justify-content-center">
+    <div class="col-md-6 order-md-1 padding-0">
+      <div class="testimonial">
+        <p>立即登入</p>
+        <p>探索虛擬貨幣的最新動態</p>
+        <div><img src="{% static 'images/crypto.png' %}" alt="Logo" style="width: auto; height: 300px;"></div>
+      </div>
     </div>
+    <div class="col-md-6 order-md-2 padding-0">
+      <form method="post" class="form">
+        {% csrf_token %}
+        <p class="title">登入</p>
+
+        {% if error %}
+          <ul class="messages">
+            <li>{{ error }}</li>
+          </ul>
+        {% endif %}
+
+        <label>
+          <input class="input" type="text" name="username" id="username" placeholder="" required>
+          <span>用戶名</span>
+        </label>
+
+        <label>
+          <input class="input" type="password" name="password" id="password" placeholder="" required>
+          <span>密碼</span>
+        </label>
+
+        <button type="submit" class="submit">登入</button>
+        <p class="signin"><a href="{% url 'password_reset' %}">忘記密碼？</a></p>
+
+        <p class="signin line">試試其他登入：</p>
+        <form action="{% provider_login_url 'google' method='POST' %}" method="post" class="form">
+          {% csrf_token %}
+          <button type="submit" class="google-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.20-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-1.04.69-2.37 1.1-3.71 1.1-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C4.01 20.36 7.77 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.77 1 4.01 3.64 2.18 7.07l3.66 2.84c.87-2.6 3.30-4.53 6.16-4.53z"/>
+            </svg>
+            Google
+          </button>
+        </form>
+      </form>
+    </div>
+  </div>
 </div>
 {% endblock %}
