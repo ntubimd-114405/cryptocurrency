@@ -648,3 +648,23 @@ def chat_api(request):
         return JsonResponse({"response": response})
     return JsonResponse({"error": "Invalid request"}, status=400)
 
+from django.shortcuts import render
+
+def guanggao_shenfen_queren(request):
+    # 預設顯示廣告
+    ad_show = True
+
+    # 檢查用戶是否已登入並且是 premium 用戶
+    if request.user.is_authenticated:
+        # 確保用戶有 Profile
+        try:
+            user_profile = request.user.profile
+            if user_profile.membership == 'premium':
+                ad_show = True  # premium 用戶不顯示廣告
+        except user_profile.DoesNotExist:
+            ad_show = True  # 如果沒有 profile，預設為 free 用戶，顯示廣告
+    else:
+        ad_show = True  # 未登入用戶視為 free，用戶，顯示廣告
+
+    # 返回渲染頁面並傳遞 ad_show 變數
+    return render(request, 'home.html', {'ad_show': ad_show})

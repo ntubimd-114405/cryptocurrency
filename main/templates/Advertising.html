@@ -1,0 +1,121 @@
+{% load static %}
+
+{% if user.is_authenticated %}
+    {% if user.profile.membership != 'premium' %}
+        <!-- 顯示廣告 -->
+        <div id="ad-popup">
+            <button id="close-btn">&times;</button> <!-- 叉叉樣式的關閉按鈕 -->
+            <p id="pppp">廣告！</p>
+
+            <!-- 插入圖片 -->
+            <img src="{% static 'images/dd50f9d57ab23f5bd945cbd2d1ebe315_3565064547437643285.png' %}" alt="廣告圖片" class="ad-image">
+        </div>
+    {% endif %}
+{% else %}
+    <!-- 未登入，用戶視為 free 用戶，顯示廣告 -->
+    <div id="ad-popup">
+        <button id="close-btn">&times;</button> <!-- 叉叉樣式的關閉按鈕 -->
+        <p id="pppp">廣告！</p>
+
+        <!-- 插入圖片 -->
+        <img src="{% static 'images/dd50f9d57ab23f5bd945cbd2d1ebe315_3565064547437643285.png' %}" alt="廣告圖片" class="ad-image">
+    </div>
+{% endif %}
+
+<script>
+    // 獲取彈窗和關閉按鈕元素
+    let adPopup = document.getElementById("ad-popup");
+    let closeBtn = document.getElementById("close-btn");
+
+    // 顯示廣告的函數
+    function showAd() {
+        adPopup.style.display = "block"; // 顯示廣告
+        adPopup.classList.add("show");  // 加入過渡效果
+    }
+
+    // 關閉廣告後的操作
+    closeBtn.onclick = function() {
+        adPopup.classList.remove("show"); // 去除過渡效果
+        setTimeout(function() {
+            adPopup.style.display = "none"; // 隱藏廣告
+        }, 500); // 延遲隱藏，配合過渡效果
+    }
+
+    // 頁面加載時先延遲顯示廣告
+    setTimeout(showAd, 10); // 10秒後顯示廣告
+</script>
+
+<style>
+    /* 設置廣告彈窗的基本樣式 */
+    #ad-popup {
+        display: none; /* 默認隱藏 */
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 1200px;
+        height: 800px;
+        background-color: rgba(0, 0, 0, 0.8);
+        color: white;
+        text-align: center;
+        padding: 20px;
+        font-size: 36px;
+        box-shadow: 0 0 30px rgba(0, 0, 0, 0.7);
+        z-index: 9999;
+        opacity: 0; /* 初始時設為透明 */
+        transition: opacity 0.5s ease-in-out; /* 添加過渡效果 */
+        border-radius: 15px; /* 邊角圓滑 */
+    }
+
+    /* 加入顯示效果 */
+    #ad-popup.show {
+        opacity: 1; /* 顯示時改為不透明 */
+    }
+
+    /* 關閉按鈕的樣式 (叉叉) */
+    #close-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        font-size: 50px;
+        color: white;
+        background: none;
+        border: none;
+        cursor: pointer;
+        transition: color 0.3s ease;
+    }
+
+    #close-btn:hover {
+        color: red; /* 滑鼠懸停時改為紅色 */
+    }
+
+    /* 圖片的樣式，讓圖片自動適應 */
+    .ad-image {
+        max-width: 100%;
+        height: auto;
+        margin-top: 20px;
+        border-radius: 10px; /* 圓角效果 */
+    }
+
+    /* 改善響應式顯示，讓彈窗在小屏幕設備下顯示合適 */
+    @media (max-width: 1300px) {
+        #ad-popup {
+            width: 90%; /* 調整寬度為 90% */
+            height: auto; /* 高度自動調整 */
+            padding: 15px;
+        }
+
+        #close-btn {
+            font-size: 40px; /* 減小關閉按鈕的字體大小 */
+            padding: 8px;
+        }
+    }
+
+    /* 增加按鈕的懸停效果 */
+    #close-btn:hover {
+        transform: scale(1.2); /* 滑鼠懸停時，按鈕放大 */
+    }
+    #pppp{
+        color: #ffffff;
+    }
+</style>
