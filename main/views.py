@@ -290,24 +290,24 @@ def favorite_coins(request):
     return render(request, 'favorite_coins.html', {'favorite_cryptos': favorite_cryptos})
 
 #忘記密碼
-from django.contrib.auth import views as auth_views
-from django.urls import reverse_lazy
-from django.contrib.auth import get_user_model
+# from django.contrib.auth import views as auth_views
+# from django.urls import reverse_lazy
+# from django.contrib.auth import get_user_model
 
-class CustomPasswordResetView(auth_views.PasswordResetView):
-    template_name = 'password_reset_form.html'  # 忘記密碼表單
-    email_template_name = 'password_reset_email.html'  # 發送郵件的模板
-    success_url = reverse_lazy('password_reset_done')  # 成功後跳轉到 `password_reset_done`
+# class CustomPasswordResetView(auth_views.PasswordResetView):
+#     template_name = 'password_reset_form.html'  # 忘記密碼表單
+#     email_template_name = 'password_reset_email.html'  # 發送郵件的模板
+#     success_url = reverse_lazy('password_reset_done')  # 成功後跳轉到 `password_reset_done`
 
-class CustomPasswordResetDoneView(auth_views.PasswordResetDoneView):
-    template_name = 'password_reset_done.html'  # 提示郵件已發送的頁面
+# class CustomPasswordResetDoneView(auth_views.PasswordResetDoneView):
+#     template_name = 'password_reset_done.html'  # 提示郵件已發送的頁面
 
-class CustomPasswordResetConfirmView(auth_views.PasswordResetConfirmView):
-    template_name = 'password_reset_confirm.html'  # 用戶輸入新密碼的頁面
-    success_url = reverse_lazy('password_reset_complete')  # 成功設置新密碼後跳轉的頁面
+# class CustomPasswordResetConfirmView(auth_views.PasswordResetConfirmView):
+#     template_name = 'password_reset_confirm.html'  # 用戶輸入新密碼的頁面
+#     success_url = reverse_lazy('password_reset_complete')  # 成功設置新密碼後跳轉的頁面
 
-class CustomPasswordResetCompleteView(auth_views.PasswordResetCompleteView):
-    template_name = 'password_reset_complete.html'  # 密碼重設完成後的頁面
+# class CustomPasswordResetCompleteView(auth_views.PasswordResetCompleteView):
+#     template_name = 'password_reset_complete.html'  # 密碼重設完成後的頁面
 
 #重設密碼
 from django.contrib.auth.decorators import login_required
