@@ -2,120 +2,134 @@
 
 {% if user.is_authenticated %}
     {% if user.profile.membership != 'premium' %}
-        <!-- 顯示廣告 -->
+        <!-- 顯示大廣告 -->
         <div id="ad-popup">
-            <button id="close-btn">&times;</button> <!-- 叉叉樣式的關閉按鈕 -->
-            <p id="pppp">廣告！</p>
-
-            <!-- 插入圖片 -->
-            <img src="{% static 'images/dd50f9d57ab23f5bd945cbd2d1ebe315_3565064547437643285.png' %}" alt="廣告圖片" class="ad-image">
+            <button id="close-btn">&times;</button>
+            <img src="{% static 'images/AdvertisingPicture1.png' %}" alt="廣告圖片" class="ad-image">
         </div>
     {% endif %}
 {% else %}
-    <!-- 未登入，用戶視為 free 用戶，顯示廣告 -->
+    <!-- 未登入用戶顯示廣告 -->
     <div id="ad-popup">
-        <button id="close-btn">&times;</button> <!-- 叉叉樣式的關閉按鈕 -->
-        <p id="pppp">廣告！</p>
-
-        <!-- 插入圖片 -->
-        <img src="{% static 'images/dd50f9d57ab23f5bd945cbd2d1ebe315_3565064547437643285.png' %}" alt="廣告圖片" class="ad-image">
+        <button id="close-btn">&times;</button>
+        <img src="{% static 'images/AdvertisingPicture1.png' %}" alt="廣告圖片" class="ad-image">
     </div>
 {% endif %}
 
+<!-- 小廣告容器 -->
+<div id="ad-minimized" style="display: none;">
+    <img src="{% static 'images/AdvertisingPicture2.png' %}" alt="小廣告" class="ad-mini-image">
+</div>
+
 <script>
-    // 獲取彈窗和關閉按鈕元素
     let adPopup = document.getElementById("ad-popup");
     let closeBtn = document.getElementById("close-btn");
+    let adMini = document.getElementById("ad-minimized");
 
-    // 顯示廣告的函數
     function showAd() {
-        adPopup.style.display = "block"; // 顯示廣告
-        adPopup.classList.add("show");  // 加入過渡效果
+        adPopup.style.display = "block";
+        adPopup.classList.add("show");
     }
 
-    // 關閉廣告後的操作
-    closeBtn.onclick = function() {
-        adPopup.classList.remove("show"); // 去除過渡效果
-        setTimeout(function() {
-            adPopup.style.display = "none"; // 隱藏廣告
-        }, 500); // 延遲隱藏，配合過渡效果
-    }
+    closeBtn.onclick = function () {
+        adPopup.classList.remove("show");
+        setTimeout(function () {
+            adPopup.style.display = "none";
+            adMini.style.display = "block";
+        }, 500);
+    };
 
-    // 頁面加載時先延遲顯示廣告
-    setTimeout(showAd, 10); // 10秒後顯示廣告
+    adMini.onclick = function () {
+        adMini.style.display = "none";
+        showAd();
+    };
+
+    // 延遲顯示大廣告（這裡使用 10 秒）
+    setTimeout(showAd, 10);
 </script>
 
 <style>
-    /* 設置廣告彈窗的基本樣式 */
     #ad-popup {
-        display: none; /* 默認隱藏 */
+        display: none;
         position: fixed;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%);
-        width: 1200px;
-        height: 800px;
-        background-color: rgba(0, 0, 0, 0.8);
+        width: 80vw;
+        max-width: 1000px;
+        height: auto;
+        max-height: 90vh;
+        background-color: rgba(0, 0, 0, 0.85);
         color: white;
         text-align: center;
-        padding: 20px;
-        font-size: 36px;
+        padding: 2vw;
+        font-size: clamp(1rem, 2vw, 2rem);
         box-shadow: 0 0 30px rgba(0, 0, 0, 0.7);
         z-index: 9999;
-        opacity: 0; /* 初始時設為透明 */
-        transition: opacity 0.5s ease-in-out; /* 添加過渡效果 */
-        border-radius: 15px; /* 邊角圓滑 */
+        opacity: 0;
+        transition: opacity 0.5s ease-in-out;
+        border-radius: 1rem;
+        overflow: auto;
     }
 
-    /* 加入顯示效果 */
     #ad-popup.show {
-        opacity: 1; /* 顯示時改為不透明 */
+        opacity: 1;
     }
 
-    /* 關閉按鈕的樣式 (叉叉) */
     #close-btn {
         position: absolute;
-        top: 10px;
-        right: 10px;
-        font-size: 50px;
+        top: 1vw;
+        right: 1vw;
+        font-size: 2.5rem;
         color: white;
         background: none;
         border: none;
         cursor: pointer;
-        transition: color 0.3s ease;
+        transition: color 0.3s ease, transform 0.3s ease;
     }
 
     #close-btn:hover {
-        color: red; /* 滑鼠懸停時改為紅色 */
+        color: red;
+        transform: scale(1.2);
     }
 
-    /* 圖片的樣式，讓圖片自動適應 */
     .ad-image {
         max-width: 100%;
+        max-height: 60vh;
         height: auto;
-        margin-top: 20px;
-        border-radius: 10px; /* 圓角效果 */
+        margin-top: 2vh;
+        border-radius: 10px;
     }
 
-    /* 改善響應式顯示，讓彈窗在小屏幕設備下顯示合適 */
-    @media (max-width: 1300px) {
-        #ad-popup {
-            width: 90%; /* 調整寬度為 90% */
-            height: auto; /* 高度自動調整 */
-            padding: 15px;
-        }
-
+    @media (max-width: 600px) {
         #close-btn {
-            font-size: 40px; /* 減小關閉按鈕的字體大小 */
-            padding: 8px;
+            font-size: 2rem;
+        }
+        #pppp {
+            font-size: 1.2rem;
         }
     }
 
-    /* 增加按鈕的懸停效果 */
-    #close-btn:hover {
-        transform: scale(1.2); /* 滑鼠懸停時，按鈕放大 */
+    /* 小廣告樣式 */
+    #ad-minimized {
+        position: fixed;
+        top: 15%;
+        left: 20px;
+        width: 200px;
+        height: 715px;
+        background-color: rgba(0, 0, 0, 0.8);
+        border-radius: 10px;
+        padding: 5px;
+        box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+        cursor: pointer;
+        z-index: 9999;
+        display: none;
+        transition: transform 0.3s ease;
     }
-    #pppp{
-        color: #ffffff;
+
+    .ad-mini-image {
+        max-width: 100%;
+        max-height: 100%;
+        border-radius: 5px;
     }
 </style>
