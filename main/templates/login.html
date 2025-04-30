@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load socialaccount static %}
 
-{% block title %}虛擬貨幣價格詳情{% endblock %}
+{% block title %}登入{% endblock %}
 
 {% block content %}
 <style>
@@ -19,7 +19,7 @@
   flex-direction: column;
   gap: 10px;
   background-color: #fff;
-  padding: 40px;
+  padding: 40px 40px 20px 40px; /* 減少底部填充，使內容更靠近下方 */
   border-radius: 0 9px 9px 0; /* 右側圓角 */
   position: relative;
 }
@@ -51,6 +51,11 @@
 
 .signin a:hover {
   text-decoration: underline #000000;
+}
+
+/* 減少「試試其他登入」文字的間距 */
+.signin.line {
+  margin: 10px 0 5px 0; /* 減少底部間距，讓 Google 按鈕更靠近 */
 }
 
 /* 輸入框樣式 */
@@ -121,12 +126,19 @@
   align-items: center;
   gap: 10px;
   transform: .3s ease;
+  margin-top: 5px; /* 新增少量頂部間距，避免與文字太貼近 */
+  width: 100%; /* 確保與其他按鈕寬度一致 */
 }
 
 .google-btn:hover {
   background-color: #f8f9fa;
   border: 1px solid #4285f4;
   cursor: pointer;
+}
+
+/* 確保第二個表單（Google 登入）減少頂部填充 */
+.form + .form {
+  padding: 0 40px 40px 40px; /* 移除頂部填充，讓 Google 表單與上方內容更連貫 */
 }
 
 /* 錯誤訊息 */
@@ -175,6 +187,10 @@
     order: 2; /* 表單在推薦區下方 */
   }
 
+  .form + .form {
+    padding: 0 20px 20px 20px; /* 響應式下保持一致 */
+  }
+
   .testimonial {
     border-radius: 9px;
     padding: 20px;
@@ -186,6 +202,10 @@
   .form {
     margin: 0;
     padding: 15px;
+  }
+
+  .form + .form {
+    padding: 0 15px 15px 15px; /* 響應式下保持一致 */
   }
 
   .title {
@@ -237,9 +257,9 @@
         </label>
 
         <button type="submit" class="submit">登入</button>
-        <p class="signin"><a href="{% url 'password_reset' %}">忘記密碼？</a></p>
-
+        <p class="signin"><a href="{% url 'account_reset_password' %}">忘記密碼？</a></p>
         <p class="signin line">試試其他登入：</p>
+      </form>
         <form action="{% provider_login_url 'google' method='POST' %}" method="post" class="form">
           {% csrf_token %}
           <button type="submit" class="google-btn">
@@ -252,7 +272,6 @@
             Google
           </button>
         </form>
-      </form>
     </div>
   </div>
 </div>

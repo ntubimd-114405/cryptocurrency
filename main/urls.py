@@ -18,10 +18,10 @@ urlpatterns = [
 
 
     # 忘記密碼
-    path('password_reset/', views.CustomPasswordResetView.as_view(), name='password_reset'),
-    path('password_reset/done/', views.CustomPasswordResetDoneView.as_view(), name='password_reset_done'),
-    path('reset/<uidb64>/<token>/', views.CustomPasswordResetConfirmView.as_view(), name='password_reset_confirm'),
-    path('reset/done/', views.CustomPasswordResetCompleteView.as_view(), name='password_reset_complete'),
+    # path('password_reset/', views.CustomPasswordResetView.as_view(), name='password_reset'),
+    # path('password_reset/done/', views.CustomPasswordResetDoneView.as_view(), name='password_reset_done'),
+    # path('reset/<uidb64>/<token>/', views.CustomPasswordResetConfirmView.as_view(), name='password_reset_confirm'),
+    # path('reset/done/', views.CustomPasswordResetCompleteView.as_view(), name='password_reset_complete'),
 
     path('update_password/', views.update_password, name='update_password'),
     path('update-firstname/', views.update_firstname, name='update_firstname'),
@@ -39,8 +39,8 @@ urlpatterns = [
     path('accounts/', include('allauth.urls')),#登入帳號(google驗證)
     
 
-    # 刪除帳號
-    path("delete_account/", views.delete_account, name="delete_account"),
+    
+    path("delete_account/", views.delete_account, name="delete_account"),# 刪除帳號
 
     path('sign_in/', views.sign_in, name='sign_in'),
     path('user_profile/', views.user_profile, name='user_profile'),  # 个人资料页面
