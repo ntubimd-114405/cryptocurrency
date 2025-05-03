@@ -1,0 +1,43 @@
+{% extends 'administrator/base.html' %}
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">編輯使用者</h2>
+
+    <form method="POST">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label class="form-label">用戶名稱</label>
+            <input type="text" name="username" class="form-control" value="{{ user.username }}">
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input type="email" name="email" class="form-control" value="{{ user.email }}">
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">會員等級</label>
+            <select name="membership" class="form-select">
+                <option value="free" {% if user.profile.membership == "free" %}selected{% endif %}>免費會員</option>
+                <option value="premium" {% if user.profile.membership == "premium" %}selected{% endif %}>高級會員</option>
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">帳號狀態</label>
+            <select name="is_active" class="form-select">
+                <option value="1" {% if user.is_active %}selected{% endif %}>啟用</option>
+                <option value="0" {% if not user.is_active %}selected{% endif %}>停用</option>
+            </select>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">新密碼（如需重設）</label>
+            <input type="password" name="password" class="form-control" placeholder="留空則不更改密碼">
+        </div>
+
+        <button type="submit" class="btn btn-success">更新</button>
+        <a href="{% url 'administrator:user_management' %}" class="btn btn-secondary">取消</a>
+    </form>
+</div>
+{% endblock %}

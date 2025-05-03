@@ -1,0 +1,43 @@
+{% extends 'administrator/base.html' %}
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">幣種管理</h2>
+
+    <table class="table table-bordered table-hover align-middle">
+        <thead class="table-primary">
+            <tr>
+                <th>幣種名稱</th>
+                <th>縮寫</th>
+                <th>Logo</th>
+                <th>API ID</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for coin in coins %}
+            <tr>
+                <td>{{ coin.coinname }}</td>
+                <td>{{ coin.abbreviation }}</td>
+                <td>
+                    {% if coin.logo_url %}
+                        <img src="{{ coin.logo_url }}" alt="Logo" style="height:30px;">
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td>{{ coin.api_id }}</td>
+                <td>
+                    <a href="{% url 'administrator:edit_crypto' coin.id %}" class="btn btn-sm btn-warning">編輯</a>
+                    <a href="{% url 'administrator:delete_crypto' coin.id %}" class="btn btn-sm btn-danger"
+                       onclick="return confirm('確定要刪除這個幣種嗎？');">刪除</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center">目前尚無幣種</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
