@@ -622,7 +622,8 @@ def sign_in(request):
     sign_in_record.save()
 
     messages.success(request, "簽到成功！")
-    return redirect('user_profile')
+    referer = request.META.get('HTTP_REFERER', '/')
+    return redirect(referer)
 
 @login_required
 def user_profile(request):
