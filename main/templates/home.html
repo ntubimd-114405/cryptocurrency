@@ -8,7 +8,91 @@
     <link rel="stylesheet" href="{% static 'css/home.css' %}">
     
         {% include "Advertising.html" %}
+    <div class="carousel" style = "margin-top: 10px;">
+        <svg class = "svg1" width="600" height="300">
+            <defs>
+                <!-- 定義線性漸變 -->
+                <linearGradient id="pathGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#87CEFA" stop-opacity="1" />
+                    <stop offset="100%" stop-color="#87CEFA" stop-opacity="0" />
+                </linearGradient>
+            </defs>
+            <!-- 管道形狀 -->
+            <path id="motionPath" 
+                d="M 20 50 
+                    H 300
+                    A 150 150 0 0 1 450 200
+                    V 700
+                    "  
+                  stroke="url(#pathGradient)" stroke-width="150" fill="none">
+            </path>
     
+            <!-- 球體 -->
+            <circle id="ball" cx="150" cy="600" r="60" fill="#6495ed"></circle>
+        </svg>
+        <div class="card-head">
+            <h2 style = "color: white;">歡迎來到虛擬貨幣分析平台</h2>
+            <p style = "color: white;">即時更新的加密貨幣價格與市場數據，助您做出明智的決策。</p>
+        </div>
+    
+        <div class="card_invent-container">
+            <div class="card_invent">
+                <div class="card_invent-inner">
+                    <div class="card_invent-face card_invent-front">
+                        <img src="{% static 'images/btc-1.png' %}" class="btc" alt="">
+                        <h3>貨幣資料</h3>
+                        <p>歷史數據</p>
+                        <a href="{% url 'crypto_list' %}"><button class="arrow-btn">→</button></a>
+                    </div>
+                    <div class="card_invent-face card_invent-back">
+                        <h2>市場統計</h2>
+                        <p><strong>總市值 (USD):</strong> <span id="total_market_cap">載入中...</span></p>
+                        <p><strong>24 小時交易量 (USD):</strong> <span id="total_24h_volume">載入中...</span></p>
+                        <p><strong>市占率:</strong> <span id="btc_dominance">載入中...</span> | <span id="eth_dominance">載入中...</span> | <span id="other_dominance">載入中...</span></p>
+                    </div>
+                </div>
+            </div>
+    
+            <div class="card_invent">
+                <div class="card_invent-inner">
+                    <div class="card_invent-face card_invent-front">
+                        <img src="{% static 'images/news.png' %}" class="new" alt="">
+                        <h2>外部資訊</h2>
+                        <p>新聞資訊</p>
+                        <a href="{% url 'news_home' %}"><button class="arrow-btn">→</button></a>
+                    </div>
+                    <div class="card_invent-face card_invent-back">
+                        <h3>加密市場動態</h3>
+                        <ul class = "ul">
+                            <li>即時新聞</li>
+                            <li>重要事件</li>
+                            <li>市場趨勢變化</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+    
+            <div class="card_invent">
+                <div class="card_invent-inner">
+                    <div class="card_invent-face card_invent-front">
+                        <img src="{% static 'images/pointer.png' %}" class="point" alt="">
+                        <h3>經濟指標</h3>
+                        <p>投資工具</p>
+                        <a href="{% url 'other_home' %}"><button class="arrow-btn">→</button></a>
+                    </div>
+                    <div class="card_invent-face card_invent-back">
+                        <h3>關鍵經濟指標</h3>
+                        <ul class = "ul">
+                            <li>提升決策精準度</li>
+                            <li>降低投資風險</li>
+                            <li>全面市場分析</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <h1>熱門加密貨幣</h1>
 
     <div class="button-container">
@@ -190,94 +274,10 @@
         <a data-testid="Web_NewHomePage_HotCrypto_More" href="{% url 'crypto_list' %}" class="sc-8bd51ba2-2 RBQIy" id = "a">探索更多</a>
     </div>
 
-    <div class="carousel">
-        <svg class = "svg1" width="600" height="300">
-            <defs>
-                <!-- 定義線性漸變 -->
-                <linearGradient id="pathGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#87CEFA" stop-opacity="1" />
-                    <stop offset="100%" stop-color="#87CEFA" stop-opacity="0" />
-                </linearGradient>
-            </defs>
-            <!-- 管道形狀 -->
-            <path id="motionPath" 
-                d="M 20 50 
-                    H 300
-                    A 150 150 0 0 1 450 200
-                    V 700
-                    "  
-                  stroke="url(#pathGradient)" stroke-width="150" fill="none">
-            </path>
-    
-            <!-- 球體 -->
-            <circle id="ball" cx="150" cy="600" r="60" fill="#6495ed"></circle>
-        </svg>
-        <div class="card-head">
-            <h2 style = "color: white;">歡迎來到虛擬貨幣分析平台</h2>
-            <p style = "color: white;">即時更新的加密貨幣價格與市場數據，助您做出明智的決策。</p>
-        </div>
-    
-        <div class="card_invent-container">
-            <div class="card_invent">
-                <div class="card_invent-inner">
-                    <div class="card_invent-face card_invent-front">
-                        <img src="{% static 'images/btc-1.png' %}" class="btc" alt="">
-                        <h3>貨幣資料</h3>
-                        <p>歷史數據</p>
-                        <a href="{% url 'crypto_list' %}"><button class="arrow-btn">→</button></a>
-                    </div>
-                    <div class="card_invent-face card_invent-back">
-                        <h2>市場統計</h2>
-                        <p><strong>總市值 (USD):</strong> <span id="total_market_cap">載入中...</span></p>
-                        <p><strong>24 小時交易量 (USD):</strong> <span id="total_24h_volume">載入中...</span></p>
-                        <p><strong>市占率:</strong> <span id="btc_dominance">載入中...</span> | <span id="eth_dominance">載入中...</span> | <span id="other_dominance">載入中...</span></p>
-                    </div>
-                </div>
-            </div>
-    
-            <div class="card_invent">
-                <div class="card_invent-inner">
-                    <div class="card_invent-face card_invent-front">
-                        <img src="{% static 'images/news.png' %}" class="new" alt="">
-                        <h2>外部資訊</h2>
-                        <p>新聞資訊</p>
-                        <a href="{% url 'news_home' %}"><button class="arrow-btn">→</button></a>
-                    </div>
-                    <div class="card_invent-face card_invent-back">
-                        <h3>加密市場動態</h3>
-                        <ul class = "ul">
-                            <li>即時新聞</li>
-                            <li>重要事件</li>
-                            <li>市場趨勢變化</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-    
-            <div class="card_invent">
-                <div class="card_invent-inner">
-                    <div class="card_invent-face card_invent-front">
-                        <img src="{% static 'images/pointer.png' %}" class="point" alt="">
-                        <h3>經濟指標</h3>
-                        <p>投資工具</p>
-                        <a href="{% url 'other_home' %}"><button class="arrow-btn">→</button></a>
-                    </div>
-                    <div class="card_invent-face card_invent-back">
-                        <h3>關鍵經濟指標</h3>
-                        <ul class = "ul">
-                            <li>提升決策精準度</li>
-                            <li>降低投資風險</li>
-                            <li>全面市場分析</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
     <div class="container-home">
         <div class="left">
             <div class="signin-card">
-              <h2>🎁 每日簽到拿獎勵！</h2>
+              <h2>🎁 每日簽到</h2>
                 {% if sign_in_record %}
                 
                     <p>今天日期：{{ today }}</p>
@@ -297,8 +297,14 @@
                 <div class="progress-bar">
                     <div class="progress" style="height: 100%; width: {{ progress_percentage }}%; background-color: #4caf50; transition: width 0.5s;"></div>
                 </div>
-          
-              <a href="{% url 'user_profile' %}"><button class="signin-btn">立即簽到</button></a>
+                
+                {% if user.signin.last_sign_in_date != today %}
+                        <form action="{% url 'sign_in' %}" method="POST">
+                            {% csrf_token %}
+                            <button type="submit" class="signin-btn">立即簽到</button>
+                        </form>
+                {% endif %}
+              
             </div>
           </div>
         
@@ -409,7 +415,7 @@
         
         <div id="animation-container">
             <h1 style = "color: white; padding-top: 10px;">開啟您的<br>財富無限宇宙</h1>
-            <a href="{% url 'login' %}">
+            <a href="{% url 'register' %}">
                 <button class="register">
                     立即註冊
                     <svg class="icon" viewBox="0 0 24 24" fill="currentColor">
