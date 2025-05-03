@@ -1,0 +1,14 @@
+{% extends 'administrator/base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2>刪除幣種</h2>
+    <p>你確定要刪除幣種 "{{ coin.coinname }}" 嗎？</p>
+    
+    <form method="POST">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">確定刪除</button>
+        <a href="{% url 'administrator:crypto_management' %}" class="btn btn-secondary">取消</a>
+    </form>
+</div>
+{% endblock %}

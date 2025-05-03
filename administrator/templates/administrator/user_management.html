@@ -1,0 +1,45 @@
+{% extends 'administrator/base.html' %}
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">使用者管理</h2>
+
+    <!-- 搜尋表單 -->
+    <form method="GET" class="mb-3">
+        <div class="input-group">
+            <input type="text" name="q" class="form-control" placeholder="搜尋用戶名稱或信箱" value="{{ query }}">
+            <button type="submit" class="btn btn-primary">搜尋</button>
+        </div>
+    </form>
+
+    <table class="table table-bordered table-hover align-middle">
+        <thead class="table-primary">
+            <tr>
+                <th>用戶名</th>
+                <th>信箱</th>
+                <th>會員等級</th>
+                <th>收藏幣種數</th>
+                <th>身分</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>{{ user.username }}</td>
+                <td>{{ user.email }}</td>
+                <td>{{ user.profile.membership|default:"-" }}</td>
+                <td>{{ user.profile.favorite_coin.count|default:"0" }}</td>
+                <td>{{ user.is_staff|yesno:"管理員,一般使用者" }}</td>
+                <td>
+                    <a href="{% url 'administrator:edit_user' user.id %}" class="btn btn-sm btn-warning">編輯</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center">找不到符合的使用者</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

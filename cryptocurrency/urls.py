@@ -25,6 +25,7 @@ urlpatterns = [
     path('news/', include('news.urls')), 
     path('other/', include('other.urls')), 
     path('model/', include('ml_upload.urls')), 
+    path('administrator/', include('administrator.urls')),
 ]
 
 if settings.DEBUG:

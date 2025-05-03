@@ -1,0 +1,50 @@
+{% extends 'administrator/base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2>歡迎來到管理者介面</h2>
+    <p>在這裡，您可以管理使用者、幣種和查看系統統計數據。</p>
+
+    <!-- 管理功能概覽 -->
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h4>使用者管理</h4>
+                </div>
+                <div class="card-body">
+                    <p>管理所有註冊使用者，查看和修改他們的資料。</p>
+                    <a href="{% url 'administrator:user_management' %}" class="btn btn-primary">前往使用者管理</a>
+
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h4>幣種管理</h4>
+                </div>
+                <div class="card-body">
+                    <p>新增、編輯或刪除支援的幣種資料。</p>
+                    <a href="{% url 'administrator:crypto_management' %}" class="btn btn-primary">前往幣種管理</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h4>預測統計</h4>
+                </div>
+                <div class="card-body">
+                    <p>查看最近的 AI 預測結果與準確率。</p>
+                    <a href="#" class="btn btn-primary">查看預測統計</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 其他區塊可以在這裡添加 -->
+</div>
+{% endblock %}

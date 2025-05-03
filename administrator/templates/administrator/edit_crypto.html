@@ -1,0 +1,33 @@
+{% extends 'administrator/base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2 class="mb-4">編輯幣種</h2>
+    
+    <form method="POST">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label for="coinname" class="form-label">幣種名稱</label>
+            <input type="text" class="form-control" id="coinname" name="coinname" value="{{ coin.coinname }}" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="abbreviation" class="form-label">縮寫</label>
+            <input type="text" class="form-control" id="abbreviation" name="abbreviation" value="{{ coin.abbreviation }}" required>
+        </div>
+
+        <div class="mb-3">
+            <label for="logo_url" class="form-label">Logo URL</label>
+            <input type="text" class="form-control" id="logo_url" name="logo_url" value="{{ coin.logo_url }}">
+        </div>
+
+        <div class="mb-3">
+            <label for="api_id" class="form-label">API ID</label>
+            <input type="number" class="form-control" id="api_id" name="api_id" value="{{ coin.api_id }}" required>
+        </div>
+
+        <button type="submit" class="btn btn-success">更新</button>
+        <a href="{% url 'administrator:crypto_management' %}" class="btn btn-secondary">取消</a>
+    </form>
+</div>
+{% endblock %}
