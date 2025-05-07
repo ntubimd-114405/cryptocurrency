@@ -69,17 +69,20 @@ SITE_ID = 1
 
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
+# 使用 email 認證登入
+ACCOUNT_LOGIN_METHODS = {'email'}
 
-# 啟用電子郵件認證
+# 註冊時需要的欄位
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'username*', 'password1*', 'password2*']
+
+# 社交登入設定
 SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
-
-# 自動將社交帳號與現有用戶關聯（基於電子郵件地址）
 SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
-# django-allauth 設置
-ACCOUNT_EMAIL_REQUIRED = True  # 確保電子郵件地址是必須的
-ACCOUNT_AUTHENTICATION_METHOD = 'email'  # 使用電子郵件進行認證
-ACCOUNT_EMAIL_VERIFICATION = 'none'  # 如果你不需要電子郵件驗證，可以設為 'none'
-SOCIALACCOUNT_AUTO_SIGNUP = True  # 啟用社交帳號自動註冊（但會被 SOCIALACCOUNT_EMAIL_AUTHENTICATION 覆蓋）
+SOCIALACCOUNT_AUTO_SIGNUP = True
+
+# 不使用 email 驗證流程（可依需求調整）
+ACCOUNT_EMAIL_VERIFICATION = 'none'
+
 
 
 # Google OAuth 設定（配合 django-allauth）
