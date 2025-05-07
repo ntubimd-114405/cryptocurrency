@@ -155,6 +155,13 @@ def macro_economy():
         "政府預算赤字/盈餘": "FYFSD",
         "生產者物價指數 (PPI)": "PPIACO",
         "消費者信心指數 (CCI)": "UMCSENT",
+        "金融壓力指數(FSI)":"STLFSI4",
+        "經濟政策不確定性指數(EPU)":"USEPUINDXD",
+        "美國外匯儲備":"TRESEGUSM052N",
+        "美國聯邦政府總債務":"GFDEBTN",
+        "美國房價指數":"CSUSHPISA",
+        "家庭債務占個人收入百分比":"TDSP",
+        "美國家庭債務佔GDP百分比":"HDTGPDUSQ163N",
     }
 
     for k, v in indicators.items():     
