@@ -1,3 +1,13 @@
+## 📊 GitHub 活動統計
+
+[![Fgh09101010's GitHub stats](https://github-readme-stats.vercel.app/api?username=fgh09101010&show_icons=true&theme=tokyonight)](https://github.com/fgh09101010)
+
+[![Top Langs](https://github-readme-stats.vercel.app/api/top-langs/?username=fgh09101010&layout=compact&theme=tokyonight)](https://github.com/fgh09101010)
+
+[![GitHub Trophy](https://github-profile-trophy.vercel.app/?username=fgh09101010&theme=tokyonight)](https://github.com/fgh09101010)
+
+[![Activity Graph](https://github-readme-activity-graph.vercel.app/graph?username=fgh09101010&theme=tokyonight)](https://github.com/fgh09101010)
+
 # 常用指令
 celery -A cryptocurrency worker --loglevel=info
 celery -A cryptocurrency worker --loglevel=info -P eventlet
