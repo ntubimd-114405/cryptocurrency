@@ -1,0 +1,77 @@
+@startuml
+
+class auth_user {
+  +int id
+  +varchar password
+  +datetime last_login
+  +tinyint is_superuser
+  +varchar username
+  +varchar first_name
+  +varchar last_name
+  +varchar email
+  +tinyint is_staff
+  +tinyint is_active
+  +datetime date_joined
+  +check_password(): bool
+  +get_full_name(): str
+}
+
+class news_article {
+  +bigint id
+  +varchar title
+  +varchar url
+  +varchar image_url
+  +longtext content
+  +datetime time
+  +bigint website_id
+  +longtext summary
+  +view_article(): string
+}
+
+class news_comment {
+  +bigint id
+  +longtext content
+  +datetime created_at
+  +datetime updated_at
+  +bigint article_id
+  +int user_id
+  +create_comment(): void
+  +edit_comment(): void
+  +delete_comment(): void
+}
+
+class news_reply {
+  +bigint id
+  +longtext content
+  +datetime created_at
+  +datetime updated_at
+  +bigint comment_id
+  +int user_id
+  +create_reply(): void
+  +edit_reply(): void
+  +delete_reply(): void
+}
+
+class news_website {
+  +bigint id
+  +varchar name
+  +varchar url
+  +varchar icon_url
+  +view_articles(): string
+}
+
+class news_xpost {
+  +bigint id
+  +varchar ids
+  +longtext html
+  +longtext text
+  +view_xpost(): string
+}
+
+news_article "1" -- "0..*" news_comment : "article_id"
+news_comment "0..*" -- "1" auth_user : "user_id"
+news_reply "0..*" -- "1" news_comment : "comment_id"
+news_reply "0..*" -- "1" auth_user : "user_id"
+news_article "0..*" -- "1" news_website : "website_id"
+
+@enduml

@@ -1,0 +1,68 @@
+@startuml
+
+
+class auth_user {
+  +int id
+  +varchar password
+  +datetime last_login
+  +tinyint is_superuser
+  +varchar username
+  +varchar first_name
+  +varchar last_name
+  +varchar email
+  +tinyint is_staff
+  +tinyint is_active
+  +datetime date_joined
+}
+
+class news_article {
+  +bigint id
+  +varchar title
+  +varchar url
+  +varchar image_url
+  +longtext content
+  +datetime time
+  +bigint website_id
+  +longtext summary
+}
+
+class news_comment {
+  +bigint id
+  +longtext content
+  +datetime created_at
+  +datetime updated_at
+  +bigint article_id
+  +int user_id
+}
+
+class news_reply {
+  +bigint id
+  +longtext content
+  +datetime created_at
+  +datetime updated_at
+  +bigint comment_id
+  +int user_id
+}
+
+class news_website {
+  +bigint id
+  +varchar name
+  +varchar url
+  +varchar icon_url
+}
+
+class news_xpost {
+  +bigint id
+  +varchar ids
+  +longtext html
+  +longtext text
+}
+
+
+news_article -- news_website : "website_id"
+news_comment -- news_article : "article_id"
+news_comment -- auth_user : "user_id"
+news_reply -- news_comment : "comment_id"
+news_reply -- auth_user : "user_id"
+
+@enduml

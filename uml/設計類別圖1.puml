@@ -1,0 +1,98 @@
+@startuml
+
+
+class auth_user {
+  +id: int
+  +password: varchar
+  +last_login: datetime
+  +is_superuser: bool
+  +username: varchar
+  +first_name: varchar
+  +last_name: varchar
+  +email: varchar
+  +is_staff: bool
+  +is_active: bool
+  +date_joined: datetime
+  --
+  +check_password(): bool
+  +get_full_name(): str
+}
+
+class main_coin {
+  +id: bigint
+  +coinname: varchar
+  +abbreviation: varchar
+  +logo_url: varchar
+  +api_id: bigint
+  --
+  +get_current_price(): Decimal
+}
+
+class main_bitcoinprice {
+  +id: bigint
+  +usd: float
+  +twd: float
+  +jpy: float
+  +eur: float
+  +market_cap: decimal
+  +volume_24h: decimal
+  +change_24h: decimal
+  +timestamp: datetime
+  +coin_id: bigint
+  --
+  +to_dict(): dict
+}
+
+class main_coinhistory {
+  +id: bigint
+  +date: datetime
+  +open_price: decimal
+  +high_price: decimal
+  +low_price: decimal
+  +close_price: decimal
+  +volume: decimal
+  +coin_id: bigint
+  --
+  +get_daily_summary(): dict
+}
+
+class main_depthdata {
+  +id: bigint
+  +last_update_id: bigint
+  +bids: text
+  +asks: text
+  +created_at: datetime
+  +coin_id: bigint
+  --
+  +parse_order_book(): dict
+}
+
+class other_trenddata {
+  +id: bigint
+  +date: datetime(6)
+  +coin_id: bigint
+  +abbreviated_value: int
+  +full_value: int
+  --
+  +to_trendline(): list
+}
+
+class main_userprofile_favorite_coin {
+  +id: bigint
+  +userprofile_id: bigint
+  +coin_id: bigint
+  --
+  +add_favorite(): void
+  +remove_favorite(): void
+  +get_user_favorites(user_id: int): list
+}
+
+' 關聯與多重性
+main_bitcoinprice "0..*" --> "1" main_coin : coin_id
+main_coinhistory "0..*" --> "1" main_coin : coin_id
+main_depthdata "0..*" --> "1" main_coin : coin_id
+other_trenddata "0..*" --> "1" main_coin : coin_id
+
+main_userprofile_favorite_coin "0..*" --> "1" main_coin : coin_id
+main_userprofile_favorite_coin "0..*" --> "1" auth_user : userprofile_id
+@enduml
