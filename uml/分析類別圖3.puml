@@ -1,0 +1,65 @@
+@startuml
+
+' Define the class for each table
+
+class other_bitcoinmetric {
+  +bigint id
+  +varchar name
+  +varchar unit
+  +varchar period
+  +longtext description
+}
+
+class other_bitcoinmetricdata {
+  +bigint id
+  +datetime(6) date
+  +double value
+  +bigint metric_id
+}
+
+class other_financialdata {
+  +bigint id
+  +date date
+  +double open_price
+  +double high_price
+  +double low_price
+  +double close_price
+  +bigint volume
+  +bigint symbol_id
+}
+
+class other_financialsymbol {
+  +bigint id
+  +varchar symbol
+  +varchar name
+}
+
+class other_indicator {
+  +bigint id
+  +varchar name
+  +varchar abbreviation
+}
+
+class other_indicatorvalue {
+  +bigint id
+  +date date
+  +double value
+  +bigint indicator_id
+}
+
+class other_trenddata {
+  +bigint id
+  +datetime(6) date
+  +bigint coin_id
+  +int abbreviated_value
+  +int full_value
+}
+
+
+other_bitcoinmetricdata -- other_bitcoinmetric : "metric_id"
+other_financialdata -- other_financialsymbol : "symbol_id"
+other_indicatorvalue -- other_indicator : "indicator_id"
+
+
+
+@enduml

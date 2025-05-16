@@ -1,0 +1,44 @@
+@startuml
+
+class auth_user {
+  +int id
+  +varchar password
+  +datetime last_login
+  +tinyint is_superuser
+  +varchar username
+  +varchar first_name
+  +varchar last_name
+  +varchar email
+  +tinyint is_staff
+  +tinyint is_active
+  +datetime date_joined
+}
+
+class main_usernotificationpreference {
+  +bigint id
+  +tinyint news_notifications
+  +tinyint email_notifications
+  +tinyint site_notifications
+  +int user_id
+}
+
+class main_userprofile {
+  +bigint id
+  +varchar profile_image
+  +int user_id
+}
+
+
+class main_signin {
+  +id: bigint
+  +last_sign_in_date: date
+  +sign_in_count: int
+  +consecutive_sign_in_count: int
+  +user_id: int
+}
+
+
+main_usernotificationpreference -- auth_user : "user_id"
+main_userprofile -- auth_user : "user_id"
+main_signin --> auth_user : user_id
+@enduml

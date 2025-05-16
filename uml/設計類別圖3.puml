@@ -1,0 +1,70 @@
+@startuml
+
+' Define the class for each table
+
+class other_bitcoinmetric {
+  +bigint id
+  +varchar name
+  +varchar unit
+  +varchar period
+  +longtext description
+  +view_metrics(): List
+}
+
+class other_bitcoinmetricdata {
+  +bigint id
+  +datetime(6) date
+  +double value
+  +bigint metric_id
+  +view_metric(): int
+}
+
+class other_financialdata {
+  +bigint id
+  +date date
+  +double open_price
+  +double high_price
+  +double low_price
+  +double close_price
+  +bigint volume
+  +bigint symbol_id
+  +view_financial_data(): int
+}
+
+class other_financialsymbol {
+  +bigint id
+  +varchar symbol
+  +varchar name
+  +view_financial_datas(): List
+}
+
+class other_indicator {
+  +bigint id
+  +varchar name
+  +varchar abbreviation
+  +view_indicators(): List
+}
+
+class other_indicatorvalue {
+  +bigint id
+  +date date
+  +double value
+  +bigint indicator_id
+  +view_indicator_(): int
+}
+
+class other_trenddata {
+  +bigint id
+  +datetime(6) date
+  +bigint coin_id
+  +int abbreviated_value
+  +int full_value
+  +view_trend_data(): int
+}
+
+' Define the associations between the classes
+other_bitcoinmetricdata "0..*" -- "1" other_bitcoinmetric : "metric_id"
+other_financialdata "0..*" -- "1" other_financialsymbol : "symbol_id"
+other_indicatorvalue "0..*" -- "1" other_indicator : "indicator_id"
+
+@enduml

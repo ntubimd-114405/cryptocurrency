@@ -1,0 +1,320 @@
+@startuml
+
+' Define the class for each table
+class auth_group {
+  +int id
+  +varchar name
+}
+
+class auth_group_permissions {
+  +bigint id
+  +int group_id
+  +int permission_id
+}
+
+class auth_permission {
+  +int id
+  +varchar name
+  +int content_type_id
+  +varchar codename
+}
+
+class auth_user {
+  +int id
+  +varchar password
+  +datetime last_login
+  +tinyint is_superuser
+  +varchar username
+  +varchar first_name
+  +varchar last_name
+  +varchar email
+  +tinyint is_staff
+  +tinyint is_active
+  +datetime date_joined
+}
+
+class auth_user_groups {
+  +bigint id
+  +int user_id
+  +int group_id
+}
+
+class auth_user_user_permissions {
+  +bigint id
+  +int user_id
+  +int permission_id
+}
+
+class django_admin_log {
+  +int id
+  +datetime action_time
+  +longtext object_id
+  +varchar object_repr
+  +smallint action_flag
+  +longtext change_message
+  +int content_type_id
+  +int user_id
+}
+
+class django_content_type {
+  +int id
+  +varchar app_label
+  +varchar model
+}
+
+class django_migrations {
+  +bigint id
+  +varchar app
+  +varchar name
+  +datetime applied
+}
+
+class django_session {
+  +varchar session_key
+  +longtext session_data
+  +datetime expire_date
+}
+
+class main_bitcoinprice {
+  +bigint id
+  +double usd
+  +double twd
+  +double jpy
+  +double eur
+  +decimal market_cap
+  +decimal volume_24h
+  +decimal change_24h
+  +datetime timestamp
+  +bigint coin_id
+}
+
+class main_coin {
+  +bigint id
+  +varchar coinname
+  +varchar abbreviation
+  +varchar logo_url
+  +bigint api_id
+}
+
+class main_coinhistory {
+  +bigint id
+  +datetime date
+  +decimal open_price
+  +decimal high_price
+  +decimal low_price
+  +decimal close_price
+  +decimal volume
+  +bigint coin_id
+}
+
+class main_depthdata {
+  +bigint id
+  +bigint last_update_id
+  +longtext bids
+  +longtext asks
+  +datetime created_at
+  +bigint coin_id
+}
+
+class main_usernotificationpreference {
+  +bigint id
+  +tinyint news_notifications
+  +tinyint email_notifications
+  +tinyint site_notifications
+  +int user_id
+}
+
+class main_userprofile {
+  +bigint id
+  +varchar profile_image
+  +int user_id
+}
+
+class main_userprofile_favorite_coin {
+  +bigint id
+  +bigint userprofile_id
+  +bigint coin_id
+}
+
+
+
+class main_signin {
+  +id: bigint
+  +last_sign_in_date: date
+  +sign_in_count: int
+  +consecutive_sign_in_count: int
+  +user_id: int
+}
+
+class news_article {
+  +bigint id
+  +varchar title
+  +varchar url
+  +varchar image_url
+  +longtext content
+  +datetime time
+  +bigint website_id
+  +longtext summary
+}
+
+class news_comment {
+  +bigint id
+  +longtext content
+  +datetime created_at
+  +datetime updated_at
+  +bigint article_id
+  +int user_id
+}
+
+class news_reply {
+  +bigint id
+  +longtext content
+  +datetime created_at
+  +datetime updated_at
+  +bigint comment_id
+  +int user_id
+}
+
+class news_website {
+  +bigint id
+  +varchar name
+  +varchar url
+  +varchar icon_url
+}
+
+class news_xpost {
+  +bigint id
+  +varchar ids
+  +longtext html
+  +longtext text
+}
+
+class other_bitcoinmetric {
+  +bigint id
+  +varchar name
+  +varchar unit
+  +varchar period
+  +longtext description
+}
+
+class other_bitcoinmetricdata {
+  +bigint id
+  +datetime(6) date
+  +double value
+  +bigint metric_id
+}
+
+class other_financialdata {
+  +bigint id
+  +date date
+  +double open_price
+  +double high_price
+  +double low_price
+  +double close_price
+  +bigint volume
+  +bigint symbol_id
+}
+
+class other_financialsymbol {
+  +bigint id
+  +varchar symbol
+  +varchar name
+}
+
+class other_indicator {
+  +bigint id
+  +varchar name
+  +varchar abbreviation
+}
+
+class other_indicatorvalue {
+  +bigint id
+  +date date
+  +double value
+  +bigint indicator_id
+}
+
+class other_trenddata {
+  +bigint id
+  +datetime(6) date
+  +bigint coin_id
+  +int abbreviated_value
+  +int full_value
+}
+
+class socialaccount_socialaccount {
+  +id: int
+  +provider: varchar
+  +uid: varchar
+  +last_login: datetime
+  +date_joined: datetime
+  +extra_data: json
+  +user_id: int
+}
+
+class socialaccount_socialapp {
+  +id: int
+  +provider: varchar
+  +name: varchar
+  +client_id: varchar
+  +secret: varchar
+  +key: varchar
+  +provider_id: varchar
+  +settings: json
+}
+
+class socialaccount_socialapp_sites {
+  +id: bigint
+  +socialapp_id: int
+  +site_id: int
+}
+
+class socialaccount_socialtoken {
+  +id: int
+  +token: text
+  +token_secret: text
+  +expires_at: datetime
+  +account_id: int
+  +app_id: int
+}
+
+' Define the relationships between the tables (foreign keys)
+auth_group_permissions -- auth_group : "group_id"
+auth_group_permissions -- auth_permission : "permission_id"
+
+auth_user_groups -- auth_user : "user_id"
+auth_user_groups -- auth_group : "group_id"
+
+auth_user_user_permissions -- auth_user : "user_id"
+auth_user_user_permissions -- auth_permission : "permission_id"
+
+django_admin_log -- django_content_type : "content_type_id"
+django_admin_log -- auth_user : "user_id"
+
+main_bitcoinprice -- main_coin : "coin_id"
+main_coinhistory -- main_coin : "coin_id"
+main_depthdata -- main_coin : "coin_id"
+main_usernotificationpreference -- auth_user : "user_id"
+main_userprofile -- auth_user : "user_id"
+main_userprofile_favorite_coin -- main_coin : "coin_id"
+main_signin --> auth_user : FK
+
+news_article -- news_website : "website_id"
+news_comment -- news_article : "article_id"
+news_comment -- auth_user : "user_id"
+news_reply -- news_comment : "comment_id"
+news_reply -- auth_user : "user_id"
+
+other_bitcoinmetricdata -- other_bitcoinmetric : "metric_id"
+other_financialdata -- other_financialsymbol : "symbol_id"
+other_indicatorvalue -- other_indicator : "indicator_id"
+other_trenddata -- main_coin : "coin_id"
+
+
+socialaccount_socialaccount --> auth_user : FK
+socialaccount_socialtoken --> socialaccount_socialaccount : account_id FK
+socialaccount_socialtoken --> socialaccount_socialapp : app_id FK
+socialaccount_socialapp_sites --> socialaccount_socialapp : socialapp_id FK
+socialaccount_socialapp_sites --> django_site : site_id FK
+
+@enduml
