@@ -3,6 +3,15 @@
 <div class="container">
     <h2 class="mb-4">幣種管理</h2>
 
+    <!-- 搜尋表單 -->
+    <form method="GET" class="mb-3">
+        <div class="input-group">
+            <input type="text" name="q" class="form-control" placeholder="搜尋幣種名稱或縮寫" value="{{ query }}">
+            <button type="submit" class="btn btn-primary">搜尋</button>
+        </div>
+    </form>
+    
+
     <table class="table table-bordered table-hover align-middle">
         <thead class="table-primary">
             <tr>

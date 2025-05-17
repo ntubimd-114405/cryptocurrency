@@ -13,10 +13,23 @@ def dashboard(request):
 from main.models import Coin
 from django.contrib.auth.decorators import login_required
 
+from django.db.models import Q  # 匯入Q物件
+
 @login_required
 def crypto_management(request):
+    query = request.GET.get('q', '')  # 預設是空字串，不會出現 None
     coins = Coin.objects.all()
-    return render(request, 'administrator/crypto_management.html', {'coins': coins})
+
+    if query:
+        coins = coins.filter(
+            Q(coinname__icontains=query) |
+            Q(abbreviation__icontains=query)
+        )
+
+    return render(request, 'administrator/crypto_management.html', {
+        'coins': coins,
+        'query': query
+    })
 
 
 from django.http import HttpResponseRedirect
