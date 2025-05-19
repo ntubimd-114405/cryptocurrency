@@ -12,22 +12,11 @@
 </form>
 <ul>
     <li><strong>使用者:</strong> {{ data_location.user.username }}</li>
-    <li><strong>位置:</strong> {{ data_location.location }}</li>
-    <li><strong>URL:</strong> <a href="{{ data_location.url }}" target="_blank">{{ data_location.url }}</a></li>
-    <li><strong>描述:</strong> {{ data_location.description }}</li>
     <li><strong>創建時間:</strong> {{ data_location.created_at }}</li>
 </ul>
 
-<h1>Kaggle Notebook 管理</h1>
-
-<p>上傳結果: <a href="{{ link }}"><strong>{{ link }}</strong></a></p>
-
-<p>當前狀態: <strong>{{ status }}</strong></p>
-
-{% if status == "COMPLETE" %}
 <p>下載結果:</p>
 <div>{{ chart_html|safe }}</div>
-{% endif %}
 
 <a href="{% url 'ml_home' %}">
     <button>返回列表</button>

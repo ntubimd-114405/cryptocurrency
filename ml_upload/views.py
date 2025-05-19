@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from data_analysis.train import upload
 from data_analysis.train import download
+from data_analysis.train2 import api
 import os
 import pandas as pd
 import plotly.graph_objects as go
@@ -39,27 +40,26 @@ def data_location_detail(request, id):
     data_location = get_object_or_404(DataLocation, id=id)
     
     status = None
-    if data_location.status != "wait":
-        status = download.check_notebook_status(id, data_location.name)
     output_result = None
-    if status == "COMPLETE":
-        output_result = download.download_output(id, data_location.name)
-    folder_path = f"media/kaggle/{id}/output"
-    kaggle_username = os.getenv("KAGGLE_USERNAME")
-    link=f"https://www.kaggle.com/code/{kaggle_username}/crypto-{id}-{data_location.name}"
+
+    folder_path = f"media\model\{id}"
+    chart_html = plot_prediction_chart(folder_path)
+
     context = {
         'data_location': data_location,
         'status': status,
         'output_result': output_result,
-        'chart_html':plot_prediction_chart(folder_path),
-        'link': link
+        'chart_html': chart_html
     }
     # 渲染 template，並傳遞 data_location 實例
     return render(request, 'data_location_detail.html',context)
 
 def plot_prediction_chart(folder_path):
     # 設定 CSV 路徑
-    csv_path = os.path.join(settings.BASE_DIR, f"{folder_path}/pred.csv")
+    csv_path = os.path.join(settings.BASE_DIR, f"{folder_path}\pred.csv")
+
+    if not os.path.exists(csv_path):
+        return None
 
     # 讀取 CSV
     df = pd.read_csv(csv_path)
@@ -89,7 +89,27 @@ def plot_prediction_chart(folder_path):
 def run_program(request, id):
     # 獲取對應的 DataLocation 實例
     data_location = get_object_or_404(DataLocation, id=id)
-    link = upload.create_kaggle_metadata(id, data_location.name)
+    features = [
+            'close_price', 
+            'S&P 500 Index', 
+            'VIX Volatility Index', 
+            'WTI Crude Oil Futures', 
+            'US Dollar Index', 
+            'Gold Futures', 
+            'volume', 
+            'positive', 
+            'neutral', 
+            'negative', 
+            'Average Block Size', 
+            'Difficulty', 
+            'Hash Rate', 
+            'Miners Revenue', 
+            'Number Of Unique Addresses Used', 
+            'open_price', 
+            'high_price', 
+            'low_price'
+    ]
+    api.prediction_api(str(id),features)
     data_location.status = "Running"
     data_location.save()  # 保存更改
     return redirect('data_location_detail', id=id)
