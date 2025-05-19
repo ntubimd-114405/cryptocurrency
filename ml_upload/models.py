@@ -9,6 +9,8 @@ class DataLocation(models.Model):
 
     status = models.CharField(max_length=50 , default="wait")
 
+    features = models.TextField(blank=True, help_text="使用者選擇的特徵")
+
     # 儲存時間戳記，代表資料創建的時間
     created_at = models.DateTimeField(auto_now_add=True, help_text="資料節位置創建時間")
 

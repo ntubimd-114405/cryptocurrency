@@ -89,6 +89,7 @@ def plot_prediction_chart(folder_path):
 def run_program(request, id):
     # 獲取對應的 DataLocation 實例
     data_location = get_object_or_404(DataLocation, id=id)
+    
     features = [
             'close_price', 
             'S&P 500 Index', 
@@ -109,6 +110,7 @@ def run_program(request, id):
             'high_price', 
             'low_price'
     ]
+    features = [f.strip() for f in data_location.features.split(',') if f.strip()]
     api.prediction_api(str(id),features)
     data_location.status = "Running"
     data_location.save()  # 保存更改

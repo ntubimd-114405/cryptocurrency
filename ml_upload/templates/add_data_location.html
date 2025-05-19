@@ -3,13 +3,60 @@
 {% block title %}新增資料位置{% endblock %}
 
 {% block content %}
-<h1>新增 Data Location</h1>
+{% load static %}
+<style>
+    .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        gap: 12px;
+        margin-top: 10px;
+    }
 
-<form method="POST">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">提交</button>
-</form>
+    .btn-check:checked + .btn-feature {
+        background-color: #0d6efd;       /* 藍色選取 */
+        color: #fff;
+        border-color: #0d6efd;
+        box-shadow: 0 0 6px rgba(13, 110, 253, 0.6);
+    }
 
-<a href="{% url 'ml_home' %}">返回列表</a>
+    .btn-feature {
+        background-color: #2b2f34;       /* 深灰底對比 */
+        color: #f1f1f1;                  /* 字體偏白 */
+        border: 1px solid #444;          /* 邊框強化 */
+        border-radius: 0.5rem;
+        padding: 0.45rem 0.9rem;
+        transition: all 0.2s ease;
+        text-align: center;
+        white-space: nowrap;
+    }
+
+    .btn-feature:hover {
+        background-color: #3a3f45;       /* hover 顏色 */
+        color: #ffffff;
+    }
+</style>
+
+<div class="container mt-5">
+    <h2 class="mb-4">新增資料位置</h2>
+    <form method="post">
+        {% csrf_token %}
+
+        <div class="mb-3">
+            {{ form.name.label_tag }}
+            {{ form.name }}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">{{ form.features.label }}</label>
+            <div class="feature-grid">
+                {% for value, label in form.fields.features.choices %}
+                    <input type="checkbox" class="btn-check" name="features" id="feature-{{ forloop.counter }}" value="{{ value }}">
+                    <label class="btn btn-feature" for="feature-{{ forloop.counter }}">{{ label }}</label>
+                {% endfor %}
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-success mt-3 px-4 py-2">送出</button>
+    </form>
+</div>
 {% endblock %}
