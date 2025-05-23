@@ -3,6 +3,7 @@
 {% block title %}虛擬貨幣評論區{% endblock %}
 
 {% block content %}
+<h1><a href="{% url 'analyze_sentiment_by_id' article.id %}">重新分析文章情緒</a></h1>
 <div class="container mt-4">
     <!-- 顯示新聞內容 -->
     <div class="row">

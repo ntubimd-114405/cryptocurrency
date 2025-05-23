@@ -127,3 +127,32 @@ def news_list(request):
         'end_date': end_date,
     })
 # 新聞列表翻頁-----------------
+
+from data_analysis.sentiment.api import predict_sentiment_api
+
+
+def analyze_sentiment_by_id(request, article_id):
+    article = get_object_or_404(Article, pk=article_id)
+
+    if article.content:
+        sentiment_result = predict_sentiment_api(article.content)
+        article.sentiment = sentiment_result
+        article.save(update_fields=['sentiment'])
+        message = f"文章 (ID: {article_id}) 的情緒分析已完成，結果: {sentiment_result}"
+    else:
+        message = f"文章 (ID: {article_id}) 沒有內容，無法分析情緒"
+
+    sentiment_label_map = {
+        '-1': '負面',
+        '0': '中立',
+        '1': '正面',
+        '-9': '信心不足',
+        None: '尚未進行分析'
+    }
+    sentiment_label = sentiment_label_map.get(article.sentiment, '未知')
+
+    return render(request, 'analyze_single_result.html', {
+        'article': article,
+        'message': message,
+        'sentiment_label': sentiment_label,
+    })

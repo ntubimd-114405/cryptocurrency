@@ -63,10 +63,16 @@
                             <div class="d-flex justify-content-between align-items-end">
                                 <div class="d-flex align-items-center gap-2">
                                     <span class="me-2">情緒：</span>
-                                    {% if article.sentiment == 'positive' %}😄 正面
-                                    {% elif article.sentiment == 'neutral' %}😐 中立
-                                    {% elif article.sentiment == 'negative' %}😔 負面
-                                    {% else %}❓ 判斷中...
+                                    {% if article.sentiment == '1' %}
+                                        😄 正面
+                                    {% elif article.sentiment == '0' %}
+                                        😐 中立
+                                    {% elif article.sentiment == '-1' %}
+                                        😔 負面
+                                    {% elif article.sentiment == '-9' %}
+                                        ⚠️ 信心不足
+                                    {% else %}
+                                        ❓ 尚未進行分析
                                     {% endif %}
                                 </div>
                                 <div class="d-flex align-items-center gap-2 text-muted small">
