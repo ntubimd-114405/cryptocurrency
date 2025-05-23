@@ -20,6 +20,8 @@ class Article(models.Model):
     time = models.DateTimeField(null=True)
     website = models.ForeignKey(Website, on_delete=models.CASCADE)  # 外鍵關聯到新聞網站
 
+    sentiment = models.CharField(max_length=10, null=True, blank=True)  # 新增情緒欄位
+
     def __str__(self):
         return self.title if self.title else "No Title"
     
