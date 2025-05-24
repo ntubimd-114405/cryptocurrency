@@ -16,15 +16,9 @@
     </div>
 {% endif %}
 
-<!-- 小廣告容器 -->
-<div id="ad-minimized" style="display: none;">
-    <img src="{% static 'images/AdvertisingPicture2.png' %}" alt="小廣告" class="ad-mini-image">
-</div>
-
 <script>
     let adPopup = document.getElementById("ad-popup");
     let closeBtn = document.getElementById("close-btn");
-    let adMini = document.getElementById("ad-minimized");
 
     function showAd() {
         adPopup.style.display = "block";
@@ -35,13 +29,7 @@
         adPopup.classList.remove("show");
         setTimeout(function () {
             adPopup.style.display = "none";
-            adMini.style.display = "block";
         }, 500);
-    };
-
-    adMini.onclick = function () {
-        adMini.style.display = "none";
-        showAd();
     };
 
     // 延遲顯示大廣告（這裡使用 10 秒）
@@ -108,28 +96,5 @@
         #pppp {
             font-size: 1.2rem;
         }
-    }
-
-    /* 小廣告樣式 */
-    #ad-minimized {
-        position: fixed;
-        top: 15%;
-        left: 20px;
-        width: 200px;
-        height: 715px;
-        background-color: rgba(0, 0, 0, 0.8);
-        border-radius: 10px;
-        padding: 5px;
-        box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
-        cursor: pointer;
-        z-index: 9999;
-        display: none;
-        transition: transform 0.3s ease;
-    }
-
-    .ad-mini-image {
-        max-width: 100%;
-        max-height: 100%;
-        border-radius: 5px;
     }
 </style>
