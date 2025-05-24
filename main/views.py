@@ -205,7 +205,7 @@ def crypto_list(request):
         # 預設根據 market_cap 由大到小排序
         all_prices = all_prices.order_by('-market_cap')
 
-    paginator = Paginator(all_prices, 10)  # 每頁顯示10條數據
+    paginator = Paginator(all_prices, 40)  # 每頁顯示10條數據
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 

@@ -14,73 +14,93 @@
         justify-content: space-between;
         align-items: flex-start;
         flex-wrap: wrap;
-        gap: 20px;
-        padding: 30px;
+        gap: 30px;
+        padding: 40px 30px;
         background: #eee;
         color: #333;
     }
 
-    .footer-container > div {
+    .footer-section {
         flex: 1;
-        max-width: 25%;
         min-width: 200px;
-        margin-bottom: 15px;
+        max-width: 25%;
     }
 
-    .footer-container h3, .footer-container h4 {
+    .footer-section h4 {
         margin-bottom: 10px;
+        font-size: 18px;
+        font-weight: bold;
+        color: #222;
+    }
+
+    .footer-section p,
+    .footer-section a {
+        font-size: 16px;
+        line-height: 1.6;
+    }
+
+    .footer-logo {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        text-align: center;
+    }
+
+    .footer-logo img {
+        height: 180px;
+        object-fit: contain;
     }
 
     .footer-legal {
         text-align: center;
         width: 100%;
-        margin-top: 20px;
+        margin-top: 30px;
         font-size: 14px;
-        color: #333;
-        font-size: 18px;
+        color: #555;
     }
 
-    .social-links a {
-        margin: 0 8px;
-        font-size: 20px;
-        color: #37BCD8;
-    }
+    @media (max-width: 768px) {
+        .footer-container {
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
 
-    .social-links a:hover {
-        color: #1a8ca8;
-    }
+        .footer-section {
+            max-width: 100%;
+        }
 
+        .footer-logo {
+            justify-content: center;
+        }
+    }
 </style>
+
 <footer>
+    {% load static %}
     <div class="footer-container">
-        <!-- Logo and description -->
-        <div style="margin-bottom: 15px;">
-            <h3>國立臺北商業大學（NTUB）</h3>
-            <p>地址：100台北市中正區濟南路一段321號</p>
-            <p>電話：(+886) 2-2322-6161</p>
-            <p>傳真：(+886) 2-2322-6170</p>
-            <p>電子郵件：<a href="mailto:info@ntub.edu.tw" style="color: #37BCD8;">info@ntub.edu.tw</a></p>
+        <!-- Logo -->
+        <div class="footer-section footer-logo">
+            <img src="{% static 'images/raw.png' %}" alt="機器人">
         </div>
-    
-        <!-- Navigation -->
-        <div style="margin-bottom: 15px;">
-            <h4>快速連結：</h4>
-            <a href="https://www.ntub.edu.tw/" target="_blank" style="color: #37BCD8; margin: 0 10px;">學校首頁</a>
-            <a href="https://imd.ntub.edu.tw/" target="_blank" style="color: #37BCD8; margin: 0 10px;">學術資源</a>
-            <a href="https://library.ntub.edu.tw/wSite/mp" target="_blank" style="color: #37BCD8; margin: 0 10px;">圖書館</a>
+
+        <!-- Quick Links -->
+        <div class="footer-section">
+            <h4>快速連結</h4>
+            <a href="{% url 'user_terms' %}" target="_blank">使用者條款</a>
         </div>
-    
-        <!-- Social links -->
-        <div style="margin-bottom: 15px;">
-            <h4>社群媒體：</h4>
-            <a href="https://www.facebook.com/NTUB1917/?locale=zh_TW" target="_blank" style="color: #37BCD8; margin: 0 10px;">Facebook</a>
-            <a href="https://www.instagram.com/ntub_1917/" target="_blank" style="color: #37BCD8; margin: 0 10px;">Instagram</a>
+
+        <!-- Contact -->
+        <div class="footer-section">
+            <h4>聯絡我們</h4>
+            <p>電子郵件：<a href="mailto:case405case405@gmail.com">case405case405@gmail.com</a></p>
+            <p>GitHub：<a href="https://github.com/ntubimd-114405/cryptocurrency" target="_blank">cryptocurrency</a></p>
         </div>
-    
-        <!-- Legal Disclaimer -->
+
+        <!-- Legal -->
         <div class="footer-legal">
-            <p>© 2025 國立臺北商業大學 版權所有</p>
+            <p>© 2025 AI幣市通 版權所有</p>
         </div>
     </div>
-    
 </footer>
