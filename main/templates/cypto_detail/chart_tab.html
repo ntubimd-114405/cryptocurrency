@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<title>加密貨幣K線圖 - 動態時間區間查詢</title>
+<style>
+  #chartdiv {
+    width: 100%;
+    height: 600px;
+  }
+  #controls {
+    margin-bottom: 10px;
+  }
+  label {
+    margin-right: 10px;
+  }
+</style>
+<!-- amCharts 5 核心 -->
+<script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/stock.js"></script>
+<script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+</head>
+<body>
+
+<div id="controls">
+  <label>開始時間：
+    <input type="datetime-local" id="startDate" />
+  </label>
+  <label>結束時間：
+    <input type="datetime-local" id="endDate" />
+  </label>
+  <button id="btnQuery">查詢</button>
+  <span id="loadingText"></span>
+</div>
+
+<div id="chartdiv"></div>
+
+<script>
+am5.ready(function() {
+  var root = am5.Root.new("chartdiv");
+  root.setThemes([am5themes_Animated.new(root)]);
+
+  var stockChart = root.container.children.push(am5stock.StockChart.new(root, {}));
+
+  var mainPanel = stockChart.panels.push(am5stock.StockPanel.new(root, {
+    wheelX: "panX",
+    wheelY: "zoomX",
+    height: am5.percent(65),
+    layout: root.verticalLayout
+  }));
+
+  var dateAxisMain = am5xy.DateAxis.new(root, {
+    baseInterval: { timeUnit: "minute", count: 1 },
+    renderer: am5xy.AxisRendererX.new(root, {}),
+    tooltip: am5.Tooltip.new(root, {})
+  });
+  dateAxisMain.setAll({
+    tooltipDateFormat: "yyyy-MM-dd HH:mm",
+    dateFormats: {
+      minute: "HH:mm",
+      hour: "yyyy-MM-dd HH:mm",
+      day: "yyyy-MM-dd"
+    }
+  });
+  mainPanel.xAxes.push(dateAxisMain);
+
+  var valueAxis = mainPanel.yAxes.push(am5xy.ValueAxis.new(root, {
+    renderer: am5xy.AxisRendererY.new(root, { pan: "zoom" }),
+    tooltip: am5.Tooltip.new(root, {})
+  }));
+
+  var candleSeries = mainPanel.series.push(am5xy.CandlestickSeries.new(root, {
+    name: "價格",
+    clustered: false,
+    openValueYField: "open",
+    highValueYField: "high",
+    lowValueYField: "low",
+    valueYField: "close",
+    valueXField: "date",
+    xAxis: dateAxisMain,
+    yAxis: valueAxis,
+    tooltip: am5.Tooltip.new(root, {
+      labelText: "日期: {valueX.formatDate('yyyy-MM-dd HH:mm')}\n開: {open}\n高: {high}\n低: {low}\n收: {close}"
+    })
+  }));
+
+  mainPanel.set("scrollbarX", am5.Scrollbar.new(root, { orientation: "horizontal" }));
+
+  var volumePanel = stockChart.panels.push(am5stock.StockPanel.new(root, {
+    wheelX: "panX",
+    height: am5.percent(35),
+    layout: root.verticalLayout
+  }));
+
+  var volumeAxis = volumePanel.yAxes.push(am5xy.ValueAxis.new(root, {
+    renderer: am5xy.AxisRendererY.new(root, { inside: true }),
+    height: am5.percent(100),
+    tooltip: am5.Tooltip.new(root, {})
+  }));
+
+  var dateAxisVolume = am5xy.DateAxis.new(root, {
+    baseInterval: { timeUnit: "minute", count: 1 },
+    renderer: am5xy.AxisRendererX.new(root, { visible: false }),
+    tooltip: am5.Tooltip.new(root, {})
+  });
+  volumePanel.xAxes.push(dateAxisVolume);
+
+  var volumeSeries = volumePanel.series.push(am5xy.ColumnSeries.new(root, {
+    name: "成交量",
+    valueXField: "date",
+    valueYField: "volume",
+    xAxis: dateAxisVolume,
+    yAxis: volumeAxis,
+    clustered: false,
+    tooltip: am5.Tooltip.new(root, {
+      labelText: "成交量: {valueY}"
+    })
+  }));
+
+  volumeSeries.columns.template.adapters.add("fill", function(fill, target) {
+    var dataItem = target.dataItem;
+    if (dataItem) {
+      var open = dataItem.dataContext.open;
+      var close = dataItem.dataContext.close;
+      return close > open ? am5.color(0xff0000) : am5.color(0x00aa00);
+    }
+    return fill;
+  });
+  volumeSeries.columns.template.adapters.add("stroke", function(stroke, target) {
+    var dataItem = target.dataItem;
+    if (dataItem) {
+      var open = dataItem.dataContext.open;
+      var close = dataItem.dataContext.close;
+      return close > open ? am5.color(0xff0000) : am5.color(0x00aa00);
+    }
+    return stroke;
+  });
+
+  var legend = stockChart.children.push(am5stock.StockLegend.new(root, {
+    stockChart: stockChart,
+    centerX: am5.percent(50),
+    x: am5.percent(50)
+  }));
+
+  var coinId = 1;
+
+  async function fetchCoinHistory(coinId, start, end) {
+    const url = new URL(`/coin-history/${coinId}/`, window.location.origin);
+    url.searchParams.append("start", start.toISOString());
+    url.searchParams.append("end", end.toISOString());
+
+    const resp = await fetch(url);
+    if (resp.status === 204) return [];
+    if (!resp.ok) throw new Error("API 請求失敗：" + resp.status);
+    const json = await resp.json();
+    return json.data;
+  }
+
+  async function loadData(start, end) {
+    try {
+      document.getElementById('loadingText').textContent = "資料讀取中...";
+      const data = await fetchCoinHistory(coinId, start, end);
+
+      if (!data || data.length === 0) {
+        document.getElementById('loadingText').textContent = "查無資料，請選擇其他時間區間";
+        candleSeries.data.setAll([]);
+        volumeSeries.data.setAll([]);
+        return;
+      }
+
+      candleSeries.data.setAll(data);
+      volumeSeries.data.setAll(data);
+
+      dateAxisMain.zoom(0, 1);
+      dateAxisVolume.zoom(0, 1);
+
+      document.getElementById('loadingText').textContent = "資料載入完成";
+    } catch (e) {
+      console.error(e);
+      alert("資料載入失敗：" + e.message);
+      document.getElementById('loadingText').textContent = "";
+    }
+  }
+
+  function setDefaultDates() {
+    const end = new Date();
+    const start = new Date(end.getTime() - 7 * 24 * 3600 * 1000);
+    document.getElementById('startDate').value = start.toISOString().slice(0, 16);
+    document.getElementById('endDate').value = end.toISOString().slice(0, 16);
+    return { start, end };
+  }
+
+  const { start, end } = setDefaultDates();
+  loadData(start, end);
+
+  document.getElementById('btnQuery').addEventListener('click', () => {
+    const startInput = document.getElementById('startDate').value;
+    const endInput = document.getElementById('endDate').value;
+    if (!startInput || !endInput) {
+      alert("請選擇完整時間區間");
+      return;
+    }
+    const start = new Date(startInput);
+    const end = new Date(endInput);
+    if (start >= end) {
+      alert("開始時間需早於結束時間");
+      return;
+    }
+    loadData(start, end);
+  });
+  const startInputEl = document.getElementById('startDate');
+  const endInputEl = document.getElementById('endDate');
+
+  let isProgrammaticChange = false;
+
+  startInputEl.addEventListener('change', () => {
+    if (isProgrammaticChange) return;
+    if (startInputEl.value) {
+      const start = new Date(startInputEl.value);
+      const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+      isProgrammaticChange = true;
+      endInputEl.value = end.toISOString().slice(0, 16);
+      isProgrammaticChange = false;
+    }
+  });
+
+  endInputEl.addEventListener('change', () => {
+    if (isProgrammaticChange) return;
+    if (endInputEl.value) {
+      const end = new Date(endInputEl.value);
+      const start = new Date(end.getTime() - 24 * 60 * 60 * 1000);
+      isProgrammaticChange = true;
+      startInputEl.value = start.toISOString().slice(0, 16);
+      isProgrammaticChange = false;
+    }
+  });
+
+
+
+
+
+});
+</script>
+
+</body>
+</html>

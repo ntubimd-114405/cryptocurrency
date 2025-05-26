@@ -170,256 +170,42 @@
         visibility: visible;
     }
 </style>
-
-<div class="container">
+<div>
     <!-- 頁面標題 -->
     <h2 class="chart-title mt-4">
         <img src="{{ data.logo_url }}" alt="{{ data.coinname }} Logo" class="me-2">
         <span class="text-primary">{{ data.coinname }}</span>
     </h2>
     <p class="text-center text-muted mb-4">簡稱: <span class="fw-semibold">{{ data.abbreviation }}</span></p>
-
-    <!-- 控制面板 -->
-    <div class="controls-container">
-        <!-- 顯示已讀取資料的筆數 -->
-        <div class="info-box text-center mb-4">
-            <span class="h5 text-dark">所有資料筆數: <span id="data-count" class="fw-bold text-success">0</span></span>
-        </div>
-
-        <!-- 顯示第一筆和最後一筆的日期 -->
-        <div class="info-box text-center mb-4">
-            <span class="h6 text-dark">第一筆日期: <span id="first-date" class="fw-bold text-info">N/A</span></span>
-            <span class="ms-3 h6 text-dark">最後一筆日期: <span id="last-date" class="fw-bold text-info">N/A</span></span>
-        </div>
-
-        <!-- 設定時間區間選擇 -->
-        <div class="text-center mb-4">
-            <label for="timeframe-select" class="h6 fw-semibold d-block mb-2">選擇時間區間：</label>
-            <div class="d-flex justify-content-center align-items-center">
-                <select id="timeframe-select" class="form-select w-auto mx-2">
-                    <option value="minute">分鐘</option>
-                    <option value="hour">小時</option>
-                    <option value="day" selected>天</option>
-                    <option value="week">週</option>
-                    <option value="month">月</option>
-                </select>
-                <small class="text-muted">(暫無功能)</small>
-            </div>
-        </div>
-
-        <!-- 開始時間範圍滑塊 -->
-        <div class="slider-box text-center mb-4">
-            <label for="start-slider" class="h6 fw-semibold">選擇開始時間：</label>
-            <input type="range" id="start-slider" min="0" max="100" value="100" step="1" class="form-range mx-auto">
-        </div>
-
-        <!-- 資料範圍滑塊 -->
-        <div class="slider-box text-center mb-4">
-            <label for="range-slider" class="h6 fw-semibold">選擇顯示的資料範圍：</label>
-            <input type="range" id="range-slider" min="1" max="300" value="100" step="1" class="form-range mx-auto">
-            <span id="range-value" class="fw-bold">100筆</span>
-        </div>
-    </div>
-
-    <!-- K 線圖容器 -->
-    <div class="chart-container text-center mb-4">
-        <svg id="k-line-chart" width="1000" height="500"></svg>
-    </div>
 </div>
-<div id="tooltip"
-    style="position: absolute; opacity: 0; background: rgba(0, 0, 0, 0.7); color: white; padding: 10px; border-radius: 5px;">
+
+<ul class="nav nav-tabs" id="mainTab" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active" id="main-tab" data-bs-toggle="tab" data-bs-target="#main" type="button" role="tab">K線圖</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="info-tab" data-bs-toggle="tab" data-bs-target="#info" type="button" role="tab">基本資訊</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="orderbook-tab" data-bs-toggle="tab" data-bs-target="#orderbook" type="button" role="tab">即時訂單簿</button>
+  </li>
+</ul>
+
+<!-- 分頁內容 -->
+<div class="tab-content mt-3">
+  <!-- ✅ 預設主頁面：K 線圖（你的原始內容放這） -->
+  <div class="tab-pane fade show active" id="main" role="tabpanel" aria-labelledby="main-tab">
+    {% include 'cypto_detail/chart_tab.html' %}
+  </div>
+
+  <!-- 基本資訊 -->
+  <div class="tab-pane fade" id="info" role="tabpanel" aria-labelledby="info-tab">
+    {% include 'cypto_detail/coin_info.html' %}
+  </div>
+
+  <!-- 即時訂單簿 -->
+  <div class="tab-pane fade" id="orderbook" role="tabpanel" aria-labelledby="orderbook-tab">
+    {% include 'cypto_detail/orderbook_trades.html' %}
+  </div>
 </div>
-<script src="https://d3js.org/d3.v7.min.js"></script>
-<script>
-    const margin = { top: 20, right: 50, bottom: 30, left: 50 };
-    const width = 1000 - margin.left - margin.right;
-    const height = 500 - margin.top - margin.bottom;
-
-    const svg = d3.select("#k-line-chart")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
-        .append("g")
-        .attr("transform", `translate(${margin.left},${margin.top})`);
-
-    const x = d3.scaleTime().range([0, width]);
-    const y = d3.scaleLinear().range([height, 0]);
-
-    const parseDate = d3.timeParse("%Y-%m-%dT%H:%M:%SZ");
-    const formatDate = d3.timeFormat("%Y/%m/%d:%H");  // 定義日期格式
-
-    let currentData = [];
-    let totalCount = 0;
-    let startValue = 0;  // 預設 start 為 100
-    let limitValue = 0;
-    let timeframe = "day";  // 預設為 "day"
-    let pendingRequest = null; // 用於存儲當前的 API 請求狀態
-
-    // 載入資料
-    function debounce(fn, delay) {
-        let timer = null;
-        return function (...args) {
-            clearTimeout(timer);
-            timer = setTimeout(() => fn(...args), delay);
-        };
-    }
-
-    // 只在數據變更時才請求 API
-    function loadData(newStart, newLimit, newTimeframe) {
-        if (
-            newStart === startValue &&
-            newLimit === limitValue &&
-            newTimeframe === timeframe
-        ) {
-            return; // 避免重複加載相同數據
-        }
-
-        // 更新變數
-        startValue = newStart;
-        limitValue = newLimit;
-        timeframe = newTimeframe;
-
-        if (pendingRequest) {
-            pendingRequest.abort(); // 中止當前請求
-        }
-
-        const controller = new AbortController();
-        pendingRequest = controller;
-
-        fetch(`/coin-history/{{ coin_id }}?start=${startValue}&limit=${limitValue}&timeframe=${timeframe}`, {
-            signal: controller.signal,
-        })
-            .then((response) => response.json())
-            .then((data) => {
-                updateChart(data.data);
-                updateDataCount(data.total_count);
-                updateDateInfo(data.data);
-                pendingRequest = null;
-            })
-            .catch((err) => {
-                if (err.name === "AbortError") {
-                    console.log("請求被中止");
-                }
-            });
-    }
-
-    loadData(100, 100, "day");
-
-    // 使用 debounce 來降低頻率
-    const debouncedLoadData = debounce(loadData, 50);
-
-    // 更新圖表
-    function updateChart(data) {
-        data.forEach(d => {
-            d.date = parseDate(d.date);
-            d.open_price = +d.open_price;
-            d.close_price = +d.close_price;
-            d.high_price = +d.high_price;
-            d.low_price = +d.low_price;
-            d.volume = +d.volume;
-        });
-
-        x.domain(d3.extent(data, d => d.date));
-        y.domain([d3.min(data, d => d.low_price), d3.max(data, d => d.high_price)]);
-
-        currentData = data;
-
-        svg.selectAll("*").remove();
-
-        svg.append("g")
-            .attr("transform", `translate(0,${height})`)
-            .call(d3.axisBottom(x).tickFormat(d3.timeFormat("%Y%m%d")));
-
-        svg.append("g")
-            .call(d3.axisLeft(y));
-
-        // 創建顯示 K 線圖的線段
-        svg.append("g")
-            .selectAll(".candlestick")
-            .data(data)
-            .enter()
-            .append("line")
-            .attr("class", "candlestick")
-            .attr("x1", d => x(d.date))
-            .attr("x2", d => x(d.date))
-            .attr("y1", d => y(d.high_price))
-            .attr("y2", d => y(d.low_price))
-            .attr("stroke", "#333")
-            .attr("stroke-width", 1.5);
-
-        svg.append("g")
-            .selectAll(".body")
-            .data(data)
-            .enter()
-            .append("rect")
-            .attr("class", "candlestick")
-            .attr("x", d => x(d.date) - 5)
-            .attr("y", d => y(Math.max(d.open_price, d.close_price)))
-            .attr("width", 10)
-            .attr("height", d => Math.abs(y(d.open_price) - y(d.close_price)))
-            .attr("fill", d => d.open_price > d.close_price ? "#FF5733" : "#4CAF50")
-            .attr("stroke", "#000")
-            .attr("stroke-width", 0.5)
-            .attr("rx", 3)
-            .attr("ry", 3)
-            // 滑鼠懸停事件
-            .on("mouseover", function (event, d) {
-                const [xPosition, yPosition] = d3.pointer(event); // 使用解構來獲取滑鼠位置
-
-                // 取得 SVG 的邊界資訊
-                const svgRect = svg.node().getBoundingClientRect();
-
-                // 調整工具提示的位置，確保它不會超出邊界
-                const tooltip = d3.select("#tooltip")
-                    .style("left", `${svgRect.left + xPosition + 20}px`) // 根據 SVG 偏移來設定位置
-                    .style("top", `${svgRect.top + yPosition + 10}px`) // 調整為相對於 SVG 畫布的位置
-                    .style("opacity", 1)
-                    .html(
-                        `<strong>日期:</strong> ${formatDate(d.date)} <br>
-                    <strong>開盤價:</strong> ${d.open_price} <br>
-                    <strong>收盤價:</strong> ${d.close_price} <br>
-                    <strong>最高價:</strong> ${d.high_price} <br>
-                    <strong>最低價:</strong> ${d.low_price} <br>
-                    <strong>交易量:</strong> ${d.volume}`
-                    );
-            })
-            .on("mouseout", function () {
-                // 隱藏工具提示
-                d3.select("#tooltip").style("opacity", 0);
-            });
-    }
-
-    // 更新已讀取資料的筆數
-    function updateDataCount(count) {
-        document.getElementById("data-count").textContent = count;
-    }
-
-    // 更新第一筆和最後一筆日期
-    function updateDateInfo(data) {
-        if (data.length > 0) {
-            let firstDate = data[0].date;
-            let lastDate = data[data.length - 1].date;
-            document.getElementById("first-date").textContent = formatDate(firstDate);
-            document.getElementById("last-date").textContent = formatDate(lastDate);
-        }
-    }
-
-    // 當開始時間滑塊變動時
-    document.getElementById("start-slider").addEventListener("input", function () {
-        debouncedLoadData(this.value, limitValue, timeframe);
-    });
-
-    // 當範圍滑塊變動時
-    document.getElementById("range-slider").addEventListener("input", function () {
-        document.getElementById("range-value").textContent = this.value + "筆";
-        debouncedLoadData(startValue, this.value, timeframe);
-    });
-
-    // 當時間範圍選擇變更時
-    document.getElementById("timeframe-select").addEventListener("change", function () {
-        debouncedLoadData(startValue, limitValue, this.value);
-    });
-
-    // 預設加載資料
-    loadData(startValue, limitValue, timeframe);
-</script>
 {% endblock %}
