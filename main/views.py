@@ -231,6 +231,42 @@ def crypto_list(request):
         'favorite_coin_ids': favorite_coin_ids,
     })
 
+def crypto_prices_ajax(request):
+    query = request.GET.get('query', '') 
+    sort_by = request.GET.get('sort_by')  
+    sort_order = request.GET.get('sort_order')
+
+    if query:
+        prices = BitcoinPrice.objects.filter(coin__coinname__icontains=query)
+    else:
+        prices = BitcoinPrice.objects.all()
+
+    if sort_by and sort_order == 'asc':
+        prices = prices.order_by(sort_by)
+    elif sort_by and sort_order == 'desc':
+        prices = prices.order_by(F(sort_by).desc())
+    else:
+        prices = prices.order_by('-market_cap')
+
+    # 只取前40筆，避免一次回傳太多資料
+    prices = prices.all()
+
+    # 準備回傳的資料格式
+    data = []
+    for price in prices:
+        data.append({
+            'id': price.id,
+            'coin_name': price.coin.coinname,
+            'usd': format_crypto_price(price.usd),
+            'twd': format_crypto_price(price.twd),
+            'jpy': format_crypto_price(price.jpy),
+            'eur': format_crypto_price(price.eur),
+            'volume_24h': format_crypto_price(price.volume_24h),
+            'market_cap': format_crypto_price(price.market_cap),
+        })
+
+    return JsonResponse({'prices': data,'sort_by': sort_by,'sort_order': sort_order,})
+
 from django.shortcuts import render, redirect
 from .forms import UserProfileForm
 from django.contrib.auth.decorators import login_required

@@ -15,7 +15,7 @@ urlpatterns = [
     path('remove-favorite/<int:pk>/', views.remove_from_favorites, name='remove_from_favorites'),
     path('favorites/', views.favorite_coins, name='favorite_coins'),
     path('register/', views.register_view, name='register'),
-
+    path('crypto_prices_ajax/', views.crypto_prices_ajax, name='crypto_prices_ajax'),
 
     # 忘記密碼
     # path('password_reset/', views.CustomPasswordResetView.as_view(), name='password_reset'),
