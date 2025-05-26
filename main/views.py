@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404,redirect
 import requests
 from django.http import JsonResponse,HttpResponseRedirect
 from .models import BitcoinPrice,UserProfile,Coin,NewsWebsite,NewsArticle,CoinHistory,User
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.core.paginator import Paginator
 # 登入頁面
 from django.contrib.auth import authenticate, login, logout
@@ -61,41 +61,6 @@ def home(request):
             'error': '無法獲取資料，請稍後再試。'
         })
 
-
-
-def crypto_detail(request, pk):
-    # 查詢 CoinHistory 資料
-    coin_history = CoinHistory.objects.filter(coin_id=pk).order_by('date')
-
-    # 準備資料
-    dates = [entry.date for entry in coin_history]
-    open_prices = [entry.open_price for entry in coin_history]
-    high_prices = [entry.high_price for entry in coin_history]
-    low_prices = [entry.low_price for entry in coin_history]
-    close_prices = [entry.close_price for entry in coin_history]
-
-    # 創建 K 線圖
-    fig = go.Figure(data=[go.Candlestick(
-        x=dates,
-        open=open_prices,
-        high=high_prices,
-        low=low_prices,
-        close=close_prices,
-        name="Candlestick"
-    )])
-
-    # 更新圖表的布局
-    fig.update_layout(
-        title=f"Price History for Coin {pk}",
-        xaxis_title="Date",
-        yaxis_title="Price",
-        xaxis_rangeslider_visible=False
-    )
-
-    # 將圖表的 HTML 代碼傳遞到模板
-    graph = fig.to_html(full_html=False)
-    price = get_object_or_404(BitcoinPrice, pk=pk)  # 獲取單一對象，若不存在則返回404
-    return render(request, 'crypto_detail.html', {'price':price,'graph': graph})
 
 #註冊
 from django.db import IntegrityError
@@ -521,47 +486,71 @@ def crypto_price_chart(request):
     return HttpResponse("hello")
 
 
-from django.shortcuts import render
-from .models import CoinHistory
-from django.http import JsonResponse
-
 def crypto_detail(request, coin_id):
-    data = Coin.objects.get(id=coin_id)
-    return render(request, 'crypto_detail.html', {'coin_id': coin_id,'data':data})
+    coin = get_object_or_404(Coin, id=coin_id)
 
-from django.db.models import Min, Max, Sum, Subquery, OuterRef
+    # 最新價格資料
+    latest_price = BitcoinPrice.objects.filter(coin=coin).order_by('-timestamp').first()
+
+    # 最新歷史資料（K 線）
+    latest_history = CoinHistory.objects.filter(coin=coin).order_by('-date').first()
+
+    return render(request, 'crypto_detail.html', {
+        'coin_id': coin_id,
+        'data': coin,  # 原本叫 data 的其實是 coin
+        'coin': coin,  # 提供給 include 用
+        'latest_price': latest_price,
+        'latest_history': latest_history
+    })
+
+from django.db.models import Min, Max, Sum, Subquery, OuterRef,Avg
 from django.db.models.functions import TruncMinute, TruncHour, TruncDay, TruncWeek, TruncMonth
 from django.http import JsonResponse
 from .models import CoinHistory
+from django.db.models import F, ExpressionWrapper, DateTimeField, Func, IntegerField
+import time
+from django.utils.dateparse import parse_datetime
+from django.utils.timezone import make_aware
+import pytz
+
 
 def coin_history(request, coin_id):
-    # 獲取請求參數，並設置預設值
-    end = int(request.GET.get('start', 0))  # 默認從第0條數據開始
-    limit = int(request.GET.get('limit', 1000))  # 默認最多返回 1000 條數據
-    timeframe = request.GET.get('timeframe', 'minute')  # 默認為分鐘級別
-    total_count = CoinHistory.objects.filter(coin_id=coin_id).count()
-    # 計算 start 位置
-    end = int(total_count * (end / 100))  # 轉換為數據索引位置
-    
-    # 時間聚合對應關係
-    time_mapping = {
-        'minute': TruncMinute('date'),
-        'hour': TruncHour('date'),
-        'day': TruncDay('date'),
-        'week': TruncWeek('date'),
-        'month': TruncMonth('date'),
-    }
+    start_str = request.GET.get('start')
+    end_str = request.GET.get('end')
 
-    time_trunc = time_mapping[timeframe]
+    if not start_str or not end_str:
+        return JsonResponse({'error': '缺少 start 或 end 參數'}, status=400)
 
-    # 查詢並聚合數據
-    history_data = CoinHistory.objects.filter(coin_id=coin_id) \
-    .values('date', 'open_price', 'high_price', 'low_price', 'close_price', 'volume') \
-    .order_by('date')[max(0, end-limit):end]  # 按日期升序排列
-    # 轉換為列表
+    start = parse_datetime(start_str)
+    end = parse_datetime(end_str)
 
-    data = list(history_data)
-    return JsonResponse({'data': data, 'total_count': total_count}, safe=False)
+    if not start or not end:
+        return JsonResponse({'error': 'start 或 end 參數格式錯誤'}, status=400)
+
+    if start >= end:
+        return JsonResponse({'error': 'start 需早於 end'}, status=400)
+
+    # 查詢資料，注意這裡假設 date 存的是 UTC 時間
+    qs = CoinHistory.objects.filter(
+        coin_id=coin_id,
+        date__gte=start,
+        date__lte=end
+    ).order_by('date')
+
+    data = []
+    for item in qs:
+        # amCharts 需要 timestamp (毫秒)
+        timestamp = int(item.date.timestamp() * 1000)
+        data.append({
+            "date": timestamp,
+            "open": float(item.open_price),
+            "high": float(item.high_price),
+            "low": float(item.low_price),
+            "close": float(item.close_price),
+            "volume": float(item.volume)
+        })
+
+    return JsonResponse({"data": data})
 
 @login_required
 def delete_account(request):
