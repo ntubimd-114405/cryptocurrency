@@ -144,12 +144,12 @@
                             <img src="{{ price.coin.logo_url }}" alt="logo"><br>{{ price.coin.coinname }}
                         </a>
                     </td>
-                    <td style="text-align: center; vertical-align: middle;">{{ price.usd_display }}</td>
-                    <td style="text-align: center; vertical-align: middle;">{{ price.twd_display }}</td>
-                    <td style="text-align: center; vertical-align: middle;">{{ price.jpy_display }}</td>
-                    <td style="text-align: center; vertical-align: middle;">{{ price.eur_display }}</td>
-                    <td style="text-align: center; vertical-align: middle;">{{ price.market_cap_display }}</td>
-                    <td style="text-align: center; vertical-align: middle;">{{ price.volume_24h_display }}</td>
+                    <td id = "usd-{{price.id}}" style="text-align: center; vertical-align: middle;">{{ price.usd_display }}</td>
+                    <td id = "twd-{{price.id}}" style="text-align: center; vertical-align: middle;">{{ price.twd_display }}</td>
+                    <td id = "jpy-{{price.id}}" style="text-align: center; vertical-align: middle;">{{ price.jpy_display }}</td>
+                    <td id = "eur-{{price.id}}" style="text-align: center; vertical-align: middle;">{{ price.eur_display }}</td>
+                    <td id = "volume_24h-{{price.id}}" style="text-align: center; vertical-align: middle;">{{ price.market_cap_display }}</td>
+                    <td id = "market_cap-{{price.id}}" style="text-align: center; vertical-align: middle;">{{ price.volume_24h_display }}</td>
                     <td style="text-align: center; vertical-align: middle;">
                         {% if price.change_24h > 0 %}
                             <span style="color: red;">{{ price.change_24h|floatformat:2 }}%</span>
@@ -210,6 +210,42 @@ $(document).ready(function() {
         });
     });
 });
+
+const sortBy = "{{ sort_by|default_if_none:'' }}";
+const sortOrder = "{{ sort_order|default_if_none:'' }}";
+
+  function buildUrl() {
+    const params = new URLSearchParams();
+    if (sortBy) params.append('sort_by', sortBy);
+    if (sortOrder) params.append('sort_order', sortOrder);
+    return `/crypto_prices_ajax?${params.toString()}`;
+  }
+
+  setInterval(() => {
+  fetch('/crypto_prices_ajax?sort_by={{ sort_by|default_if_none:"" }}&sort_order={{ sort_order|default_if_none:"" }}')
+    .then(response => response.json())
+    .then(data => {
+      data.prices.forEach(price => {
+        const usd = document.getElementById(`usd-${price.id}`);
+        const twd = document.getElementById(`twd-${price.id}`);
+        const jpy = document.getElementById(`jpy-${price.id}`);
+        const eur = document.getElementById(`eur-${price.id}`);
+        const volume = document.getElementById(`volume_24h-${price.id}`);
+        const cap = document.getElementById(`market_cap-${price.id}`);
+
+        if (usd) usd.textContent = price.usd;
+        if (twd) twd.textContent = price.twd;
+        if (jpy) jpy.textContent = price.jpy;
+        if (eur) eur.textContent = price.eur;
+        if (volume) volume.textContent = price.volume_24h;
+        if (cap) cap.textContent = price.market_cap;
+        
+      });
+      
+    })
+    .catch(error => console.error('Error fetching crypto prices:', error));
+}, 30000);
+
 </script>
 <!-- 分頁導航 -->
 <nav aria-label="Page navigation example">
