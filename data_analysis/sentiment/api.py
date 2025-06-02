@@ -19,7 +19,7 @@ def predict_sentiment_api(texts):
     if response.status_code == 200:
         results = response.json()
         for item in results:
-            print(f"文字: {item['text']}, 情感: {item['sentiment']}")
+            print(f"情感: {item['sentiment']}")
         return results[0]['sentiment']
 
 if __name__ == "__main__":
