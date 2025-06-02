@@ -21,29 +21,29 @@ import re
 
 def home(request):
     try:
-        user = request.user
         today = timezone.now().date()
 
-        # 取得該使用者的簽到資料（如果沒有就不傳）
-        sign_in_record = SignIn.objects.filter(user=user).first()
-
+        sign_in_record = None
         progress_percentage = 0
-        if sign_in_record:
-            progress_days = sign_in_record.consecutive_sign_in_count % 7
-            progress_percentage = int((progress_days / 7) * 100)
 
-            # 特別處理剛好 7 的情況
-            if progress_days == 0 and sign_in_record.consecutive_sign_in_count > 0:
-                progress_percentage = 100
+        if request.user.is_authenticated:
+            user = request.user
+            sign_in_record = SignIn.objects.filter(user=user).first()
 
-        # 取得資料庫中的所有價格，按 id 升序排列
+            if sign_in_record:
+                progress_days = sign_in_record.consecutive_sign_in_count % 7
+                progress_percentage = int((progress_days / 7) * 100)
+
+                if progress_days == 0 and sign_in_record.consecutive_sign_in_count > 0:
+                    progress_percentage = 100
+
+        # 資料查詢
         top_coins = BitcoinPrice.objects.all().order_by('id')[:5]
         increase_coins = BitcoinPrice.objects.all().order_by('-change_24h')[:5]
         decline_coins = BitcoinPrice.objects.all().order_by('change_24h')[:5]
-        volume = BitcoinPrice.objects.all().order_by('-volume_24h')[:10]
+        volume = BitcoinPrice.objects.all().order_by('-volume_24h')[:5]
         image_url = request.build_absolute_uri(static('images/crypto.png')) 
         
-        # 渲染到模板
         return render(request, 'home.html', {
             'top_coins': top_coins,
             'increase_coins': increase_coins,
