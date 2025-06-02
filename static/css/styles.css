@@ -322,3 +322,13 @@ img.profile-image {
 .custom-dropdown a:hover {
     background-color: #f8f9fa; /* 懸停時變色 */
 }
+
+
+
+/* 0603新增統一logo大小 */
+.coin-logo {
+    width: 64px;
+    height: 64px;
+    object-fit: contain; /* 保持比例，不會被拉伸 */
+
+}
