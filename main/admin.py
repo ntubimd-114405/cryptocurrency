@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Coin, BitcoinPrice, UserProfile, NewsWebsite, NewsArticle, CoinHistory
+from .models import Coin, BitcoinPrice, UserProfile, CoinHistory
 from django.utils.html import format_html
 
 @admin.register(Coin)
@@ -27,18 +27,6 @@ class UserProfileAdmin(admin.ModelAdmin):
 
     avatar_image.short_description = 'Avatar'  # 設置顯示的欄位名稱
 
-
-
-
-
-
-@admin.register(NewsWebsite)
-class NewsWebsiteAdmin(admin.ModelAdmin):
-    list_display = ('name', 'icon_url')
-
-@admin.register(NewsArticle)
-class NewsArticleAdmin(admin.ModelAdmin):
-    list_display = ('title', 'url', 'image_url', 'time', 'website')
 
 @admin.register(CoinHistory)
 class CoinHistoryAdmin(admin.ModelAdmin):
