@@ -1,25 +1,17 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-<meta charset="UTF-8" />
-<title>加密貨幣K線圖 - 動態時間區間查詢</title>
-<style>
-  #chartdiv {
-    width: 100%;
-    height: 600px;
-  }
-  #controls {
-    margin-bottom: 10px;
-  }
-  label {
-    margin-right: 10px;
-  }
-</style>
-<!-- amCharts 5 核心 -->
-<script src="https://cdn.amcharts.com/lib/5/index.js"></script>
-<script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
-<script src="https://cdn.amcharts.com/lib/5/stock.js"></script>
-<script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+  <meta charset="UTF-8" />
+  <title>加密貨幣K線圖 - 動態時間區間查詢</title>
+  <style>
+    #chartdiv { width: 100%; height: 600px; }
+    #controls { margin-bottom: 10px; }
+    label { margin-right: 10px; }
+  </style>
+  <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/stock.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
 </head>
 <body>
 
@@ -37,6 +29,12 @@
 <div id="chartdiv"></div>
 
 <script>
+function toDatetimeLocalString(date) {
+  const offset = date.getTimezoneOffset();
+  const local = new Date(date.getTime() - offset * 60000);
+  return local.toISOString().slice(0, 16);
+}
+
 am5.ready(function() {
   var root = am5.Root.new("chartdiv");
   root.setThemes([am5themes_Animated.new(root)]);
@@ -50,11 +48,12 @@ am5.ready(function() {
     layout: root.verticalLayout
   }));
 
-  var dateAxisMain = am5xy.DateAxis.new(root, {
+  var dateAxisMain = mainPanel.xAxes.push(am5xy.DateAxis.new(root, {
     baseInterval: { timeUnit: "minute", count: 1 },
     renderer: am5xy.AxisRendererX.new(root, {}),
     tooltip: am5.Tooltip.new(root, {})
-  });
+  }));
+
   dateAxisMain.setAll({
     tooltipDateFormat: "yyyy-MM-dd HH:mm",
     dateFormats: {
@@ -63,7 +62,6 @@ am5.ready(function() {
       day: "yyyy-MM-dd"
     }
   });
-  mainPanel.xAxes.push(dateAxisMain);
 
   var valueAxis = mainPanel.yAxes.push(am5xy.ValueAxis.new(root, {
     renderer: am5xy.AxisRendererY.new(root, { pan: "zoom" }),
@@ -99,12 +97,11 @@ am5.ready(function() {
     tooltip: am5.Tooltip.new(root, {})
   }));
 
-  var dateAxisVolume = am5xy.DateAxis.new(root, {
+  var dateAxisVolume = volumePanel.xAxes.push(am5xy.DateAxis.new(root, {
     baseInterval: { timeUnit: "minute", count: 1 },
     renderer: am5xy.AxisRendererX.new(root, { visible: false }),
     tooltip: am5.Tooltip.new(root, {})
-  });
-  volumePanel.xAxes.push(dateAxisVolume);
+  }));
 
   var volumeSeries = volumePanel.series.push(am5xy.ColumnSeries.new(root, {
     name: "成交量",
@@ -137,19 +134,18 @@ am5.ready(function() {
     return stroke;
   });
 
-  var legend = stockChart.children.push(am5stock.StockLegend.new(root, {
+  stockChart.children.push(am5stock.StockLegend.new(root, {
     stockChart: stockChart,
     centerX: am5.percent(50),
     x: am5.percent(50)
   }));
 
-  var coinId = 1;
+  const coinId = 1;
 
   async function fetchCoinHistory(coinId, start, end) {
     const url = new URL(`/coin-history/${coinId}/`, window.location.origin);
     url.searchParams.append("start", start.toISOString());
     url.searchParams.append("end", end.toISOString());
-
     const resp = await fetch(url);
     if (resp.status === 204) return [];
     if (!resp.ok) throw new Error("API 請求失敗：" + resp.status);
@@ -161,20 +157,16 @@ am5.ready(function() {
     try {
       document.getElementById('loadingText').textContent = "資料讀取中...";
       const data = await fetchCoinHistory(coinId, start, end);
-
       if (!data || data.length === 0) {
         document.getElementById('loadingText').textContent = "查無資料，請選擇其他時間區間";
         candleSeries.data.setAll([]);
         volumeSeries.data.setAll([]);
         return;
       }
-
       candleSeries.data.setAll(data);
       volumeSeries.data.setAll(data);
-
       dateAxisMain.zoom(0, 1);
       dateAxisVolume.zoom(0, 1);
-
       document.getElementById('loadingText').textContent = "資料載入完成";
     } catch (e) {
       console.error(e);
@@ -185,14 +177,41 @@ am5.ready(function() {
 
   function setDefaultDates() {
     const end = new Date();
-    const start = new Date(end.getTime() - 7 * 24 * 3600 * 1000);
-    document.getElementById('startDate').value = start.toISOString().slice(0, 16);
-    document.getElementById('endDate').value = end.toISOString().slice(0, 16);
+    const start = new Date(end.getTime() - 24 * 3600 * 1000);
+    document.getElementById('startDate').value = toDatetimeLocalString(start);
+    document.getElementById('endDate').value = toDatetimeLocalString(end);
     return { start, end };
   }
 
   const { start, end } = setDefaultDates();
   loadData(start, end);
+
+  const startInputEl = document.getElementById('startDate');
+  const endInputEl = document.getElementById('endDate');
+
+  let isProgrammaticChange = false;
+
+  startInputEl.addEventListener('change', () => {
+    if (isProgrammaticChange) return;
+    if (startInputEl.value) {
+      const start = new Date(startInputEl.value);
+      const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+      isProgrammaticChange = true;
+      endInputEl.value = toDatetimeLocalString(end);
+      isProgrammaticChange = false;
+    }
+  });
+
+  endInputEl.addEventListener('change', () => {
+    if (isProgrammaticChange) return;
+    if (endInputEl.value) {
+      const end = new Date(endInputEl.value);
+      const start = new Date(end.getTime() - 24 * 60 * 60 * 1000);
+      isProgrammaticChange = true;
+      startInputEl.value = toDatetimeLocalString(start);
+      isProgrammaticChange = false;
+    }
+  });
 
   document.getElementById('btnQuery').addEventListener('click', () => {
     const startInput = document.getElementById('startDate').value;
@@ -209,39 +228,7 @@ am5.ready(function() {
     }
     loadData(start, end);
   });
-  const startInputEl = document.getElementById('startDate');
-  const endInputEl = document.getElementById('endDate');
-
-  let isProgrammaticChange = false;
-
-  startInputEl.addEventListener('change', () => {
-    if (isProgrammaticChange) return;
-    if (startInputEl.value) {
-      const start = new Date(startInputEl.value);
-      const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
-      isProgrammaticChange = true;
-      endInputEl.value = end.toISOString().slice(0, 16);
-      isProgrammaticChange = false;
-    }
-  });
-
-  endInputEl.addEventListener('change', () => {
-    if (isProgrammaticChange) return;
-    if (endInputEl.value) {
-      const end = new Date(endInputEl.value);
-      const start = new Date(end.getTime() - 24 * 60 * 60 * 1000);
-      isProgrammaticChange = true;
-      startInputEl.value = start.toISOString().slice(0, 16);
-      isProgrammaticChange = false;
-    }
-  });
-
-
-
-
-
 });
 </script>
-
 </body>
 </html>

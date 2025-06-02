@@ -52,40 +52,6 @@ def create_user_profile(sender, instance, created, **kwargs):
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):
     instance.profile.save()
-
-
-class NewsWebsite(models.Model):
-    name = models.CharField(max_length=255)  # 新聞網站名稱
-    url = models.URLField(max_length=255, unique=True)
-    icon_url = models.URLField(max_length=500)
-
-    def __str__(self):
-        return self.name
-
-
-class NewsArticle(models.Model):
-    title = models.CharField(max_length=255, null=True)  # 標題
-    url = models.URLField(max_length=255,unique=True)  # 網址
-    image_url = models.URLField(null=True,max_length=500)  # 圖片網址
-    content = models.TextField(null=True)  # 內文欄位，使用 TextField 儲存長篇文字內容
-    time = models.DateTimeField(null=True)
-    website = models.ForeignKey(NewsWebsite, on_delete=models.CASCADE)  # 外鍵關聯到新聞網站
-
-    SENTIMENT_CHOICES = [
-        ('positive', 'Positive'),
-        ('neutral', 'Neutral'),
-        ('negative', 'Negative'),
-    ]
-
-    sentiment = models.CharField(
-        max_length=10,
-        choices=SENTIMENT_CHOICES,
-        null=True,  # 允許存入 NULL 值
-        blank=True  # 表單驗證時允許為空
-    )
-
-    def __str__(self):
-        return self.title
     
     
 class CoinHistory(models.Model):

@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404,redirect
 import requests
 from django.http import JsonResponse,HttpResponseRedirect
-from .models import BitcoinPrice,UserProfile,Coin,NewsWebsite,NewsArticle,CoinHistory,User
+from .models import BitcoinPrice,UserProfile,Coin,CoinHistory,User
 from datetime import datetime, timedelta
 from django.core.paginator import Paginator
 # 登入頁面
