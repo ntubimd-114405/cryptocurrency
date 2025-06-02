@@ -30,7 +30,8 @@ class YahooWebsite(BaseWebsite):
         for article in articles:
             link_tag = article.find('a')
             link = link_tag['href'] if link_tag and link_tag.has_attr('href') else None
-            if "https://finance.yahoo.com" not in link:continue
+            if not link or "https://finance.yahoo.com" not in link:
+                continue
 
             # 提取標題（h2 或 h3）
             title_tag = article.find(['h3'], class_=['clamp yf-82qtw3'])
@@ -89,7 +90,7 @@ class YahooArticle(BaseArticle):
 
     def get_news_details(self):
         options = Options()
-        options.add_argument("--headless")  # 不開啟瀏覽器視窗
+        #options.add_argument("--headless")  # 不開啟瀏覽器視窗
         options.add_argument("--disable-gpu")
         options.add_argument("--no-sandbox")
         options.add_argument("--disable-dev-shm-usage")
@@ -113,7 +114,7 @@ class YahooArticle(BaseArticle):
         # 獲取新聞內容
         content = soup.find('div', class_='atoms-wrapper')
         if content:
-            self.content = content.get_text(strip=True)
+            self.content = convert_emoji_to_text(content.get_text(strip=True))
         
         # 獲取圖片
 

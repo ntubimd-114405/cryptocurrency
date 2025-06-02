@@ -14,5 +14,5 @@ def article(a):
         return YahooArticle(a)
     elif hostname == "hk.investing.com":
         return InvestingArticle(a)
-    elif hostname == "www.coindesk.com":
+    elif hostname == "coindesk.com":
         return CoindeskArticle(a)
