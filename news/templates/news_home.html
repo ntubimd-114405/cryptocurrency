@@ -70,28 +70,42 @@
             無圖片
             {% endif %}
             <div class="card-body d-flex flex-column">
-                <h4 class="card-title">{{ article.title }}</h4>
-                <p class="card-text flex-grow-1 text-start">
+                <!-- 固定高度的 title，不省略文字 -->
+                <h4 class="card-title mb-2" style="min-height: 4em;">{{ article.title }}</h4>
+
+                <!-- 內容摘要區塊，自動撐開填滿，最多顯示三行 -->
+                <p class="card-text flex-grow-1 text-start" style="
+                    max-height: 4.5em;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    display: -webkit-box;
+                    -webkit-line-clamp: 3;
+                    -webkit-box-orient: vertical;
+                ">
                     {% if article.summary and article.summary != "" %}
-                    {{ article.summary|truncatewords:20 }}
+                    {{ article.summary }}
                     {% else %}
-                    {{ article.content|truncatewords:20 }}
+                    {{ article.content }}
                     {% endif %}
                 </p>
-                <div class="d-flex justify-content-between">
-                    <a href="{% url 'news_detail' article_id=article.id %}" class=" btn-sm button-bu">評論</a>
-                    <a href="{{ article.url }}" target="_blank" class=" btn-sm button-bu">閱讀更多...</a>
+
+                <!-- 按鈕區塊固定在底部 -->
+                <div class="d-flex justify-content-between mt-2">
+                    <a href="{% url 'news_detail' article_id=article.id %}" class="btn-sm button-bu">評論</a>
+                    <a href="{{ article.url }}" target="_blank" class="btn-sm button-bu">閱讀更多...</a>
                 </div>
             </div>
             <div class="card-footer text-muted text-center">
-                {% if article.sentiment == 'positive' %}
-                😄 正面
-                {% elif article.sentiment == 'neutral' %}
-                😐 中立
-                {% elif article.sentiment == 'negative' %}
-                😔 負面
+                {% if article.sentiment == '1' %}
+                    😄 正面
+                {% elif article.sentiment == '0' %}
+                    😐 中立
+                {% elif article.sentiment == '-1' %}
+                    😔 負面
+                {% elif article.sentiment == '-9' %}
+                    ⚠️ 信心不足
                 {% else %}
-                ❓ 判斷中...
+                    ❓ 尚未進行分析
                 {% endif %}
                 <span class="mx-2">•</span>
                 {{ article.time|date:"Y-m-d H:i" }}
