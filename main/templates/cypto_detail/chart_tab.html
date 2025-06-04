@@ -140,7 +140,7 @@ am5.ready(function() {
     x: am5.percent(50)
   }));
 
-  const coinId = 1;
+  const coinId = {{ coin.id }};
 
   async function fetchCoinHistory(coinId, start, end) {
     const url = new URL(`/coin-history/${coinId}/`, window.location.origin);
