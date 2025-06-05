@@ -65,11 +65,11 @@
                         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
                         
                       </div>
-
+                    {% if user.is_authenticated %}
                        <li class="nav-item">
                             <a href="{% url 'ml_home' %}" class="nav-link text-white">訓練模型</a>
                         </li>
-
+                    {% endif %}
                     {% if user.is_superuser %}
                         <li class="nav-item">
                             <a href="{% url 'administrator:administrator_dashboard' %}" class="nav-link text-white">進入後台</a>
