@@ -55,7 +55,7 @@ def data_location_detail(request, id):
     # 渲染 template，並傳遞 data_location 實例
     return render(request, 'data_location_detail.html',context)
 
-@login_required
+
 def plot_prediction_chart(folder_path):
     # 設定 CSV 路徑
     csv_path = os.path.join(settings.BASE_DIR, f"{folder_path}\pred.csv")
