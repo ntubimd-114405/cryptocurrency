@@ -61,3 +61,9 @@ def fetch_history():
     coin_history = Coin.objects.filter(Q(id=34) | Q(id__lte=5)).order_by('id')
     tasks = group(fetch_coin_history.s(coin.id) for coin in coin_history)
     tasks.apply_async()
+
+
+from api.coindata.all import main 
+@shared_task
+def crypto_data():
+    main(1)

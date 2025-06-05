@@ -214,38 +214,42 @@ $(document).ready(function() {
 const sortBy = "{{ sort_by|default_if_none:'' }}";
 const sortOrder = "{{ sort_order|default_if_none:'' }}";
 
-  function buildUrl() {
-    const params = new URLSearchParams();
-    if (sortBy) params.append('sort_by', sortBy);
-    if (sortOrder) params.append('sort_order', sortOrder);
-    return `/crypto_prices_ajax?${params.toString()}`;
-  }
+function buildUrl() {
+  const params = new URLSearchParams();
+  if (sortBy) params.append('sort_by', sortBy);
+  if (sortOrder) params.append('sort_order', sortOrder);
+  return `/crypto_prices_ajax?${params.toString()}`;
+}
 
-  setInterval(() => {
-  fetch('/crypto_prices_ajax?sort_by={{ sort_by|default_if_none:"" }}&sort_order={{ sort_order|default_if_none:"" }}')
+setInterval(() => {
+  fetch(buildUrl())
     .then(response => response.json())
     .then(data => {
       data.prices.forEach(price => {
-        const usd = document.getElementById(`usd-${price.id}`);
-        const twd = document.getElementById(`twd-${price.id}`);
-        const jpy = document.getElementById(`jpy-${price.id}`);
-        const eur = document.getElementById(`eur-${price.id}`);
-        const volume = document.getElementById(`volume_24h-${price.id}`);
-        const cap = document.getElementById(`market_cap-${price.id}`);
+        const updateField = (id, newVal) => {
+          const el = document.getElementById(`${id}-${price.id}`);
+          if (el) {
+            const oldVal = el.textContent;
+            if (oldVal !== newVal) {
+              el.textContent = newVal;
+              el.classList.add("highlight");
+              setTimeout(() => {
+                el.classList.remove("highlight");
+              }, 500);
+            }
+          }
+        };
 
-        if (usd) usd.textContent = price.usd;
-        if (twd) twd.textContent = price.twd;
-        if (jpy) jpy.textContent = price.jpy;
-        if (eur) eur.textContent = price.eur;
-        if (volume) volume.textContent = price.volume_24h;
-        if (cap) cap.textContent = price.market_cap;
-        
+        updateField('usd', price.usd);
+        updateField('twd', price.twd);
+        updateField('jpy', price.jpy);
+        updateField('eur', price.eur);
+        updateField('volume_24h', price.volume_24h);
+        updateField('market_cap', price.market_cap);
       });
-      
     })
     .catch(error => console.error('Error fetching crypto prices:', error));
-}, 30000);
-
+}, 10000);
 </script>
 <!-- 分頁導航 -->
 <nav aria-label="Page navigation example">
