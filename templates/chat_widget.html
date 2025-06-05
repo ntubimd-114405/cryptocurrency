@@ -275,59 +275,56 @@
 </style>
 
 <script>
-    let isChatOpen = false; // 跟踪聊天窗口狀態
-    let lastToggleTime = 0; // 上次切換時間
-    let isProcessing = false; // 跟踪是否正在處理訊息
-    const debounceTime = 400; // 防抖時間（毫秒）
+let isChatOpen = false;
+let lastToggleTime = 0;
+let isProcessing = false;
+const debounceTime = 200;
 
-    function toggleChat() {
-        const currentTime = Date.now();
-        if (currentTime - lastToggleTime < debounceTime) return; // 防抖檢查
+// 初始化聊天小工具
+function initChat() {
+    const chatBody = document.getElementById("chatBody");
+    const chatContainer = document.getElementById("chatContainer");
+    const tickMark = document.querySelector(".tick_mark");
+    const chatBtn = document.querySelector(".chat-btn");
+    const chatInput = document.getElementById("chatInput");
+    const toggleBtn = document.getElementById("chat-toggle-btn");
 
-        lastToggleTime = currentTime;
-        const chatContainer = document.getElementById("chatContainer");
-        const tickMark = document.querySelector(".tick_mark");
-        const chatBtn = document.querySelector(".chat-btn");
-
-        if (isChatOpen) {
-            chatContainer.classList.remove("show");
-            tickMark.classList.remove("active");
-            chatBtn.classList.remove("active"); // 移除背景動畫
-            setTimeout(() => {
-                chatContainer.style.display = "none";
-            }, 400); // 等待動畫完成
-            isChatOpen = false;
-        } else {
-            chatContainer.style.display = "flex";
-            requestAnimationFrame(() => {
-                chatContainer.classList.add("show");
-                tickMark.classList.add("active");
-                chatBtn.classList.add("active"); // 啟動背景動畫
-            });
-            isChatOpen = true;
-        }
+    // 檢查必要元素是否存在
+    if (!chatBody || !chatContainer || !tickMark || !chatBtn || !chatInput || !toggleBtn) {
+        console.warn("聊天小工具的 DOM 元素未找到，無法初始化");
+        return;
     }
 
-    function sendMessage() {
-        const chatInput = document.getElementById("chatInput");
-        const chatBody = document.getElementById("chatBody");
-        const sendButton = chatInput.nextElementSibling; // 發送按鈕
-        const text = chatInput.value.trim();
+    // 載入聊天記錄
+    const savedChat = localStorage.getItem("chat_history");
+    const pendingRequest = localStorage.getItem("pending_request");
 
-        if (text === "" || isProcessing) {
-            return; // 如果正在處理或輸入為空，直接返回
-        }
-
-        // 顯示使用者訊息
-        chatBody.innerHTML += `
-            <div>
-                <div class="message user">${text}</div>
-            </div>`;
-        chatInput.value = "";
+    // 恢復聊天記錄，排除舊的「正在思考」動畫
+    if (savedChat) {
+        chatBody.innerHTML = savedChat;
+        const waitingMessages = chatBody.querySelectorAll(".message.waiting");
+        waitingMessages.forEach(msg => msg.parentElement.remove());
         chatBody.scrollTop = chatBody.scrollHeight;
+    }
 
-        // 顯示思考中動畫
-        const waitMsgId = "wait-msg-" + Date.now();
+    // 頁面載入時預設關閉聊天框
+    chatContainer.style.display = "none";
+    tickMark.classList.remove("active");
+    chatBtn.classList.remove("active");
+    isChatOpen = false;
+    localStorage.setItem("chat_open", "false"); // 更新儲存狀態為關閉
+
+    // 恢復未完成的請求
+    if (pendingRequest) {
+        const { text, waitMsgId } = JSON.parse(pendingRequest);
+        isProcessing = true;
+        chatInput.disabled = true;
+        chatInput.nextElementSibling.disabled = true;
+        chatInput.style.background = "#e0e0e0";
+        chatInput.nextElementSibling.style.background = "#a0a0a0";
+        chatInput.nextElementSibling.style.cursor = "not-allowed";
+
+        // 添加新的「正在思考」動畫
         chatBody.innerHTML += `
             <div id="${waitMsgId}">
                 <div class="message waiting">
@@ -338,15 +335,7 @@
             </div>`;
         chatBody.scrollTop = chatBody.scrollHeight;
 
-        // 禁用輸入框和發送按鈕
-        isProcessing = true;
-        chatInput.disabled = true;
-        sendButton.disabled = true;
-        chatInput.style.background = "#e0e0e0";
-        sendButton.style.background = "#a0a0a0";
-        sendButton.style.cursor = "not-allowed";
-
-        // 發送 POST 請求到 Django 的 chat_api
+        // 重新發起請求
         fetch("/chat_api/", {
             method: "POST",
             headers: {
@@ -368,44 +357,182 @@
             console.error("錯誤:", error);
             const waitMsg = document.getElementById(waitMsgId);
             if (waitMsg) {
-                waitMsg.innerHTML = `
-                    <div class="message ai">發生錯誤，請稍後再試。</div>`;
+                waitMsg.innerHTML = `<div class="message ai">發生錯誤，請稍後再試。</div>`;
             }
             chatBody.scrollTop = chatBody.scrollHeight;
         })
         .finally(() => {
-            // 恢復輸入框和按鈕
             isProcessing = false;
             chatInput.disabled = false;
-            sendButton.disabled = false;
+            chatInput.nextElementSibling.disabled = false;
             chatInput.style.background = "#f1f1f1";
-            sendButton.style.background = "#6e8efb";
-            sendButton.style.cursor = "pointer";
+            chatInput.nextElementSibling.style.background = "#6e8efb";
+            chatInput.nextElementSibling.style.cursor = "pointer";
             chatInput.focus();
+            localStorage.removeItem("pending_request");
+            saveChatState();
         });
     }
 
-    // 取得 CSRF Token 用來通過 Django 安全驗證
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== "") {
-            const cookies = document.cookie.split(";");
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + "=")) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
-        }
-        return cookieValue;
+    // 重新綁定事件監聽器
+    chatInput.removeEventListener("keydown", handleEnterKey);
+    chatInput.addEventListener("keydown", handleEnterKey);
+
+    toggleBtn.removeEventListener("click", toggleChat);
+    toggleBtn.addEventListener("click", toggleChat);
+}
+
+// 處理 Enter 鍵
+function handleEnterKey(event) {
+    if (event.key === "Enter" && !event.shiftKey) {
+        event.preventDefault();
+        sendMessage();
+    }
+}
+
+function toggleChat() {
+    const currentTime = Date.now();
+    if (currentTime - lastToggleTime < debounceTime) return;
+
+    lastToggleTime = currentTime;
+    const chatContainer = document.getElementById("chatContainer");
+    const tickMark = document.querySelector(".tick_mark");
+    const chatBtn = document.querySelector(".chat-btn");
+
+    if (!chatContainer || !tickMark || !chatBtn) {
+        console.warn("聊天小工具的 DOM 元素未找到，無法切換");
+        return;
     }
 
-    // 添加 Enter 鍵送出功能
-    document.getElementById("chatInput").addEventListener("keydown", function(event) {
-        if (event.key === "Enter" && !event.shiftKey) {
-            event.preventDefault(); // 防止換行
-            sendMessage(); // 觸發送出訊息
+    if (isChatOpen) {
+        chatContainer.classList.remove("show");
+        tickMark.classList.remove("active");
+        chatBtn.classList.remove("active");
+        setTimeout(() => {
+            chatContainer.style.display = "none";
+        }, 400);
+        isChatOpen = false;
+    } else {
+        chatContainer.style.display = "flex";
+        requestAnimationFrame(() => {
+            chatContainer.classList.add("show");
+            tickMark.classList.add("active");
+            chatBtn.classList.add("active");
+        });
+        isChatOpen = true;
+    }
+    saveChatState();
+}
+
+function sendMessage() {
+    const chatInput = document.getElementById("chatInput");
+    const chatBody = document.getElementById("chatBody");
+    const sendButton = chatInput.nextElementSibling;
+    const text = chatInput.value.trim();
+
+    if (text === "" || isProcessing) {
+        return;
+    }
+
+    // 顯示用戶消息
+    chatBody.innerHTML += `
+        <div>
+            <div class="message user">${text}</div>
+        </div>`;
+    chatInput.value = "";
+    chatBody.scrollTop = chatBody.scrollHeight;
+
+    // 顯示「正在思考」動畫
+    const waitMsgId = "wait-msg-" + Date.now();
+    chatBody.innerHTML += `
+        <div id="${waitMsgId}">
+            <div class="message waiting">
+                <span class="waiting-animation">
+                    正在思考 <span></span><span></span><span></span>
+                </span>
+            </div>
+        </div>`;
+    chatBody.scrollTop = chatBody.scrollHeight;
+
+    // 保存請求狀態
+    localStorage.setItem("pending_request", JSON.stringify({ text, waitMsgId }));
+    saveChatState();
+
+    // 禁用輸入框和按鈕
+    isProcessing = true;
+    chatInput.disabled = true;
+    sendButton.disabled = true;
+    chatInput.style.background = "#e0e0e0";
+    sendButton.style.background = "#a0a0a0";
+    sendButton.style.cursor = "not-allowed";
+
+    // 發送 POST 請求
+    fetch("/chat_api/", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCookie("csrftoken")
+        },
+        body: JSON.stringify({ text: text })
+    })
+    .then(response => response.json())
+    .then(data => {
+        const waitMsg = document.getElementById(waitMsgId);
+        if (waitMsg) {
+            const responseWithBreaks = data.response.replace(/\n/g, "<br>");
+            waitMsg.innerHTML = `<div class="message ai">${responseWithBreaks}</div>`;
         }
+        chatBody.scrollTop = chatBody.scrollHeight;
+    })
+    .catch(error => {
+        console.error("錯誤:", error);
+        const waitMsg = document.getElementById(waitMsgId);
+        if (waitMsg) {
+            waitMsg.innerHTML = `<div class="message ai">發生錯誤，請稍後再試。</div>`;
+        }
+        chatBody.scrollTop = chatBody.scrollHeight;
+    })
+    .finally(() => {
+        isProcessing = false;
+        chatInput.disabled = false;
+        sendButton.disabled = false;
+        chatInput.style.background = "#f1f1f1";
+        sendButton.style.background = "#6e8efb";
+        sendButton.style.cursor = "pointer";
+        chatInput.focus();
+        localStorage.removeItem("pending_request");
+        saveChatState();
     });
+}
+
+function saveChatState() {
+    const chatBody = document.getElementById("chatBody");
+    const chatContainer = document.getElementById("chatContainer");
+    if (chatBody && chatContainer) {
+        // 複製 chatBody 內容並移除「正在思考」消息
+        const tempContainer = document.createElement("div");
+        tempContainer.innerHTML = chatBody.innerHTML;
+        const waitingMessages = tempContainer.querySelectorAll(".message.waiting");
+        waitingMessages.forEach(msg => msg.parentElement.remove());
+        localStorage.setItem("chat_history", tempContainer.innerHTML);
+        localStorage.setItem("chat_open", isChatOpen.toString());
+    }
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== "") {
+        const cookies = document.cookie.split(";");
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + "=")) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+window.addEventListener("load", initChat);
 </script>
