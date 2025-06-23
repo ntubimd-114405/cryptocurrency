@@ -1,0 +1,23 @@
+<button id="downloadPdfBtn">下載報告 PDF</button>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dom-to-image/2.6.0/dom-to-image.min.js"></script>
+
+<script>
+document.getElementById('downloadPdfBtn').addEventListener('click', () => {
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF('p', 'pt', 'a4');
+  const element = document.getElementById('reportContent');
+
+  domtoimage.toPng(element, { quality: 0.95 }).then(imgData => {
+    const imgProps = pdf.getImageProperties(imgData);
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    pdf.save('weekly_report.pdf');
+  }).catch(error => {
+    console.error('Error generating image:', error);
+  });
+});
+</script>
