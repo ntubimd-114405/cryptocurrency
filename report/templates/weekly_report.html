@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}個人化報告{% endblock %}
+{% block content %}
+{% include 'report_download.html' %}
+<div id="reportContent">
+    <h1>加密貨幣每週投資報告</h1>
+
+    <h2>市場概況</h2>
+    <p>{{ summary }}</p>
+
+    {% include 'report_price_chart.html' %}
+    {% include 'report_wordcloud.html' %}
+</div>
+{% endblock %}

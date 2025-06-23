@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'ml_upload',
     'administrator',
     'agent',
+    'report',
     #-----------登入
     'django.contrib.sites',
     'allauth',

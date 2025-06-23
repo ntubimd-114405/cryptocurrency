@@ -1,0 +1,31 @@
+<h2>價格與技術指標</h2>
+<canvas id="priceChart" width="800" height="400"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+  const labels = {{ price_labels|safe }};
+  const closeData = {{ close_data|safe }};
+  const ma20Data = {{ ma20_data|safe }};
+  const ma50Data = {{ ma50_data|safe }};
+
+  const ctx = document.getElementById('priceChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        { label: 'Close Price', data: closeData, borderColor: 'blue', fill: false },
+        { label: 'MA20', data: ma20Data, borderColor: 'green', fill: false },
+        { label: 'MA50', data: ma50Data, borderColor: 'orange', fill: false }
+      ]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        x: { display: true, title: { display: true, text: '日期' } },
+        y: { display: true, title: { display: true, text: '價格 (USD)' } }
+      }
+    }
+  });
+</script>
