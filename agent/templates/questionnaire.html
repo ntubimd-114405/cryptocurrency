@@ -1,0 +1,40 @@
+<!-- agent/templates/agent/questionnaire.html -->
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5">
+  <h2>使用者風險屬性問卷</h2>
+  <form method="post">
+    {% csrf_token %}
+
+    <div class="form-group mt-3">
+      <label>風險屬性</label>
+      <select name="risk_type" class="form-control" required>
+        <option value="保守型">保守型</option>
+        <option value="中性型">中性型</option>
+        <option value="積極型">積極型</option>
+      </select>
+    </div>
+
+    <div class="form-group mt-3">
+      <label>投資目標</label>
+      <select name="investment_goal" class="form-control" required>
+        <option value="短期獲利">短期獲利</option>
+        <option value="長期增值">長期增值</option>
+        <option value="資產保值">資產保值</option>
+      </select>
+    </div>
+
+    <div class="form-group mt-3">
+      <label>總投資預算（NTD）</label>
+      <input type="number" step="0.01" name="total_budget" class="form-control" required>
+    </div>
+
+    <div class="form-group mt-3">
+      <label>單幣容忍金額（NTD）</label>
+      <input type="number" step="0.01" name="tolerance_per_coin" class="form-control" required>
+    </div>
+
+    <button type="submit" class="btn btn-primary mt-4">送出</button>
+  </form>
+</div>
+{% endblock %}
