@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'news',
     'ml_upload',
     'administrator',
+    'agent',
     #-----------登入
     'django.contrib.sites',
     'allauth',
