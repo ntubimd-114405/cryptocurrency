@@ -5,7 +5,7 @@ import requests
 
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
-from .models import UserProfile,BitcoinPrice,Coin,CoinHistory
+from .models import UserProfile
 from django.http import JsonResponse
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
@@ -70,11 +70,7 @@ def user_questionnaire(request):
 
     return render(request, 'questionnaire.html')
 
-def get_crypto_insights(symbol):
-    today = datetime.today().date()
-    week_ago = today - timedelta(days=7)
 
-    
 
 @login_required
 def asset_suggestion(request):
