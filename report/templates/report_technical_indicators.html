@@ -1,0 +1,103 @@
+
+<div class="text-block">
+  <h2>技術指標圖表</h2>
+</div>
+
+<div class="chart-container">
+  <div id="klineChart"></div>
+</div>
+
+<div class="chart-container">
+  <div id="rsiChart"></div>
+</div>
+
+<div class="chart-container">
+  <div id="macdChart"></div>
+</div>
+
+
+
+
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script>
+  const ohlcData = {{ ohlc_json|safe }};
+  const rsiData = {{ rsi_json|safe }};
+  const macdData = {{ macd_json|safe }};
+  const macdSignalData = {{ macd_signal_json|safe }};
+
+  // K 線圖 + MA
+  const traceKline = {
+    x: ohlcData.map(d => d.x),
+    open: ohlcData.map(d => d.open),
+    high: ohlcData.map(d => d.high),
+    low: ohlcData.map(d => d.low),
+    close: ohlcData.map(d => d.close),
+    type: 'candlestick',
+    name: 'K線',
+  };
+
+  const ma20 = {
+    x: ohlcData.map(d => d.x),
+    y: {{ ma20_data|safe }},
+    type: 'scatter',
+    mode: 'lines',
+    name: 'MA20',
+    line: { color: 'orange' }
+  };
+
+  const ma50 = {
+    x: ohlcData.map(d => d.x),
+    y: {{ ma50_data|safe }},
+    type: 'scatter',
+    mode: 'lines',
+    name: 'MA60',
+    line: { color: 'green' }
+  };
+
+  Plotly.newPlot('klineChart', [traceKline, ma20, ma50], {
+    title: 'K 線圖與均線',
+    xaxis: { title: '日期' },
+    yaxis: { title: '價格' }
+  });
+
+  // RSI 圖
+  Plotly.newPlot('rsiChart', [{
+    x: rsiData.map(d => d.x),
+    y: rsiData.map(d => d.y),
+    type: 'scatter',
+    mode: 'lines',
+    name: 'RSI',
+    line: { color: 'blue' }
+  }], {
+    title: 'RSI (14日)',
+    xaxis: { title: '日期' },
+    yaxis: { title: 'RSI', range: [0, 100] },
+    shapes: [
+      { type: 'line', xref: 'paper', x0: 0, x1: 1, y0: 70, y1: 70, line: { dash: 'dot', color: 'red' } },
+      { type: 'line', xref: 'paper', x0: 0, x1: 1, y0: 30, y1: 30, line: { dash: 'dot', color: 'green' } }
+    ]
+  });
+
+  // MACD 圖
+  Plotly.newPlot('macdChart', [
+    {
+      x: macdData.map(d => d.x),
+      y: macdData.map(d => d.y),
+      type: 'bar',
+      name: 'MACD',
+      marker: { color: 'purple' }
+    },
+    {
+      x: macdSignalData.map(d => d.x),
+      y: macdSignalData.map(d => d.y),
+      type: 'scatter',
+      mode: 'lines',
+      name: 'Signal',
+      line: { color: 'orange' }
+    }
+  ], {
+    title: 'MACD 與訊號線',
+    xaxis: { title: '日期' },
+    yaxis: { title: 'MACD' }
+  });
+</script>
