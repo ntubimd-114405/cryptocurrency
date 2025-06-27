@@ -44,6 +44,12 @@ AI幣市通是一套結合人工智慧與資料視覺化技術的加密貨幣分
 
 ---
 
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=ntubimd-114405/cryptocurrency&type=Date)](https://www.star-history.com/#ntubimd-114405/cryptocurrency&Date)
+
+
+---
 
 ## 📬 聯絡資訊
 
