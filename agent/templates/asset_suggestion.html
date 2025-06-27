@@ -23,4 +23,12 @@
     </tbody>
   </table>
 </div>
+
+<div class="container mt-5">
+  <h3>AI 建議如下：</h3>
+  <div class="alert alert-info mt-3">
+    <pre style="white-space: pre-wrap;">{{ gpt_reply }}</pre>
+  </div>
+  <button onclick="history.back()" class="btn btn-secondary">返回上一頁</button>
+</div>
 {% endblock %}
