@@ -2,14 +2,19 @@
 {% load static %}
 {% block title %}個人化報告{% endblock %}
 {% block content %}
-{% include 'report_download.html' %}
+
+{% include 'report_download.html' %}  {# PDF 匯出按鈕等 #}
+
 <div id="reportContent">
-    <h1>加密貨幣每週投資報告</h1>
+    <div class="text-block">
+        <h1>加密貨幣每週投資報告</h1>
+    </div>
 
-    <h2>市場概況</h2>
-    <p>{{ summary }}</p>
-
-    {% include 'report_price_chart.html' %}
+    {% include 'report_market_overview.html' %}
+    {% include 'report_technical_indicators.html' %}
+    {% include 'recent_news.html' %}
     {% include 'report_wordcloud.html' %}
+    {% include 'report_coin_analysis.html' %}
 </div>
+
 {% endblock %}

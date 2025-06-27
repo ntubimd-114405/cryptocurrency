@@ -1,23 +1,49 @@
-<button id="downloadPdfBtn">下載報告 PDF</button>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dom-to-image/2.6.0/dom-to-image.min.js"></script>
 
+<button id="downloadPdfBtn">下載報告 PDF</button>
+
 <script>
-document.getElementById('downloadPdfBtn').addEventListener('click', () => {
+document.getElementById('downloadPdfBtn').addEventListener('click', async () => {
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF('p', 'pt', 'a4');
-  const element = document.getElementById('reportContent');
+  const pdfWidth = pdf.internal.pageSize.getWidth();
+  const pdfHeight = pdf.internal.pageSize.getHeight();
 
-  domtoimage.toPng(element, { quality: 0.95 }).then(imgData => {
-    const imgProps = pdf.getImageProperties(imgData);
-    const pdfWidth = pdf.internal.pageSize.getWidth();
-    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+  // 同時取得所有文字和圖表元素（NodeList）
+  const textBlocks = Array.from(document.querySelectorAll('.text-block'));
+  const chartBlocks = Array.from(document.querySelectorAll('.chart-container'));
 
-    pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-    pdf.save('weekly_report.pdf');
-  }).catch(error => {
-    console.error('Error generating image:', error);
+  // 合併兩陣列
+  const allBlocks = textBlocks.concat(chartBlocks);
+
+  // 根據在 DOM 裡的位置排序（確保從上到下）
+  allBlocks.sort((a, b) => {
+    return a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
   });
+
+  let currentY = 0;
+
+  async function addElementImageToPdf(element) {
+    const imgData = await domtoimage.toPng(element, { quality: 0.95 });
+    const imgProps = pdf.getImageProperties(imgData);
+    const imgWidth = pdfWidth;
+    const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+
+    if (currentY + imgHeight > pdfHeight) {
+      pdf.addPage();
+      currentY = 0;
+    }
+
+    pdf.addImage(imgData, 'PNG', 0, currentY, imgWidth, imgHeight);
+    currentY += imgHeight + 10;
+  }
+
+  for (let i = 0; i < allBlocks.length; i++) {
+    await addElementImageToPdf(allBlocks[i]);
+  }
+
+  pdf.save('weekly_report.pdf');
 });
+
 </script>
