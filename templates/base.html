@@ -68,6 +68,9 @@
                         <li class="nav-item">
                             <a href="{% url 'weekly_report' %}" class="nav-link text-white">報告</a>
                         </li>
+                        <li class="nav-item">
+                            <a href="{% url 'agent:questionnaire_list' %}" class="nav-link text-white">問卷</a>
+                        </li>
                     {% if user.is_authenticated %}
                        <li class="nav-item">
                             <a href="{% url 'ml_home' %}" class="nav-link text-white">訓練模型</a>

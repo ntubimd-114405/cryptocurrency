@@ -2,7 +2,9 @@
 from django.urls import path
 from . import views
 
+app_name = 'agent'
+
 urlpatterns = [
-    path('questionnaire/', views.user_questionnaire, name='user_questionnaire'),
-    path('portfolio/', views.asset_suggestion, name='asset_suggestion'),
+    path('', views.questionnaire_list, name='questionnaire_list'),
+    path('questionnaire/<int:questionnaire_id>/', views.questionnaire_detail, name='questionnaire_detail'),
 ]

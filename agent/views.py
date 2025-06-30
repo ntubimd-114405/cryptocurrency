@@ -5,7 +5,6 @@ import requests
 
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
-from .models import UserProfile
 from django.http import JsonResponse
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
@@ -19,82 +18,15 @@ load_dotenv(dotenv_path=env_path)
 
 api = os.getenv('OPEN_API')
 
-@login_required
-def user_questionnaire(request):
-    if request.method == 'POST':
-        risk_type = request.POST['risk_type']
-        investment_goal = request.POST['investment_goal']
-        total_budget = request.POST['total_budget']
-        tolerance = request.POST['tolerance_per_coin']
-
-        # ➤ 產生 GPT prompt
-        user_prompt = f"""
-        我是一位「{risk_type}」投資人，我的投資目標是「{investment_goal}」，
-        我的總投資預算是 {total_budget} 元，對於單一幣種的最大容忍金額是 {tolerance} 元。
-        請根據這些資訊，建議我一個加密貨幣的資產配置策略，並說明理由。
-        """
-
-        # ➤ 呼叫 GPT API
-        url = 'https://free.v36.cm/v1/chat/completions'
-        headers = {
-            'Authorization': f'Bearer {api}',
-            'Content-Type': 'application/json',
-        }
-        data = {
-            "model": "gpt-4o-mini",
-            "messages": [
-                {"role": "user", "content": user_prompt}
-            ]
-        }
-
-        try:
-            response = requests.post(url, headers=headers, json=data)
-            response.raise_for_status()
-            gpt_reply = response.json()['choices'][0]['message']['content']
-        except Exception as e:
-            gpt_reply = f"GPT API 發生錯誤：{str(e)}"
-
-        # ➤ 存入資料庫
-        profile, created = UserProfile.objects.update_or_create(
-            user=request.user,
-            defaults={
-                'risk_type': risk_type,
-                'investment_goal': investment_goal,
-                'total_budget': total_budget,
-                'tolerance_per_coin': tolerance,
-            }
-        )
-
-        # ➤ 將 GPT 回應傳到前端顯示
-        return render(request, 'asset_suggestion.html', {'gpt_reply': gpt_reply,'profile': profile})
-
-    return render(request, 'questionnaire.html')
-
-
-
-@login_required
-def asset_suggestion(request):
-    profile = UserProfile.objects.get(user=request.user)
-
-    # 配置建議
-    ALLOCATIONS = {
-        '保守型': {'穩定幣': 60, '主流幣': 40},
-        '中性型': {'主流幣': 50, 'DeFi幣': 30, '穩定幣': 20},
-        '積極型': {'DeFi幣': 40, 'Meme幣': 30, '小幣': 30},
-    }
-
-    allocation = ALLOCATIONS.get(profile.risk_type, {})
-    budget = float(profile.total_budget)
-    suggestion = {k: round(budget * v / 100, 2) for k, v in allocation.items()}
-
-    return render(request, 'asset_suggestion.html', {
-        'profile': profile,
-        'suggestion': suggestion,
-    })
-
 def call_free_chatgpt_api(request):
-    # 從 GET 取得使用者輸入
-    user_input = request.GET.get('prompt', 'Hello!')
+    
+     # ➤ 產生 GPT prompt
+    user_prompt = f"""
+        我是一位「{1}」投資人，我的投資目標是「{2}」，
+        我的總預算是 {4} 元，單一幣最大容忍為 {3} 元，
+        投資經驗「{5}」，偏好幣種為「{6}」。
+        請提供一份個人化的資產配置建議，並說明理由。
+        """
 
     # ✅ 使用你申請到的 URL 和 API KEY
     url = 'https://free.v36.cm/v1/chat/completions'
@@ -107,7 +39,7 @@ def call_free_chatgpt_api(request):
     data = {
         "model": "gpt-4o-mini",
         "messages": [
-            {"role": "user", "content": user_input}
+            {"role": "user", "content": user_prompt}
         ]
     }
 
@@ -119,3 +51,118 @@ def call_free_chatgpt_api(request):
     
     except requests.exceptions.RequestException as e:
         return JsonResponse({'error': str(e)}, status=500)
+    
+from django.shortcuts import render, get_object_or_404, redirect
+from django.contrib.auth.decorators import login_required
+from django.utils import timezone
+from .models import Questionnaire, Question, AnswerOption, UserAnswer, UserQuestionnaireRecord
+
+@login_required
+def questionnaire_detail(request, questionnaire_id):
+    questionnaire = get_object_or_404(Questionnaire, id=questionnaire_id)
+    questions = questionnaire.questions.all().prefetch_related('answer_options')
+
+    if request.method == 'POST':
+        user = request.user
+        # 建立問卷填寫紀錄（或更新完成時間）
+        record, created = UserQuestionnaireRecord.objects.get_or_create(
+            user=user,
+            questionnaire=questionnaire,
+        )
+        record.completed_at = timezone.now()
+        record.save()
+
+        for question in questions:
+            # POST 傳入的欄位名稱
+            field_name = f"question_{question.id}"
+            user_answer, created = UserAnswer.objects.get_or_create(
+                user=user,
+                question=question,
+            )
+            # 先清空先前選項（多選用）
+            user_answer.selected_options.clear()
+
+            if question.question_type == Question.SINGLE_CHOICE:
+                option_id = request.POST.get(field_name)
+                if option_id:
+                    try:
+                        option = question.answer_options.get(id=option_id)
+                        user_answer.selected_options.add(option)
+                    except AnswerOption.DoesNotExist:
+                        pass
+                user_answer.save()
+
+            elif question.question_type == Question.MULTIPLE_CHOICE:
+                option_ids = request.POST.getlist(field_name)
+                for option_id in option_ids:
+                    try:
+                        option = question.answer_options.get(id=option_id)
+                        user_answer.selected_options.add(option)
+                    except AnswerOption.DoesNotExist:
+                        pass
+                user_answer.save()
+
+            elif question.question_type == Question.TEXT:
+                # 文字填答的答案存在selected_options不合適，需額外欄位
+                # 建議新增一個TextAnswer欄位，這裡先示範用UserAnswer的selected_options不存文字
+                # 可以改成擴充UserAnswer，新增 text_answer = models.TextField(null=True, blank=True)
+                text_answer = request.POST.get(field_name, '').strip()
+                # 目前 UserAnswer 沒文字欄位，若要存文字，需改model（下方我會示範）
+                # 這裡暫時跳過存文字
+                # 可改成：
+                # user_answer.text_answer = text_answer
+                # user_answer.save()
+                # 若沒擴充，請先忽略文字存儲
+                # 如果要存文字，請參考下方的 model 及 view 修改示範
+                pass
+
+        # 儲存完跳轉或顯示成功訊息
+        return redirect('agent:questionnaire_list')  # 你要自己新增一個謝謝頁面或跳轉回首頁
+
+    return render(request, 'questionnaire_detail.html', {
+        'questionnaire': questionnaire,
+        'questions': questions,
+    })
+
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from .models import Questionnaire, UserQuestionnaireRecord, UserAnswer
+
+@login_required
+def questionnaire_list(request):
+    user = request.user
+    questionnaires = Questionnaire.objects.all()
+
+    data = []
+    for q in questionnaires:
+        # 取得該問卷填寫紀錄 (可能沒有)
+        record = UserQuestionnaireRecord.objects.filter(user=user, questionnaire=q).first()
+
+        # 問卷總題數
+        total_questions = q.questions.count()
+        # 該使用者回答的題數
+        answered_questions = UserAnswer.objects.filter(user=user, question__questionnaire=q).count()
+
+        if total_questions > 0:
+            progress = int(answered_questions / total_questions * 100)
+        else:
+            progress = 0
+
+        # 填寫狀況字串
+        if progress == 0:
+            status = "未填寫"
+        elif progress == 100:
+            status = "已填寫"
+        else:
+            status = f"填寫中 {progress}%"
+
+        data.append({
+            'questionnaire': q,
+            'last_completed': record.completed_at if record else None,
+            'status': status,
+            'progress': progress,
+        })
+
+    return render(request, 'questionnaire_list.html', {
+        'data': data,
+    })

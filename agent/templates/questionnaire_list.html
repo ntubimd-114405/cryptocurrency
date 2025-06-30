@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+
+{% block title %}問卷首頁{% endblock %}
+
+{% block content %}
+
+<h1>問卷首頁</h1>
+
+<table border="1" cellpadding="5" cellspacing="0">
+    <thead>
+        <tr>
+            <th>問卷編號</th>
+            <th>問卷名稱</th>
+            <th>上次填寫時間</th>
+            <th>填寫狀況</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for item in data %}
+        <tr>
+            <td>{{ item.questionnaire.id }}</td>
+            <td>{{ item.questionnaire.title }}</td>
+            <td>
+                {% if item.last_completed %}
+                    {{ item.last_completed|date:"Y-m-d H:i" }}
+                {% else %}
+                    尚未填寫
+                {% endif %}
+            </td>
+            <td>{{ item.status }}</td>
+            <td>
+                <a href="{% url 'agent:questionnaire_detail' item.questionnaire.id %}">
+                    開始/繼續填寫
+                </a>
+            </td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="4">目前沒有問卷</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

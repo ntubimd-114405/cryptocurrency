@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ questionnaire.title }}{% endblock %}
+
+{% block content %}
+
+<h1>{{ questionnaire.title }}</h1>
+{% if questionnaire.description %}
+<p>{{ questionnaire.description }}</p>
+{% endif %}
+
+<form method="post">
+    {% csrf_token %}
+    {% for question in questions %}
+        <div>
+            <p><strong>{{ question.order }}. {{ question.content }}</strong></p>
+            {% if question.question_type == 'single' %}
+                {% for option in question.answer_options.all %}
+                    <label>
+                        <input type="radio" name="question_{{ question.id }}" value="{{ option.id }}">
+                        {{ option.content }}
+                    </label><br>
+                {% endfor %}
+            {% elif question.question_type == 'multiple' %}
+                {% for option in question.answer_options.all %}
+                    <label>
+                        <input type="checkbox" name="question_{{ question.id }}" value="{{ option.id }}">
+                        {{ option.content }}
+                    </label><br>
+                {% endfor %}
+            {% elif question.question_type == 'text' %}
+                <textarea name="question_{{ question.id }}" rows="3"></textarea>
+            {% endif %}
+        </div>
+    {% endfor %}
+
+    <button type="submit">提交問卷</button>
+</form>
+
+<script>
+document.querySelectorAll('input[type=radio]').forEach(radio => {
+  radio.addEventListener('click', function() {
+    if (this.wasChecked) {
+      this.checked = false;
+      this.wasChecked = false;
+    } else {
+      // 先把其他同組 radio 的 wasChecked 設成 false
+      const radios = document.getElementsByName(this.name);
+      radios.forEach(r => r.wasChecked = false);
+      this.wasChecked = true;
+    }
+  });
+});
+</script>
+{% endblock %}
