@@ -4,39 +4,48 @@
 <button id="downloadPdfBtn">下載報告 PDF</button>
 
 <script>
+function replaceCanvasWithImage() {
+  document.querySelectorAll('.chart-container canvas').forEach(canvas => {
+    const img = new Image();
+    img.src = canvas.toDataURL('image/png');
+    img.style.width = canvas.style.width || canvas.width + 'px';
+    img.style.height = canvas.style.height || canvas.height + 'px';
+    img.className = canvas.className;  // 保留原本的 class (可選)
+    canvas.parentNode.replaceChild(img, canvas);
+  });
+}
+
 document.getElementById('downloadPdfBtn').addEventListener('click', async () => {
   const { jsPDF } = window.jspdf;
   const pdf = new jsPDF('p', 'pt', 'a4');
   const pdfWidth = pdf.internal.pageSize.getWidth();
   const pdfHeight = pdf.internal.pageSize.getHeight();
 
-  // 同時取得所有文字和圖表元素（NodeList）
-  const textBlocks = Array.from(document.querySelectorAll('.text-block'));
-  const chartBlocks = Array.from(document.querySelectorAll('.chart-container'));
+  // 先把 Canvas 轉成 Img，避免 dom-to-image 轉換失敗
+  replaceCanvasWithImage();
 
-  // 合併兩陣列
-  const allBlocks = textBlocks.concat(chartBlocks);
-
-  // 根據在 DOM 裡的位置排序（確保從上到下）
-  allBlocks.sort((a, b) => {
-    return a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
-  });
+  // 依照頁面上元素順序抓取文字和圖表元素
+  const allBlocks = Array.from(document.querySelectorAll('.text-block, .chart-container'));
 
   let currentY = 0;
 
   async function addElementImageToPdf(element) {
-    const imgData = await domtoimage.toPng(element, { quality: 0.95 });
-    const imgProps = pdf.getImageProperties(imgData);
-    const imgWidth = pdfWidth;
-    const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+    try {
+      const imgData = await domtoimage.toPng(element, { quality: 0.95 });
+      const imgProps = pdf.getImageProperties(imgData);
+      const imgWidth = pdfWidth;
+      const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
 
-    if (currentY + imgHeight > pdfHeight) {
-      pdf.addPage();
-      currentY = 0;
+      if (currentY + imgHeight > pdfHeight) {
+        pdf.addPage();
+        currentY = 0;
+      }
+
+      pdf.addImage(imgData, 'PNG', 0, currentY, imgWidth, imgHeight);
+      currentY += imgHeight + 10;
+    } catch (error) {
+      console.error('轉換 element 失敗:', element, error);
     }
-
-    pdf.addImage(imgData, 'PNG', 0, currentY, imgWidth, imgHeight);
-    currentY += imgHeight + 10;
   }
 
   for (let i = 0; i < allBlocks.length; i++) {
@@ -44,6 +53,6 @@ document.getElementById('downloadPdfBtn').addEventListener('click', async () => 
   }
 
   pdf.save('weekly_report.pdf');
+  location.reload();
 });
-
 </script>
