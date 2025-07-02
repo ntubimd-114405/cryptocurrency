@@ -3,7 +3,7 @@ import json
 import re
 from collections import Counter
 from decimal import Decimal
-from datetime import datetime,timedelta
+from datetime import date,datetime,timedelta
 
 import numpy as np
 import pandas as pd
@@ -15,6 +15,7 @@ from django.http import HttpResponse
 
 from main.models import CoinHistory
 from news.models import Article
+from other.models import FinancialData, IndicatorValue, BitcoinMetricData
 # 資料庫取得資料
 
 def load_price_data_from_db(coin_id, start_date=None, end_date=None):
@@ -41,7 +42,7 @@ def load_price_data_from_db(coin_id, start_date=None, end_date=None):
 
     df['Date'] = pd.to_datetime(df['Date'])
     df.set_index('Date', inplace=True)
-    print(df)
+
     daily_df = df.resample('1D').agg({
         'Open': 'first',
         'High': 'max',
@@ -151,6 +152,35 @@ def decimal_to_float(data_list):
     return [float(val) if isinstance(val, Decimal) else val for val in data_list]
 
 # 主視圖：weekly report
+def full_month_data_view():
+    today = date.today()
+    start_date = today - timedelta(days=120)
+
+    # 📈 FinancialData 資料
+    financial_qs = FinancialData.objects.select_related('symbol').filter(date__range=(start_date, today))
+    financial_df = pd.DataFrame(list(financial_qs.values(
+        'symbol__symbol', 'symbol__name', 'date',
+        'open_price', 'high_price', 'low_price', 'close_price', 'volume'
+    )))
+
+    # 🧠 IndicatorValue 資料
+    indicator_qs = IndicatorValue.objects.select_related('indicator').filter(date__range=(start_date, today))
+    indicator_df = pd.DataFrame(list(indicator_qs.values(
+        'indicator__name', 'indicator__abbreviation', 'date', 'value'
+    )))
+
+    # 🔗 BitcoinMetricData 資料
+    bitcoin_qs = BitcoinMetricData.objects.select_related('metric').filter(date__range=(start_date, today))
+    bitcoin_df = pd.DataFrame(list(bitcoin_qs.values(
+        'metric__name', 'metric__unit', 'metric__period', 'date', 'value'
+    )))
+
+    # 📊 轉為 JSON 傳到模板（或可以之後轉為 REST API）
+    return {
+        'financial_data_json': financial_df.to_json(orient='records', date_format='iso'),
+        'indicator_data_json': indicator_df.to_json(orient='records', date_format='iso'),
+        'bitcoin_data_json': bitcoin_df.to_json(orient='records', date_format='iso'),
+    }
 
 def weekly_report_view(request):
     report_dir = os.path.join(settings.MEDIA_ROOT, 'report')
@@ -186,7 +216,7 @@ def weekly_report_view(request):
     監管不確定性仍存，穩定幣透明度問題引發關注。
     """
 
-    return render(request, 'weekly_report.html', {
+    context = {
         'summary': summary,
         'word_freqs_json': json.dumps(word_freqs),
         'ma20_data': json.dumps(decimal_to_float(ma20_data)),
@@ -196,4 +226,15 @@ def weekly_report_view(request):
         'macd_json': json.dumps(df['macd_bar'].dropna().tolist()),
         'macd_signal_json': json.dumps(df['macd_signal_line'].dropna().tolist()),
         'articles': recent_articles,
-    })
+    }
+
+    # 合併 full_month_data 的 dict
+    context.update(full_month_data_view())
+
+    return render(request, 'weekly_report.html', context)
+
+
+
+
+
+
