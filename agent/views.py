@@ -62,6 +62,8 @@ def questionnaire_detail(request, questionnaire_id):
     questionnaire = get_object_or_404(Questionnaire, id=questionnaire_id)
     questions = questionnaire.questions.all().prefetch_related('answer_options')
 
+    user = request.user
+
     if request.method == 'POST':
         user = request.user
         # 建立問卷填寫紀錄（或更新完成時間）
@@ -119,10 +121,29 @@ def questionnaire_detail(request, questionnaire_id):
         # 儲存完跳轉或顯示成功訊息
         return redirect('agent:questionnaire_list')  # 你要自己新增一個謝謝頁面或跳轉回首頁
 
+    # 載入使用者先前填寫答案
+    user_answers = UserAnswer.objects.filter(user=user, question__in=questions).prefetch_related('selected_options')
+
+    # ➤ 建立 question.id → set(option.id) 的映射
+    answer_map = {
+        answer.question.id: set(opt.id for opt in answer.selected_options.all())
+        for answer in user_answers
+    }
+
+    # ➤ 將每個問題包成 dict，加上已選項目（selected_option_ids）
+    questions_with_answers = []
+    for q in questions:
+        selected_ids = answer_map.get(q.id, set())
+        questions_with_answers.append({
+            'question': q,
+            'selected_ids': selected_ids,
+        })
+
     return render(request, 'questionnaire_detail.html', {
         'questionnaire': questionnaire,
-        'questions': questions,
+        'questions_with_answers': questions_with_answers,
     })
+
 
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
@@ -138,11 +159,16 @@ def questionnaire_list(request):
         # 取得該問卷填寫紀錄 (可能沒有)
         record = UserQuestionnaireRecord.objects.filter(user=user, questionnaire=q).first()
 
-        # 問卷總題數
-        total_questions = q.questions.count()
-        # 該使用者回答的題數
-        answered_questions = UserAnswer.objects.filter(user=user, question__questionnaire=q).count()
+        # 該問卷的題目
+        questions = q.questions.all()
+        total_questions = questions.count()
 
+        # 使用者回答該問卷中的多少題
+        answered_questions = UserAnswer.objects.filter(user=user, question__in=questions).exclude(selected_options=None).count()
+
+
+        
+        print(total_questions,answered_questions)
         if total_questions > 0:
             progress = int(answered_questions / total_questions * 100)
         else:

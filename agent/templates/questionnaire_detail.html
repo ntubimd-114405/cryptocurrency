@@ -3,53 +3,84 @@
 {% block title %}{{ questionnaire.title }}{% endblock %}
 
 {% block content %}
+<style>
+.font-size-inherit {
+  font-size: inherit !important;
+}
+</style>
 
 <h1>{{ questionnaire.title }}</h1>
 {% if questionnaire.description %}
 <p>{{ questionnaire.description }}</p>
 {% endif %}
 
+<!-- 字體大小控制按鈕 -->
+<div class="mb-3">
+  <label class="form-label">字體大小：</label>
+  <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setFontSize('fs-6')">小</button>
+  <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setFontSize('fs-5')">中</button>
+  <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setFontSize('fs-4')">大</button>
+</div>
+
+<!-- 問卷表單區塊 -->
+<div id="questionnaire" class="fs-5">
 <form method="post">
     {% csrf_token %}
-    {% for question in questions %}
-        <div>
-            <p><strong>{{ question.order }}. {{ question.content }}</strong></p>
+    {% for item in questions_with_answers %}
+        {% with question=item.question selected_ids=item.selected_ids %}
+        <div class="container left-aligned-container bg-light p-5 text-start">           
+            <p class="fw-bold font-size-inherit">{{ question.order }}. {{ question.content }}</p>
+
             {% if question.question_type == 'single' %}
                 {% for option in question.answer_options.all %}
                     <label>
-                        <input type="radio" name="question_{{ question.id }}" value="{{ option.id }}">
+                        <input type="radio" name="question_{{ question.id }}" value="{{ option.id }}"
+                               {% if option.id in selected_ids %}checked{% endif %}>
                         {{ option.content }}
                     </label><br>
                 {% endfor %}
+
             {% elif question.question_type == 'multiple' %}
                 {% for option in question.answer_options.all %}
                     <label>
-                        <input type="checkbox" name="question_{{ question.id }}" value="{{ option.id }}">
+                        <input type="checkbox" name="question_{{ question.id }}" value="{{ option.id }}"
+                               {% if option.id in selected_ids %}checked{% endif %}>
                         {{ option.content }}
                     </label><br>
                 {% endfor %}
+
             {% elif question.question_type == 'text' %}
-                <textarea name="question_{{ question.id }}" rows="3"></textarea>
+                <textarea name="question_{{ question.id }}" rows="3" class="form-control"></textarea>
             {% endif %}
         </div>
+        {% endwith %}
     {% endfor %}
 
-    <button type="submit">提交問卷</button>
+    <button type="submit" class="btn btn-primary mt-3">提交問卷</button>
 </form>
+</div>
 
+<!-- 字體調整與取消單選功能 -->
 <script>
-document.querySelectorAll('input[type=radio]').forEach(radio => {
-  radio.addEventListener('click', function() {
-    if (this.wasChecked) {
-      this.checked = false;
-      this.wasChecked = false;
-    } else {
-      // 先把其他同組 radio 的 wasChecked 設成 false
-      const radios = document.getElementsByName(this.name);
-      radios.forEach(r => r.wasChecked = false);
-      this.wasChecked = true;
-    }
+  function setFontSize(sizeClass) {
+    const container = document.getElementById('questionnaire');
+    container.classList.remove('fs-4', 'fs-5', 'fs-6');
+    container.classList.add(sizeClass);
+  }
+
+  // 支援取消單選選項
+  document.querySelectorAll('input[type=radio]').forEach(radio => {
+    radio.addEventListener('click', function () {
+      if (this.wasChecked) {
+        this.checked = false;
+        this.wasChecked = false;
+      } else {
+        const radios = document.getElementsByName(this.name);
+        radios.forEach(r => r.wasChecked = false);
+        this.wasChecked = true;
+      }
+    });
   });
-});
 </script>
+
 {% endblock %}
