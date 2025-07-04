@@ -54,5 +54,8 @@ class UserQuestionnaireRecord(models.Model):
     questionnaire = models.ForeignKey(Questionnaire, on_delete=models.CASCADE, verbose_name="問卷")
     completed_at = models.DateTimeField(null=True, blank=True, verbose_name="完成填寫時間")
 
+    last_submitted_hash = models.CharField(max_length=64, null=True, blank=True)
+    gpt_analysis_result = models.TextField(null=True, blank=True)
+
     def __str__(self):
         return f"{self.user.username} 填寫 {self.questionnaire.title}"

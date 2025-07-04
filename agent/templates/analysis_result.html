@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-5">
+  <h2>分析結果</h2>
+
+  {% if analysis %}
+  <div class="alert alert-info mt-3" style="white-space: pre-wrap;">
+    {{ analysis }}
+  </div>
+  {% endif %}
+
+  {% if analysis_all %}
+  <div class="alert alert-info mt-3" style="white-space: pre-wrap;">
+    {{ analysis_all }}
+  </div>
+  {% endif %}
+
+  <a href="{% url 'agent:questionnaire_list' %}" class="btn btn-secondary mt-3">返回列表</a>
+</div>
+{% endblock %}
