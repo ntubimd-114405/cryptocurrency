@@ -2,6 +2,7 @@ from django.shortcuts import render
 
 # agent/views.py
 import requests
+import hashlib
 
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
@@ -10,6 +11,8 @@ from dotenv import load_dotenv
 from datetime import datetime, timedelta
 import os
 from pathlib import Path
+from django.db import connection
+from django.conf import settings
 
 env_path = Path(__file__).resolve().parents[2] / '.env'
 
@@ -192,3 +195,131 @@ def questionnaire_list(request):
     return render(request, 'questionnaire_list.html', {
         'data': data,
     })
+
+
+def get_user_answer_hash(user_id, questionnaire_id):
+    with connection.cursor() as cursor:
+        cursor.execute("""
+            SELECT q.content, ao.content
+            FROM agent_useranswer ua
+            JOIN agent_question q ON ua.question_id = q.id
+            JOIN agent_useranswer_selected_options uso ON uso.useranswer_id = ua.id
+            JOIN agent_answeroption ao ON uso.answeroption_id = ao.id
+            WHERE ua.user_id = %s
+                       AND q.questionnaire_id = %s
+            ORDER BY q.id
+        """, [user_id, questionnaire_id])
+        rows = cursor.fetchall()
+
+    combined = "|".join([f"{q}-{a}" for q, a in rows])
+    return hashlib.sha256(combined.encode("utf-8")).hexdigest(), rows
+
+
+def analyze_user_responses(user, questionnaire, api):
+    
+
+    # 計算目前填答 hash
+    answer_hash, qa_pairs = get_user_answer_hash(user.id, questionnaire.id)
+    print(questionnaire)
+
+    
+
+    # 取得紀錄（若不存在就建立）
+    record, _ = UserQuestionnaireRecord.objects.get_or_create(
+        user=user,
+        questionnaire=questionnaire,
+    )
+
+    # 如果 hash 相同，代表沒改動過 → 直接回傳之前的結果
+    if record.last_submitted_hash == answer_hash and record.gpt_analysis_result:
+        return record.gpt_analysis_result
+
+    # 產生 prompt
+    prompt_lines = [f"Q: {q}\nA: {a}" for q, a in qa_pairs]
+    print(prompt_lines)
+    prompt = "以下是使用者的問卷回答進行分析，最後做個總結：\n\n" + "\n\n".join(prompt_lines)
+
+    # 呼叫 v36 API
+    try:
+        url = 'https://free.v36.cm/v1/chat/completions'
+        headers = {
+            'Authorization': f'Bearer {api}',  # ← 這裡原本是錯的 api，已修正
+            'Content-Type': 'application/json',
+        }
+        data = {
+            "model": "gpt-4o-mini",
+            "messages": [
+                {"role": "user", "content": prompt}
+            ]
+        }
+        response = requests.post(url, headers=headers, json=data)
+        response.raise_for_status()
+        result = response.json()
+        content = result['choices'][0]['message']['content']
+
+        # 儲存結果
+        record.gpt_analysis_result = content
+        record.last_submitted_hash = answer_hash
+        record.completed_at = timezone.now()
+        record.save()
+
+        return content
+    except Exception as e:
+        return f"分析失敗：{e}"
+    
+def get_total_analysis():
+    records = UserQuestionnaireRecord.objects.filter(
+        gpt_analysis_result__isnull=False
+    ).select_related('questionnaire', 'user')
+
+    analysis_blocks = []
+    for record in records:
+        title = record.questionnaire.title
+        username = record.user.username
+        analysis = record.gpt_analysis_result
+        block = f"【問卷】{title}（使用者：{username}）\n{analysis}"
+        analysis_blocks.append(block)
+
+    prompt = (
+        "以下是多份問卷的 GPT 分析結果，請根據這些內容進行第二層的彙總分析，列出整體觀察與建議：\n\n"
+        + "\n\n".join(analysis_blocks)
+    )
+
+    url = 'https://free.v36.cm/v1/chat/completions'
+    headers = {
+        'Authorization': f'Bearer {api}',  # 從 settings 或 config 獲取
+        'Content-Type': 'application/json',
+    }
+    data = {
+        "model": "gpt-4o-mini",
+        "messages": [
+            {"role": "user", "content": prompt}
+        ]
+    }
+
+    try:
+        response = requests.post(url, headers=headers, json=data)
+        response.raise_for_status()
+        result = response.json()
+        content = result['choices'][0]['message']['content']
+    except Exception as e:
+        content = f"總分析時發生錯誤：{str(e)}"
+
+    return content
+
+def analyze_all_questionnaires(request):
+    result = get_total_analysis()
+    return render(request, "analysis_result.html", {
+        "analysis": result
+    })
+    
+@login_required
+def analyze_view(request, questionnaire_id):
+    questionnaire = get_object_or_404(Questionnaire, id=questionnaire_id)
+    user = request.user
+    print(f"[DEBUG] user = {user} (type={type(user)}) {questionnaire}")
+    api_key = api  # 從 settings 抓你的 GPT key
+
+    result = analyze_user_responses(user, questionnaire, api_key)
+
+    return render(request, "analysis_result.html", {"analysis": result,})
