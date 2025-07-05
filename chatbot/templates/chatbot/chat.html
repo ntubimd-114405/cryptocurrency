@@ -59,47 +59,57 @@
     <input type="text" id="message" placeholder="输入你的消息..." />
     <button onclick="sendMessage()">发送</button>
 
-    <script>
-        function sendMessage() {
-            const messageInput = document.getElementById('message');
-            const message = messageInput.value.trim();
-            if (!message) return;
+<script>
+    // 初始化歡迎訊息
+    window.onload = function() {
+        const chatBox = document.getElementById('chat-box');
+        const botDiv = document.createElement('div');
+        botDiv.className = 'message bot';
+        botDiv.innerText = 'GPT: 你好，可以詢問我有關加密貨幣相關的問題喔！';
+        chatBox.appendChild(botDiv);
+    }
 
-            const chatBox = document.getElementById('chat-box');
+    function sendMessage() {
+        const messageInput = document.getElementById('message');
+        const message = messageInput.value.trim();
+        if (!message) return;
 
-            const userDiv = document.createElement('div');
-            userDiv.className = 'message user';
-            userDiv.innerText = '你: ' + message;
-            chatBox.appendChild(userDiv);
+        const chatBox = document.getElementById('chat-box');
 
-            messageInput.value = '';
+        const userDiv = document.createElement('div');
+        userDiv.className = 'message user';
+        userDiv.innerText = '你: ' + message;
+        chatBox.appendChild(userDiv);
 
-            fetch('/chatbot/api/chat/', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message: message })
-            })
-            .then(response => response.json())
-            .then(data => {
-                const botDiv = document.createElement('div');
-                botDiv.className = 'message bot';
+        messageInput.value = '';
 
-                if (data.error) {
-                    botDiv.innerText = '錯誤: ' + data.error;
-                } else {
-                    botDiv.innerText = 'GPT: ' + data.reply;
-                }
+        fetch('/chatbot/api/chat/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: message })
+        })
+        .then(response => response.json())
+        .then(data => {
+            const botDiv = document.createElement('div');
+            botDiv.className = 'message bot';
 
-                chatBox.appendChild(botDiv);
-                chatBox.scrollTop = chatBox.scrollHeight;
-            })
-            .catch(err => {
-                const errDiv = document.createElement('div');
-                errDiv.className = 'message bot';
-                errDiv.innerText = '錯誤: 請求失敗';
-                chatBox.appendChild(errDiv);
-            });
-        }
-    </script>
+            if (data.error) {
+                botDiv.innerText = '錯誤: ' + data.error;
+            } else {
+                botDiv.innerText = 'GPT: ' + data.reply;
+            }
+
+            chatBox.appendChild(botDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        })
+        .catch(err => {
+            const errDiv = document.createElement('div');
+            errDiv.className = 'message bot';
+            errDiv.innerText = '錯誤: 請求失敗';
+            chatBox.appendChild(errDiv);
+        });
+    }
+</script>
+
 </body>
 </html>
