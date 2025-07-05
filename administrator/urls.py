@@ -1,5 +1,5 @@
 # administrator/urls.py
-from django.urls import path
+from django.urls import path , include
 from .views import *
 
 app_name = 'administrator'  # 添加這行，設定 namespace
@@ -14,4 +14,5 @@ urlpatterns = [
     path('edit-crypto-management/<int:id>/', edit_crypto, name='edit_crypto'),
     path('delete-crypto-management/<int:id>/', delete_crypto, name='delete_crypto'),
     
+    path("api/", include("chatbot.urls")),
 ]

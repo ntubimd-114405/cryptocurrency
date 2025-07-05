@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8" />
+    <title>GPT 聊天机器人</title>
+    <style>
+        body {
+            background-color: #0f0f0f;
+            color: #eee;
+            font-family: 'Segoe UI', sans-serif;
+            max-width: 700px;
+            margin: 50px auto;
+        }
+        h1 {
+            text-align: center;
+            color: #00ffe1;
+        }
+        #chat-box {
+            height: 500px;
+            overflow-y: auto;
+            border: 1px solid #333;
+            padding: 15px;
+            background: #1a1a1a;
+            border-radius: 8px;
+        }
+        .message {
+            margin-bottom: 10px;
+        }
+        .user {
+            color: #00aaff;
+        }
+        .bot {
+            color: #00ff88;
+        }
+        input {
+            width: 75%;
+            padding: 10px;
+            border: 1px solid #444;
+            background: #222;
+            color: #eee;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #00ffe1;
+            color: #000;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #00c9af;
+        }
+    </style>
+</head>
+<body>
+    <h1>GPT 聊天机器人</h1>
+    <div id="chat-box"></div>
+    <input type="text" id="message" placeholder="输入你的消息..." />
+    <button onclick="sendMessage()">发送</button>
+
+    <script>
+        function sendMessage() {
+            const messageInput = document.getElementById('message');
+            const message = messageInput.value.trim();
+            if (!message) return;
+
+            const chatBox = document.getElementById('chat-box');
+
+            const userDiv = document.createElement('div');
+            userDiv.className = 'message user';
+            userDiv.innerText = '你: ' + message;
+            chatBox.appendChild(userDiv);
+
+            messageInput.value = '';
+
+            fetch('/chatbot/api/chat/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: message })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const botDiv = document.createElement('div');
+                botDiv.className = 'message bot';
+
+                if (data.error) {
+                    botDiv.innerText = '錯誤: ' + data.error;
+                } else {
+                    botDiv.innerText = 'GPT: ' + data.reply;
+                }
+
+                chatBox.appendChild(botDiv);
+                chatBox.scrollTop = chatBox.scrollHeight;
+            })
+            .catch(err => {
+                const errDiv = document.createElement('div');
+                errDiv.className = 'message bot';
+                errDiv.innerText = '錯誤: 請求失敗';
+                chatBox.appendChild(errDiv);
+            });
+        }
+    </script>
+</body>
+</html>
