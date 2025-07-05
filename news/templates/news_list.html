@@ -50,14 +50,26 @@
                             {% endif %}
                         </div>
                         <div class="col-md-9">
-                            <h4 class="text-start">
-                                <a href="{{ article.url }}" target="_blank" class="text-dark text-decoration-none">{{ article.title }}</a>
+                            <!-- 固定高度的標題（不截斷） -->
+                            <h4 class="text-start mb-2" style="min-height: 3em;">
+                                <a href="{{ article.url }}" target="_blank" class="text-dark text-decoration-none">
+                                    {{ article.title }}
+                                </a>
                             </h4>
-                            <p class="card-text flex-grow-1 text-start">
+
+                            <!-- 固定高度的摘要（多行截斷） -->
+                            <p class="card-text flex-grow-1 text-start" style="
+                                max-height: 4.5em;
+                                overflow: hidden;
+                                text-overflow: ellipsis;
+                                display: -webkit-box;
+                                -webkit-line-clamp: 3;
+                                -webkit-box-orient: vertical;
+                            ">
                                 {% if article.summary and article.summary != "" %}
-                                {{ article.summary|truncatewords:20 }}
+                                {{ article.summary }}
                                 {% else %}
-                                {{ article.content|truncatewords:20 }}
+                                {{ article.content }}
                                 {% endif %}
                             </p>
                             <div class="d-flex justify-content-between align-items-end">

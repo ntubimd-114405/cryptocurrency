@@ -51,6 +51,8 @@ INSTALLED_APPS = [
     'news',
     'ml_upload',
     'administrator',
+    'agent',
+    'report',
     #-----------登入
     'django.contrib.sites',
     'allauth',
@@ -216,35 +218,52 @@ CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'Asia/Taipei'
 
-
+'''
 CELERY_BEAT_SCHEDULE = {
-    'news_crawler-every-1-hour': {
+    #新聞爬蟲
+    'news_crawler-every-1-hour': { 
         'task': 'news.tasks.news_crawler',
-        'schedule': 3600.0,
-    },
-    'fetch_history-every-1-hour': {
-        'task': 'main.tasks.fetch_history',  
-        'schedule': 3600.0, 
+        'schedule': 3600.0, #每1小時執行一次
     },
 
-    'macro_economy-every-1-day': {
+    #加密貨幣ohlcv資料
+    'fetch_history-every-1-hour': { 
+        'task': 'main.tasks.fetch_history',  
+        'schedule': 3600.0, #1小時
+    },
+
+    #宏觀經濟資訊
+    'macro_economy-every-1-day': { 
         'task': 'other.tasks.macro_economy',  
-        'schedule': 86400.0,
+        'schedule': 86400.0, #1天
     },
-    'update_bitcoin_metrics-every-1-hour': {
+
+    #加密貨幣指標
+    'update_bitcoin_metrics-every-1-hour': { 
         'task': 'other.tasks.update_bitcoin_metrics',  
-        'schedule': 3600.0,
+        'schedule': 3600.0, #1小時
     },
-    'update_bitcoin_metrics-every-1-day': {
+
+    #金融數據
+    'update_bitcoin_financial-every-1-day': { 
         'task': 'other.tasks.save_financial',  
-        'schedule': 86400.0,
+        'schedule': 86400.0, #1天
     },
-    'fetch_trends_task-every-1-day': {
+
+    #Google Trends 網路搜尋量
+    'fetch_trends_task-every-1-day': { 
         'task': 'other.tasks.fetch_trends_task',  
-        'schedule': 86400.0,
+        'schedule': 86400.0, #1天
     },
 }
+'''
+CELERY_BEAT_SCHEDULE = {
 
+    'fetch_coindata-every-1-min': { 
+        'task': 'main.tasks.crypto_data',  
+        'schedule': 60.0, #1小時
+    },
+}
 
 '''
 'news_sentiment-every-1-hour': {

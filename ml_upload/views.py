@@ -8,8 +8,9 @@ import plotly.graph_objects as go
 from django.conf import settings
 from .models import *
 from .forms import DataLocationForm
+from django.contrib.auth.decorators import login_required
 
-
+@login_required
 def home(request):
     # 查詢所有 DataLocation 物件
     data_locations = DataLocation.objects.all()
@@ -17,7 +18,7 @@ def home(request):
     # 傳遞到模板
     return render(request, 'ml_home.html', {'data_locations': data_locations})
 
-
+@login_required
 def add_data_location(request):
     if request.method == 'POST':
         # 如果是 POST 請求，則表單提交
@@ -34,7 +35,7 @@ def add_data_location(request):
 
     return render(request, 'add_data_location.html', {'form': form})
 
-
+@login_required
 def data_location_detail(request, id):
     # 使用 get_object_or_404 確保當資料不存在時返回 404 錯誤
     data_location = get_object_or_404(DataLocation, id=id)
@@ -53,6 +54,7 @@ def data_location_detail(request, id):
     }
     # 渲染 template，並傳遞 data_location 實例
     return render(request, 'data_location_detail.html',context)
+
 
 def plot_prediction_chart(folder_path):
     # 設定 CSV 路徑
@@ -85,7 +87,7 @@ def plot_prediction_chart(folder_path):
 
     return chart_html
 
-
+@login_required
 def run_program(request, id):
     # 獲取對應的 DataLocation 實例
     data_location = get_object_or_404(DataLocation, id=id)

@@ -1,0 +1,58 @@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dom-to-image/2.6.0/dom-to-image.min.js"></script>
+
+<button id="downloadPdfBtn">下載報告 PDF</button>
+
+<script>
+function replaceCanvasWithImage() {
+  document.querySelectorAll('.chart-container canvas').forEach(canvas => {
+    const img = new Image();
+    img.src = canvas.toDataURL('image/png');
+    img.style.width = canvas.style.width || canvas.width + 'px';
+    img.style.height = canvas.style.height || canvas.height + 'px';
+    img.className = canvas.className;  // 保留原本的 class (可選)
+    canvas.parentNode.replaceChild(img, canvas);
+  });
+}
+
+document.getElementById('downloadPdfBtn').addEventListener('click', async () => {
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF('p', 'pt', 'a4');
+  const pdfWidth = pdf.internal.pageSize.getWidth();
+  const pdfHeight = pdf.internal.pageSize.getHeight();
+
+  // 先把 Canvas 轉成 Img，避免 dom-to-image 轉換失敗
+  replaceCanvasWithImage();
+
+  // 依照頁面上元素順序抓取文字和圖表元素
+  const allBlocks = Array.from(document.querySelectorAll('.text-block, .chart-container'));
+
+  let currentY = 0;
+
+  async function addElementImageToPdf(element) {
+    try {
+      const imgData = await domtoimage.toPng(element, { quality: 0.95 });
+      const imgProps = pdf.getImageProperties(imgData);
+      const imgWidth = pdfWidth;
+      const imgHeight = (imgProps.height * imgWidth) / imgProps.width;
+
+      if (currentY + imgHeight > pdfHeight) {
+        pdf.addPage();
+        currentY = 0;
+      }
+
+      pdf.addImage(imgData, 'PNG', 0, currentY, imgWidth, imgHeight);
+      currentY += imgHeight + 10;
+    } catch (error) {
+      console.error('轉換 element 失敗:', element, error);
+    }
+  }
+
+  for (let i = 0; i < allBlocks.length; i++) {
+    await addElementImageToPdf(allBlocks[i]);
+  }
+
+  pdf.save('weekly_report.pdf');
+  location.reload();
+});
+</script>

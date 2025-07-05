@@ -1,58 +1,63 @@
-## 📊 GitHub 活動統計
+# <img src="static/images/crypto.png" alt="AI幣市通 Logo" width="80"/> AI幣市通
 
-[![Fgh09101010's GitHub stats](https://github-readme-stats.vercel.app/api?username=fgh09101010&show_icons=true&theme=tokyonight)](https://github.com/fgh09101010)
 
-[![Top Langs](https://github-readme-stats.vercel.app/api/top-langs/?username=fgh09101010&layout=compact&theme=tokyonight)](https://github.com/fgh09101010)
+AI幣市通是一套結合人工智慧與資料視覺化技術的加密貨幣分析平台，專為幣圈投資人打造。平台提供即時幣價查詢、AI 預測模型、市場情緒分析與新聞聚合，協助使用者掌握趨勢、預測走勢、做出更明智的投資判斷。
 
-[![GitHub Trophy](https://github-profile-trophy.vercel.app/?username=fgh09101010&theme=tokyonight)](https://github.com/fgh09101010)
+---
 
-[![Activity Graph](https://github-readme-activity-graph.vercel.app/graph?username=fgh09101010&theme=tokyonight)](https://github.com/fgh09101010)
+## 📊 系統功能比較
 
-# 常用指令
-celery -A cryptocurrency worker --loglevel=info
-celery -A cryptocurrency worker --loglevel=info -P eventlet
-celery -A cryptocurrency worker --loglevel=info -P gevent
-celery -A cryptocurrency worker --loglevel=info --pool=solo
+| 功能 / 特色                  | **AI幣市通**             | CoinGecko             | TradingView           | Messari                   |
+|-----------------------------|--------------------------|------------------------|------------------------|---------------------------|
+| 1. 即時幣價顯示              | ✔ 有                     | ✔ 有                   | ❌ 以圖表為主          | ❌ 以研究為主             |
+| 2. 幣價趨勢預測（AI 模型）  | ✔ 自家 AI 預測模型       | ❌ 無                  | ❌ 無                  | ❌ 無                      |
+| 3. 資訊整合（新聞 + 數據）  | ✔ 自動爬蟲與彙整         | ✔ 有新聞整合          | ❌ 圖表為主            | ✔ 有產業分析報告         |
+| 4. 技術分析圖表              | ✔ 互動式技術分析圖表     | ✔ 基本圖表            | ✔ 高階圖表            | ❌ 無                      |
+| 5. AI 智能客服               | ✔ 有                     | ❌ 無                  | ❌ 無                  | ✔ 有（部分支援）         |
+| 6. AI Agent 任務助手         | ✔ 任務導向式 AI Agent     | ❌ 無                  | ❌ 無                  | ✔ Messari AI Assistant    |
+| 7. AI 個人化報告生成         | ✔ 自動化報告生成與摘要   | ❌ 無                  | ❌ 無                  | ✔ AI 報告摘要             |
+---
 
-celery -A cryptocurrency beat --loglevel=info
+## 🛠 使用技術 Technology Stack
 
-set DJANGO_SETTINGS_MODULE=cryptocurrency.settings
+| 類別 | 技術 |
+|------|------|
+| 後端框架 | Django (Python) |
+| 資料庫 | MariaDB |
+| 任務佇列 / 訊息代理 | RabbitMQ + Celery                                                   |
+| 情緒分析模型 | ElKulako/cryptobert,mrm8488/distilroberta,AfterRain007/cryptobertRefined,ProsusAI/finbert |
+| AI客服模型 | AdaptLLM/finance-chat |
+| 前端 | HTML / CSS / JavaScript |
 
-git merge team/main
+---
 
-# 匯出匯入資料
-python -Xutf8 manage.py dumpdata --natural-primary --natural-foreign --indent 2 > data.json
-python manage.py flush
-python -Xutf8 manage.py loaddata --ignorenonexistent data.json
+## 🗂 資料來源與更新頻率
 
-# Cuda
-https://developer.nvidia.com/cuda-11.2.2-download-archive
+| 類別             | 更新頻率 | 資料種類                              | 資料來源                                |
+|------------------|----------|---------------------------------------|-----------------------------------------|
+| 加密貨幣資訊     | 每日 1 次 | 名稱、圖示、市值等                   | [CoinMarketCap API](https://coinmarketcap.com/api/) |
+| 加密貨幣價格     | 每 10 分鐘 | 最高價、最低價、交易量等             | [CCXT](https://github.com/ccxt/ccxt)    |
+| 新聞爬蟲         | 每小時    | 標題、內文、新聞圖片等               | [CoinDesk](https://www.coindesk.com/)、[Yahoo Finance](https://finance.yahoo.com) |
+| 宏觀經濟數據     | 每日 1 次 | GDP、失業率、CPI 等                  | [FRED API](https://fred.stlouisfed.org/) |
+| 其他金融與鏈上資料 | 每小時    | S&P500、美元指數、哈希率、挖礦難度等 | [yfinance](https://pypi.org/project/yfinance/)、[Blockchain.com API](https://www.blockchain.com/api) |
 
-# Download cuDNN v8.1.1 (Feburary 26th, 2021), for CUDA 11.0,11.1 and 11.2
-https://developer.nvidia.com/rdp/cudnn-archive
-# 創建虛擬環境
-python -m venv env
 
-# 啟動虛擬環境（Windows）
-env\Scripts\activate
+---
 
-# Cryptocurrency
-這裡放上你專案的簡短描述或介紹。
+## Star History
 
-# 安裝
-pip install -r requirements.txt
+[![Star History Chart](https://api.star-history.com/svg?repos=ntubimd-114405/cryptocurrency&type=Date)](https://www.star-history.com/#ntubimd-114405/cryptocurrency&Date)
 
-# 使用方法
-提供使用你項目的指示。你可以包含代碼範例或截圖。
 
-# 貢獻
-解釋其他人如何貢獻到你的項目，例如報告錯誤、提出改進建議或提交拉取請求。
+---
 
-# 授權
-指定你的專案分發的授權條款。
+## 📬 聯絡資訊
 
-# 鳴謝
-感謝所有貢獻或啟發你的人。
+開發者：陳建璋、陳紹維、何竑蓄、江以丞
 
-# 聯絡
-提供聯絡方式（例如電子郵件或社交媒體），讓使用者可以向你提問或提供回饋。
+學校/系所：台北商業大學資訊管理系
+
+指導老師：劉志華
+
+Email：1114608@ntub.edu.tw
+

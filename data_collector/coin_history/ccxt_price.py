@@ -6,7 +6,7 @@ class CryptoHistoryFetcher:
         self.coin = coin
         self.exchange = ["binance", "bitget", "coinbasepro", "kraken", "bitfinex", "kucoin", "huobi", "okx", "bybit", "bitstamp"]
         self.symbol = self.get_symbol(coin)
-        self.timeframe = '1h'  # K 線圖的時間間隔，例如 '1m', '5m', '1h', '1d'
+        self.timeframe = '1m'  # K 線圖的時間間隔，例如 '1m', '5m', '1h', '1d'
         self.starttime = starttime
 
     def get_symbol(self, coin):

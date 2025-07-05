@@ -10,6 +10,7 @@
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js"></script>
     <!-- 加載 CSS 文件 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     {% load static %}
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
 </head>
@@ -64,11 +65,17 @@
                         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
                         
                       </div>
-
+                        <li class="nav-item">
+                            <a href="{% url 'weekly_report' %}" class="nav-link text-white">報告</a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="{% url 'agent:questionnaire_list' %}" class="nav-link text-white">問卷</a>
+                        </li>
+                    {% if user.is_authenticated %}
                        <li class="nav-item">
                             <a href="{% url 'ml_home' %}" class="nav-link text-white">訓練模型</a>
                         </li>
-
+                    {% endif %}
                     {% if user.is_superuser %}
                         <li class="nav-item">
                             <a href="{% url 'administrator:administrator_dashboard' %}" class="nav-link text-white">進入後台</a>

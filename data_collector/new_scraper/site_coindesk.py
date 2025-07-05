@@ -129,7 +129,6 @@ class CoindeskArticle(BaseArticle):
         else:
             title = title_tag.text.strip()
         self.title = title.encode('ascii', 'ignore').decode('ascii')
-        
         summary_tag = soup.find('h2',class_="font-headline-xs")
         if summary_tag is None:
             self.summary=None

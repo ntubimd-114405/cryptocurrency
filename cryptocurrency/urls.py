@@ -27,6 +27,8 @@ urlpatterns = [
     path('model/', include('ml_upload.urls')), 
     path('administrator/', include('administrator.urls')),
     path('chatbot/', include('chatbot.urls')), 
+    path('agent/', include('agent.urls')), 
+    path('report/', include('report.urls')),
 ]
 
 if settings.DEBUG:

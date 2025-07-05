@@ -322,3 +322,23 @@ img.profile-image {
 .custom-dropdown a:hover {
     background-color: #f8f9fa; /* 懸停時變色 */
 }
+
+
+
+/* 0603新增統一logo大小 */
+.coin-logo {
+    width: 64px;
+    height: 64px;
+    object-fit: contain; /* 保持比例，不會被拉伸 */
+
+}
+
+/* 貨幣列表更新特效 */
+.highlight {
+  animation: blink-change 0.5s ease-in-out;
+}
+
+@keyframes blink-change {
+  0% { background-color: #ffeaa7; }  /* 淺黃 */
+  100% { background-color: transparent; }
+}

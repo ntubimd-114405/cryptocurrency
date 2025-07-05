@@ -14,31 +14,6 @@ def home(request):
     return render(request, 'news_home.html', context)
 
 
-def news_list(request):
-    # 獲取搜尋關鍵字和篩選選項
-    query = request.GET.get('q', '')  # 搜尋關鍵字
-    start_date = request.GET.get('start_date', '')  # 開始日期
-    end_date = request.GET.get('end_date', '')  # 結束日期
-    
-    # 基本篩選邏輯
-    if query:
-        all_articles = Article.objects.filter(title__icontains=query)
-    else:
-        all_articles = Article.objects.all()
-    
-    # 如果提供了日期範圍，則進行日期篩選
-    if start_date:
-        start_date = datetime.strptime(start_date, '%Y-%m-%d')  # 解析日期格式
-        all_articles = all_articles.filter(time__gte=start_date)
-    if end_date:
-        end_date = datetime.strptime(end_date, '%Y-%m-%d')
-        all_articles = all_articles.filter(time__lte=end_date)
-    
-    # 根據時間倒序排序
-    all_articles = all_articles.order_by('-time')
-
-    return render(request, 'news_list.html', {'all_articles': all_articles, 'query': query})
-
 
 def news_detail(request, article_id):
     article = get_object_or_404(Article, pk=article_id)
@@ -92,31 +67,43 @@ from .models import Article, Website, Reply, Comment, XPost
 from datetime import datetime
 import re
 
+from django.db.models import Q
+from datetime import datetime
+from django.core.paginator import Paginator
+from django.shortcuts import render
+from .models import Article
+
 def news_list(request):
-    # 獲取搜尋關鍵字和篩選選項
     query = request.GET.get('q', '')  # 搜尋關鍵字
     start_date = request.GET.get('start_date', '')  # 開始日期
     end_date = request.GET.get('end_date', '')  # 結束日期
     page = request.GET.get('page', 1)  # 當前頁碼
-    
-    # 基本篩選邏輯
+
+    # 篩選 title、content、time 不為空的資料
+    all_articles = Article.objects.filter(
+        ~Q(title__isnull=True),
+        ~Q(title=''),
+        ~Q(content__isnull=True),
+        ~Q(content=''),
+        ~Q(time__isnull=True)
+    )
+
+    # 若有關鍵字，再進行額外搜尋條件
     if query:
-        all_articles = Article.objects.filter(title__icontains=query)
-    else:
-        all_articles = Article.objects.all()
-    
-    # 如果提供了日期範圍，則進行日期篩選
+        all_articles = all_articles.filter(title__icontains=query)
+
+    # 日期範圍篩選
     if start_date:
-        start_date = datetime.strptime(start_date, '%Y-%m-%d')  # 解析日期格式
+        start_date = datetime.strptime(start_date, '%Y-%m-%d')
         all_articles = all_articles.filter(time__gte=start_date)
     if end_date:
         end_date = datetime.strptime(end_date, '%Y-%m-%d')
         all_articles = all_articles.filter(time__lte=end_date)
-    
+
     # 根據時間倒序排序
     all_articles = all_articles.order_by('-time')
 
-    # 分頁，每頁顯示 5 條新聞
+    # 分頁
     paginator = Paginator(all_articles, 5)
     paged_articles = paginator.get_page(page)
 
@@ -126,6 +113,7 @@ def news_list(request):
         'start_date': start_date,
         'end_date': end_date,
     })
+
 # 新聞列表翻頁-----------------
 
 from data_analysis.sentiment.api import predict_sentiment_api

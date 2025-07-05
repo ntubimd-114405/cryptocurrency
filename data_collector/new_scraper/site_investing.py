@@ -118,7 +118,7 @@ class InvestingArticle(BaseArticle):
             paragraphs = content_element.find_all('p')
             # 提取所有 p 標籤的文本
             if paragraphs:
-                self.content = "\n".join([p.get_text(strip=True) for p in paragraphs])
+                self.content = convert_emoji_to_text("\n".join([p.get_text(strip=True) for p in paragraphs]))
 
         # 取得發佈時間
         time_element = soup.find("div", class_="flex flex-col gap-2 text-warren-gray-700 md:flex-row md:items-center md:gap-0")
