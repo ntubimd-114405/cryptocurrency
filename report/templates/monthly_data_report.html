@@ -1,0 +1,184 @@
+
+
+<style>
+  .tab-buttons { margin-bottom: 15px; }
+  .tab-btn { cursor: pointer; margin-right: 8px; padding: 6px 12px; border: 1px solid #ccc; border-radius: 4px; background: #f7f7f7; }
+  .tab-btn.active { background: #007bff; color: white; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+</style>
+
+
+
+<div class="text-block">
+  <h1>📊 最近四個月金融及加密指標圖表</h1>
+</div>
+<div id="tabs" class="tab-buttons"></div>
+<div class="chart-container">
+  <div id="tabContents"></div>
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const financialData = {{ financial_data_json|safe }};
+const indicatorData = {{ indicator_data_json|safe }};
+const bitcoinData = {{ bitcoin_data_json|safe }};
+
+// ✅ 格式化日期 ➜ MM/DD（從 ISO 日期轉換）
+function formatDateToMMDD(dateStr) {
+  const date = new Date(dateStr);
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  return `${mm}/${dd}`;
+}
+
+const financialSymbols = [...new Set(financialData.map(d => d.symbol__name))].sort();
+const indicatorNames = [...new Set(indicatorData.map(d => d.indicator__name))].sort();
+const bitcoinMetricNames = [...new Set(bitcoinData.map(d => d.metric__name))].sort();
+
+const tabsContainer = document.getElementById('tabs');
+const contentContainer = document.getElementById('tabContents');
+
+function createTab(id, label, active = false){
+  const btn = document.createElement('button');
+  btn.className = 'tab-btn' + (active ? ' active' : '');
+  btn.textContent = label;
+  btn.dataset.target = id;
+  tabsContainer.appendChild(btn);
+}
+
+function createContent(id, active = false){
+  const div = document.createElement('div');
+  div.className = 'tab-content' + (active ? ' active' : '');
+  div.id = id;
+  const canvas = document.createElement('canvas');
+  canvas.id = id + '-canvas';
+  div.appendChild(canvas);
+  contentContainer.appendChild(div);
+}
+
+let first = true;
+financialSymbols.forEach((name, idx) => {
+  const id = 'financial-' + idx;
+  createTab(id, name, first);
+  createContent(id, first);
+  first = false;
+});
+if (financialSymbols.length === 0) first = true;
+indicatorNames.forEach((name, idx) => {
+  const id = 'indicator-' + idx;
+  createTab(id, name, first);
+  createContent(id, first);
+  first = false;
+});
+if (financialSymbols.length === 0 && indicatorNames.length === 0) first = true;
+bitcoinMetricNames.forEach((name, idx) => {
+  const id = 'bitcoin-' + idx;
+  createTab(id, name, first);
+  createContent(id, first);
+  first = false;
+});
+
+tabsContainer.addEventListener('click', e => {
+  if(e.target.classList.contains('tab-btn')){
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    e.target.classList.add('active');
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.getElementById(e.target.dataset.target).classList.add('active');
+  }
+});
+
+// ✅ 共用 chart options：減少 x 軸 label 數量
+const commonOptions = (title) => ({
+  responsive: true,
+  plugins: { title: { display: true, text: title } },
+  scales: {
+    x: {
+      ticks: {
+        maxTicksLimit: 6,
+        autoSkip: true,
+      }
+    },
+    y: { beginAtZero: false }
+  }
+});
+
+// ✅ Financial Chart
+function drawFinancialChart(canvasId, symbolName){
+  const data = financialData.filter(d => d.symbol__name === symbolName);
+  const labels = data.map(d => formatDateToMMDD(d.date));
+  const values = data.map(d => d.close_price);
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: symbolName,
+        data: values,
+        borderColor: '#3366CC',
+        fill: false,
+        tension: 0.2
+      }]
+    },
+    options: commonOptions(symbolName + ' 收盤價')
+  });
+}
+
+// ✅ Indicator Chart
+function drawIndicatorChart(canvasId, indicatorName){
+  const data = indicatorData.filter(d => d.indicator__name === indicatorName);
+  const labels = data.map(d => formatDateToMMDD(d.date));
+  const values = data.map(d => d.value);
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: indicatorName,
+        data: values,
+        borderColor: '#FF6600',
+        fill: false,
+        tension: 0.2
+      }]
+    },
+    options: commonOptions(indicatorName)
+  });
+}
+
+// ✅ Bitcoin Chart
+function drawBitcoinMetricChart(canvasId, metricName){
+  const data = bitcoinData.filter(d => d.metric__name === metricName);
+  const labels = data.map(d => formatDateToMMDD(d.date));
+  const values = data.map(d => d.value);
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: metricName,
+        data: values,
+        borderColor: '#33AA33',
+        fill: false,
+        tension: 0.2
+      }]
+    },
+    options: commonOptions(metricName)
+  });
+}
+
+// ⏳ 初始化圖表
+financialSymbols.forEach((name, idx) => {
+  drawFinancialChart('financial-' + idx + '-canvas', name);
+});
+indicatorNames.forEach((name, idx) => {
+  drawIndicatorChart('indicator-' + idx + '-canvas', name);
+});
+bitcoinMetricNames.forEach((name, idx) => {
+  drawBitcoinMetricChart('bitcoin-' + idx + '-canvas', name);
+});
+</script>
