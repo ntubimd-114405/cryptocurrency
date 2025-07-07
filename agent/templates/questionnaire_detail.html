@@ -7,6 +7,84 @@
 .font-size-inherit {
   font-size: inherit !important;
 }
+
+/* 背景浮動區塊 - 半透明 + 毛玻璃 */
+.floating-bar-modern {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 20px;
+  padding: 14px 32px;
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(20px);
+  border-radius: 24px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.1);
+  z-index: 9999;
+  animation: fadeInUp 0.6s ease-out;
+}
+
+/* 按鈕基礎樣式 */
+.modern-btn {
+  padding: 14px 28px;
+  font-size: 18px;
+  font-weight: bold;
+  border-radius: 16px;
+  border: none;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+}
+
+/* 主行動按鈕：流行紫→藍漸層 + 陰影 + 微動畫 */
+.modern-btn.primary {
+  background: linear-gradient(135deg, #8b5cf6, #6366f1);
+  color: white;
+}
+.modern-btn.primary:hover {
+  transform: scale(1.05) translateY(-3px);
+  box-shadow: 0 6px 24px rgba(99, 102, 241, 0.5);
+}
+
+/* 次要按鈕：中性色＋邊框＋hover 變淡 */
+.modern-btn.secondary {
+  background-color: #f9fafb;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+.modern-btn.secondary:hover {
+  background-color: #e5e7eb;
+  transform: translateY(-2px);
+}
+
+/* 手機 RWD */
+@media (max-width: 600px) {
+  .floating-bar-modern {
+    flex-direction: column;
+    width: calc(100% - 32px);
+    padding: 20px;
+  }
+  .modern-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* 進場動畫 */
+@keyframes fadeInUp {
+  from {
+    transform: translateX(-50%) translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+}
 </style>
 
 <h1>{{ questionnaire.title }}</h1>
@@ -22,14 +100,23 @@
   <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setFontSize('fs-4')">大</button>
 </div>
 
+
+
 <!-- 問卷表單區塊 -->
 <div id="questionnaire" class="fs-5">
-<form method="post">
+<form id="questionnaire-form" method="post">
     {% csrf_token %}
     {% for item in questions_with_answers %}
         {% with question=item.question selected_ids=item.selected_ids %}
-        <div class="container left-aligned-container bg-light p-5 text-start">           
-            <p class="fw-bold font-size-inherit">{{ question.order }}. {{ question.content }}</p>
+        <div class="container left-aligned-container bg-light p-5 text-start">      
+
+            <p class="fw-bold font-size-inherit">{{ question.order }}. {{ question.content }} 
+            {% if question.question_type == 'multiple' %}
+                (複選題)
+            {% endif %}
+            </p>
+
+
 
             {% if question.question_type == 'single' %}
                 {% for option in question.answer_options.all %}
@@ -55,32 +142,79 @@
         </div>
         {% endwith %}
     {% endfor %}
-
-    <button type="submit" class="btn btn-primary mt-3">提交問卷</button>
 </form>
+<!-- 浮動按鈕區 -->
+<div class="floating-bar-modern">
+    <a href="{% url 'agent:questionnaire_list' %}" class="modern-btn secondary">
+      🏠 返回上頁
+    </a>
+    <button type="button" class="modern-btn primary" onclick="confirmSubmit()">
+      🚀 提交問卷
+    </button>
+</div>
+
 </div>
 
 <!-- 字體調整與取消單選功能 -->
 <script>
-  function setFontSize(sizeClass) {
-    const container = document.getElementById('questionnaire');
-    container.classList.remove('fs-4', 'fs-5', 'fs-6');
-    container.classList.add(sizeClass);
-  }
+  document.addEventListener("DOMContentLoaded", function () {
+    let isFormEdited = false;
+    const form = document.getElementById("questionnaire-form");
 
-  // 支援取消單選選項
-  document.querySelectorAll('input[type=radio]').forEach(radio => {
-    radio.addEventListener('click', function () {
-      if (this.wasChecked) {
-        this.checked = false;
-        this.wasChecked = false;
-      } else {
-        const radios = document.getElementsByName(this.name);
-        radios.forEach(r => r.wasChecked = false);
-        this.wasChecked = true;
-      }
+    // ✅ 字體大小調整功能
+    window.setFontSize = function(sizeClass) {
+      const container = document.getElementById('questionnaire');
+      container.classList.remove('fs-4', 'fs-5', 'fs-6');
+      container.classList.add(sizeClass);
+    };
+
+    // ✅ 支援取消單選選項（一定要放在 DOMContentLoaded 內）
+    form.querySelectorAll('input[type=radio]').forEach(radio => {
+      radio.addEventListener('click', function () {
+        if (this.wasChecked) {
+          this.checked = false;
+          this.wasChecked = false;
+          isFormEdited = true;  // ⬅️ 這邊也要標記為已修改！
+        } else {
+          const radios = document.getElementsByName(this.name);
+          radios.forEach(r => r.wasChecked = false);
+          this.wasChecked = true;
+        }
+      });
     });
+
+    // ✅ 標記使用者是否有修改表單（input/change 都算）
+    form.querySelectorAll("input, textarea, select").forEach(el => {
+      el.addEventListener("input", () => {
+        isFormEdited = true;
+      });
+      el.addEventListener("change", () => {
+        isFormEdited = true;
+      });
+    });
+
+    // ✅ 攔截原始表單提交，移除離開提示
+    form.addEventListener("submit", () => {
+      window.onbeforeunload = null;
+    });
+
+    // ✅ 若表單已修改，離開時提示
+    window.onbeforeunload = function () {
+      if (isFormEdited) {
+        return "您確定要離開頁面嗎？目前填寫的資料將會遺失。";
+      }
+    };
   });
+
+  // ✅ 提交確認提示（綁定浮動按鈕）
+  function confirmSubmit() {
+    const form = document.getElementById("questionnaire-form");
+    if (confirm("您確定要送出問卷嗎？")) {
+      window.onbeforeunload = null;
+      form.submit();
+    }
+  }
 </script>
+
 
 {% endblock %}

@@ -166,9 +166,6 @@ def questionnaire_list(request):
         # 使用者回答該問卷中的多少題
         answered_questions = UserAnswer.objects.filter(user=user, question__in=questions).exclude(selected_options=None).count()
 
-
-        
-        print(total_questions,answered_questions)
         if total_questions > 0:
             progress = int(answered_questions / total_questions * 100)
         else:
@@ -192,3 +189,23 @@ def questionnaire_list(request):
     return render(request, 'questionnaire_list.html', {
         'data': data,
     })
+
+# 重新填問卷
+from django.views.decorators.http import require_POST
+
+@login_required
+@require_POST
+def reset_questionnaire_answers(request, questionnaire_id):
+    questionnaire = get_object_or_404(Questionnaire, id=questionnaire_id)
+
+    # 1. 找出問卷下所有題目
+    questions = questionnaire.questions.all()
+
+    # 2. 刪除該使用者對這些題目的所有答案
+    UserAnswer.objects.filter(user=request.user, question__in=questions).delete()
+
+    # 3. 刪除填寫紀錄
+    UserQuestionnaireRecord.objects.filter(user=request.user, questionnaire=questionnaire).delete()
+
+    # 4. 重新導向到問卷填寫頁面
+    return redirect('agent:questionnaire_detail', questionnaire_id=questionnaire.id)

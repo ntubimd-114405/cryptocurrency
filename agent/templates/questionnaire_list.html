@@ -11,8 +11,7 @@
             <th>問卷編號</th>
             <th>問卷名稱</th>
             <th>上次填寫時間</th>
-            <th>填寫狀況</th>
-            <th>填寫進度</th>  {# 新增進度欄位 #}
+            <th>填寫進度</th> 
             <th>操作</th>
         </tr>
     </thead>
@@ -28,30 +27,44 @@
                     尚未填寫
                 {% endif %}
             </td>
-            <td>{{ item.status }}</td>
             <td>
-                <div class="progress" style="height: 20px;">
+                <div class="progress" style="height: 20px; position: relative;">
                     <div class="progress-bar 
                         {% if item.progress == 100 %}
                             bg-success
                         {% elif item.progress >= 50 %}
                             bg-info
-                        {% else %}
+                        {% elif item.progress > 0 %}
                             bg-warning
+                        {% else %}
+                            bg-transparent
                         {% endif %}"
                         role="progressbar"
                         style="width: {{ item.progress }}%;" 
                         aria-valuenow="{{ item.progress }}" 
                         aria-valuemin="0" 
                         aria-valuemax="100">
-                        {{ item.progress }}%
                     </div>
+                    <!-- 文字固定顯示在中間 -->
+                    <span style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 0.9rem;">
+                        {{ item.progress }}%
+                    </span>
                 </div>
             </td>
-            <td>
-                <a class="btn btn-primary btn-sm" href="{% url 'agent:questionnaire_detail' item.questionnaire.id %}">
-                    開始/繼續填寫
-                </a>
+            <td style="white-space: nowrap; width: 1%;">
+                <div class="d-inline-flex gap-2 justify-content-center">
+                    <a class="btn btn-primary btn-sm" href="{% url 'agent:questionnaire_detail' item.questionnaire.id %}">
+                        開始/繼續填寫
+                    </a>
+                    <a>|</a>
+                    <form action="{% url 'agent:reset_questionnaire_answers' item.questionnaire.id %}" method="post">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-danger btn-sm"
+                                onclick="return confirm('確定要清除所有答案並重新填寫嗎？');">
+                            重新填寫此問卷
+                        </button>
+                    </form>
+                </div>
             </td>
         </tr>
         {% empty %}
