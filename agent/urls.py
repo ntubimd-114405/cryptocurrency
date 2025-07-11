@@ -10,4 +10,5 @@ urlpatterns = [
     path('questionnaire/<int:questionnaire_id>/reset/', views.reset_questionnaire_answers, name='reset_questionnaire_answers'),
     path('analyze/<int:questionnaire_id>/', views.analyze_view, name='analyze_questionnaire'),
     path('analyze/all/', views.analyze_all_questionnaires, name='analyze_all_questionnaires'),
+    path('history/', views.coin_history_view, name = 'history'),
 ]

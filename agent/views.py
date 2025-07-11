@@ -3,6 +3,9 @@ from django.shortcuts import render
 # agent/views.py
 import requests
 import hashlib
+import pandas as pd
+import json
+import ta
 
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
@@ -13,6 +16,8 @@ import os
 from pathlib import Path
 from django.db import connection
 from django.conf import settings
+from main.models import CoinHistory, Coin
+from decimal import Decimal
 
 env_path = Path(__file__).resolve().parents[2] / '.env'
 
@@ -339,3 +344,51 @@ def analyze_view(request, questionnaire_id):
     result = analyze_user_responses(user, questionnaire, api_key)
 
     return render(request, "analysis_result.html", {"analysis": result,})
+
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return float(obj)
+        return super().default(obj)
+
+def coin_history_view(request):
+    coins = Coin.objects.all()
+    coin_id = request.GET.get('coin_id', coins.first().id)
+    selected_coin = Coin.objects.get(id=coin_id)  # ← 取得選擇的幣
+
+    thirty_days_ago = timezone.now().date() - timedelta(days=60)
+
+    # 取得歷史資料
+    queryset = (
+        CoinHistory.objects
+        .filter(coin_id=coin_id, date__gte=thirty_days_ago)
+        .select_related('coin')
+        .order_by('date')
+    )
+
+    # 轉成 DataFrame
+    df = pd.DataFrame.from_records(queryset.values('date', 'close_price'))
+    df['date'] = pd.to_datetime(df['date'])
+    df = df.sort_values('date')
+
+    # 計算指標
+    df['ema20'] = ta.trend.EMAIndicator(close=df['close_price'], window=20).ema_indicator()
+    df['rsi'] = ta.momentum.RSIIndicator(close=df['close_price'], window=14).rsi()
+
+    # ➤ 把含 NaN 的列整個移除
+    df = df.dropna(subset=['ema20', 'rsi'])
+
+    # 準備要傳給 Chart.js 的資料
+    chart_data = {
+        'dates': df['date'].dt.strftime('%Y-%m-%d').tolist(),
+        'close': df['close_price'].tolist(),
+        'ema20': df['ema20'].round(2).tolist(),
+        'rsi': df['rsi'].round(2).tolist(),
+    }
+
+    return render(request, 'coin_history.html', {
+        'coins': coins,
+        'coin_id': int(coin_id),
+        'selected_coin_name': selected_coin.coinname,  # 傳給前端用
+        'chart_data': json.dumps(chart_data, cls=DecimalEncoder)
+    })

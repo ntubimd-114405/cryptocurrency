@@ -139,8 +139,17 @@
         <a href="{% url 'agent:analyze_all_questionnaires' %}" style = "color: #fff;">
             執行總分析
         </a>
-    </span>   
+        
+    </span>  
 </button>
+<button class = "analysis">
+    <span>
+        <a href="{% url 'agent:history' %}" style = "color: #fff;">
+            報表
+        </a>
+    </span> 
+</button>
+
 
 <table class="table table-bordered align-middle text-center">
     <thead class="table-light">
@@ -217,4 +226,5 @@
         {% endfor %}
     </tbody>
 </table>
+
 {% endblock %}
