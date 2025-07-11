@@ -10,13 +10,20 @@ import pandas as pd
 import ta
 from django.utils import timezone
 from django.conf import settings
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404,redirect
 from django.http import HttpResponse
+from django.contrib.auth.decorators import login_required
+from django.utils.timezone import now
+from django.db import IntegrityError
 
+from .models import WeeklyReport
 from main.models import CoinHistory
 from news.models import Article
 from other.models import FinancialData, IndicatorValue, BitcoinMetricData
-# 資料庫取得資料
+
+from data_analysis.text_generation.chatgpt_api import call_chatgpt
+
+
 
 def load_price_data_from_db(coin_id, start_date=None, end_date=None):
     queryset = CoinHistory.objects.filter(coin_id=coin_id)
@@ -182,9 +189,21 @@ def full_month_data_view():
         'bitcoin_data_json': bitcoin_df.to_json(orient='records', date_format='iso'),
     }
 
+
+
+@login_required
+def report_list(request):
+    user = request.user
+    reports = WeeklyReport.objects.filter(user=user).order_by('-year', '-week')
+
+    context = {
+        'reports': reports,
+    }
+    return render(request, 'weekly_report_list.html', context)
+
+
+'''
 def weekly_report_view(request):
-    report_dir = os.path.join(settings.MEDIA_ROOT, 'report')
-    os.makedirs(report_dir, exist_ok=True)
 
     # 實際或假資料（目前使用假資料）
     df = load_price_data_from_db(1)
@@ -232,9 +251,123 @@ def weekly_report_view(request):
     context.update(full_month_data_view())
 
     return render(request, 'weekly_report.html', context)
+'''
+
+@login_required
+def weekly_report_view(request):
+    today = now().date()
+    year, week, _ = today.isocalendar()
+    user = request.user
+
+    # 嘗試從資料庫讀取週報
+    try:
+        report = WeeklyReport.objects.get(user=user, year=year, week=week)
+        context = {
+            'summary': report.summary,
+            'word_freqs_json': json.dumps(report.word_frequencies),
+            'ma20_data': json.dumps(report.ma20_data),
+            'ma50_data': json.dumps(report.ma50_data),
+            'ohlc_json': json.dumps(report.ohlc_data),
+            'rsi_json': json.dumps(report.rsi_data),
+            'macd_json': json.dumps(report.macd_data),
+            'macd_signal_json': json.dumps(report.macd_signal_data),
+        }
+    except WeeklyReport.DoesNotExist:
+        # 若無，則即時產生
+        df = load_price_data_from_db(1)
+        df = add_technical_indicators(df).tail(30)
+
+        ma20_data = decimal_to_float(df['ma20'].tolist())
+        ma50_data = decimal_to_float(df['ma60'].tolist())
+
+        summary = "..."  # 自動摘要
+        news_text = "..."  # 統一處理新聞文字
+        word_freqs = process_word_frequencies(news_text)
+
+        report = WeeklyReport.objects.create(
+            user=user,
+            year=year,
+            week=week,
+            summary=summary,
+            word_frequencies=word_freqs,
+            ma20_data=ma20_data,
+            ma50_data=ma50_data,
+            ohlc_data=df['ohlc'].tolist(),
+            rsi_data=df['rsi_point'].dropna().tolist(),
+            macd_data=df['macd_bar'].dropna().tolist(),
+            macd_signal_data=df['macd_signal_line'].dropna().tolist()
+        )
+
+        context = {
+            'summary': report.summary,
+            'word_freqs_json': json.dumps(report.word_frequencies),
+            'ma20_data': json.dumps(report.ma20_data),
+            'ma50_data': json.dumps(report.ma50_data),
+            'ohlc_json': json.dumps(report.ohlc_data),
+            'rsi_json': json.dumps(report.rsi_data),
+            'macd_json': json.dumps(report.macd_data),
+            'macd_signal_json': json.dumps(report.macd_signal_data),
+        }
+
+    # 額外加上共用 JSON（不用重複計算）
+    context.update(full_month_data_view())
+
+    return render(request, 'weekly_report.html', context)
 
 
+@login_required
+def generate_weekly_report(request):
+    user = request.user
+    today = now().date()
+    year, week, _ = today.isocalendar()
+
+    # 重新計算資料
+    df = load_price_data_from_db(1)  # 或 user.id，視你的邏輯
+    df = add_technical_indicators(df).tail(30)
+
+    ma20_data = decimal_to_float(df['ma20'].tolist())
+    ma50_data = decimal_to_float(df['ma60'].tolist())
+
+    summary = "..."  # 你的自動摘要邏輯
+    news_text = "..."  # 你的新聞文字
+    word_freqs = process_word_frequencies(news_text)
+
+    # 更新或新增本週報告
+    WeeklyReport.objects.update_or_create(
+        user=user,
+        year=year,
+        week=week,
+        defaults={
+            'summary': summary,
+            'word_frequencies': word_freqs,
+            'ma20_data': ma20_data,
+            'ma50_data': ma50_data,
+            'ohlc_data': df['ohlc'].tolist(),
+            'rsi_data': df['rsi_point'].dropna().tolist(),
+            'macd_data': df['macd_bar'].dropna().tolist(),
+            'macd_signal_data': df['macd_signal_line'].dropna().tolist(),
+        }
+    )
+
+    return redirect('weekly_report_list')  # 重新導向你的週報頁
 
 
+@login_required
+def view_weekly_report_by_id(request, report_id):
+    report = get_object_or_404(WeeklyReport, id=report_id, user=request.user)
 
+    context = {
+        'summary': report.summary,
+        'word_freqs_json': json.dumps(report.word_frequencies),
+        'ma20_data': json.dumps(report.ma20_data),
+        'ma50_data': json.dumps(report.ma50_data),
+        'ohlc_json': json.dumps(report.ohlc_data),
+        'rsi_json': json.dumps(report.rsi_data),
+        'macd_json': json.dumps(report.macd_data),
+        'macd_signal_json': json.dumps(report.macd_signal_data),
+    }
 
+    # 也可以把共用的 full_month_data 加進 context，如果需要
+    context.update(full_month_data_view())
+
+    return render(request, 'weekly_report.html', context)
