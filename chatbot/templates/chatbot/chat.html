@@ -1,114 +1,388 @@
-<!DOCTYPE html>
-<html lang="zh">
+<!DOCTYPE html> 
+<html lang="zh-TW">
 <head>
-    <meta charset="UTF-8" />
-    <title>GPT 聊天机器人</title>
-    <style>
-        body {
-            background-color: #0f0f0f;
-            color: #eee;
-            font-family: 'Segoe UI', sans-serif;
-            max-width: 700px;
-            margin: 50px auto;
-        }
-        h1 {
-            text-align: center;
-            color: #00ffe1;
-        }
-        #chat-box {
-            height: 500px;
-            overflow-y: auto;
-            border: 1px solid #333;
-            padding: 15px;
-            background: #1a1a1a;
-            border-radius: 8px;
-        }
-        .message {
-            margin-bottom: 10px;
-        }
-        .user {
-            color: #00aaff;
-        }
-        .bot {
-            color: #00ff88;
-        }
-        input {
-            width: 75%;
-            padding: 10px;
-            border: 1px solid #444;
-            background: #222;
-            color: #eee;
-            border-radius: 5px;
-        }
-        button {
-            padding: 10px 20px;
-            background-color: #00ffe1;
-            color: #000;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #00c9af;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <title>浮動聊天視窗</title>
+  <style>
+    /* 聊天視窗和按鈕的樣式（從第一段複製來） */
+    .checkbox-wrapper {
+        position: fixed;
+        bottom: 95px;
+        right: 20px;
+        z-index: 9999;
+    }
+    .chat-btn {
+        --size: 50px;
+        --shadow: calc(var(--size) * .07) calc(var(--size) * .1);
+        position: relative;
+        display: block;
+        width: var(--size);
+        height: var(--size);
+        margin: 0 auto;
+        background-color: #4158D0;
+        background-image: linear-gradient(43deg, #4158D0 0%, #C850C0 46%, #FFCC70 100%);
+        border-radius: 50%;
+        cursor: pointer;
+        transition: 0.2s ease transform, 0.2s ease box-shadow;
+        overflow: hidden;
+        z-index: 1;
+    }
+    .chat-btn:before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        right: 0;
+        left: 0;
+        width: calc(var(--size) * .7);
+        height: calc(var(--size) * .7);
+        margin: 0 auto;
+        background-color: #fff;
+        transform: translateY(-50%);
+        border-radius: 50%;
+        transition: 0.2s ease width, 0.2s ease height;
+    }
+    .chat-btn:hover:before {
+        width: calc(var(--size) * .55);
+        height: calc(var(--size) * .55);
+    }
+    .chat-btn:active {
+        transform: scale(0.9);
+    }
+    .chat-btn.active {
+        box-shadow: rgba(0, 0, 0, 0.3) 0px 19px 38px, rgba(0, 0, 0, 0.22) 0px 15px 12px;
+    }
+    .chat-btn.active:before {
+        width: 0;
+        height: 0;
+    }
+    .tick_mark {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: calc(var(--size) * .9);
+        height: calc(var(--size) * .9);
+        transform: translate(-50%, -50%);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        background-image: none !important; /* 清除第二段原本icon背景 */
+    }
+    .tick_mark.active {
+        opacity: 1;
+    }
+    .tick_mark:before,
+    .tick_mark:after {
+        content: "";
+        position: absolute;
+        background-color: #fff;
+        border-radius: 50% / 60%;
+        transition: 0.3s ease transform;
+    }
+    .tick_mark:before {
+        top: 10px;
+        left: 5px;
+        width: calc(var(--size) * .25);
+        height: calc(var(--size) * .35);
+        transform: translateY(15px);
+        box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.1);
+    }
+    .tick_mark:after {
+        top: 10px;
+        right: 5px;
+        width: calc(var(--size) * .25);
+        height: calc(var(--size) * .35);
+        transform: translateY(15px);
+        box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.1);
+    }
+    .tick_mark:before::after,
+    .tick_mark:after::after {
+        content: "";
+        position: absolute;
+        width: calc(var(--size) * .08);
+        height: calc(var(--size) * .12);
+        background-color: #333;
+        border-radius: 50% / 60%;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    .tick_mark.active:before,
+    .tick_mark.active:after {
+        transform: translateY(0);
+    }
+    .tick_mark.active:before::after,
+    .tick_mark.active:after::after {
+        opacity: 1;
+    }
+    @keyframes eyeBounce {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-2px); }
+    }
+    .tick_mark.active:before,
+    .tick_mark.active:after {
+        animation: eyeBounce 1.5s infinite ease-in-out;
+    }
+    .tick_mark.active:before {
+        animation-delay: 0s;
+    }
+    .tick_mark.active:after {
+        animation-delay: 0.2s;
+    }
+
+    /* 思考中動畫 */
+    .waiting-animation {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        color: #6e8efb;
+        font-style: italic;
+    }
+    .waiting-animation span {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        background-color: #6e8efb;
+        border-radius: 50%;
+        animation: bounce 0.6s ease-in-out infinite;
+    }
+    .waiting-animation span:nth-child(2) {
+        animation-delay: 0.2s;
+    }
+    .waiting-animation span:nth-child(3) {
+        animation-delay: 0.4s;
+    }
+    @keyframes bounce {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-5px); }
+    }
+
+    /* 聊天窗口樣式 */
+    .chat-container {
+        z-index: 10;
+        position: fixed;
+        bottom: 158px;
+        right: 20px;
+        width: 350px;
+        height: 450px;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.2);
+        display: none;
+        flex-direction: column;
+        overflow: hidden;
+        opacity: 0;
+        transform: translateY(20px);
+        transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+    .chat-container.show {
+        display: flex;
+        opacity: 1;
+        transform: translateY(0);
+    }
+    .chat-header {
+        background: linear-gradient(135deg, #6e8efb, #a777e3);
+        color: white;
+        padding: 15px;
+        text-align: center;
+        font-weight: bold;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .chat-body {
+        flex: 1;
+        padding: 15px;
+        overflow-y: auto;
+        font-size: 14px;
+        background-color: #f9f9f9;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .chat-footer {
+        display: flex;
+        padding: 10px;
+        border-top: 1px solid #ddd;
+        background-color: #fff;
+    }
+    .chat-footer input {
+        flex: 1;
+        padding: 10px;
+        border: none;
+        border-radius: 20px;
+        outline: none;
+        font-size: 14px;
+        background: #f1f1f1;
+    }
+    .chat-footer button {
+        margin-left: 10px;
+        padding: 10px 15px;
+        background: #6e8efb;
+        color: white;
+        border: none;
+        border-radius: 20px;
+        cursor: pointer;
+        transition: background 0.3s ease;
+    }
+    .chat-footer button:hover {
+        background: #a777e3;
+    }
+
+    /* 新增對話氣泡樣式 */
+    .message {
+        max-width: 75%;
+        padding: 10px 15px;
+        border-radius: 15px;
+        line-height: 1.4;
+        position: relative;
+        word-wrap: break-word;
+    }
+    .message.user {
+        background: #6e8efb;
+        color: white;
+        align-self: flex-end;
+        margin-left: auto;
+        border-bottom-right-radius: 5px;
+    }
+    .message.bot {
+        background: #ffffff;
+        color: #333;
+        align-self: flex-start;
+        margin-right: auto;
+        border-bottom-left-radius: 5px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    .message.waiting {
+        background: #ffffff;
+        color: #333;
+        align-self: flex-start;
+        margin-right: auto;
+        border-radius: 15px;
+        padding: 10px;
+    }
+    .chat-body > div {
+        display: flex;
+        flex-direction: column;
+    }
+  </style>
 </head>
 <body>
-    <h1>GPT 聊天机器人</h1>
-    <div id="chat-box"></div>
-    <input type="text" id="message" placeholder="输入你的消息..." />
-    <button onclick="sendMessage()">发送</button>
+
+<!-- Chat Floating Widget -->
+<div class="checkbox-wrapper">
+    <div class="chat-btn" onclick="toggleChat()" id="chatBtn">
+        <div class="tick_mark" id="tickMark"></div>
+    </div>
+</div>
+
+<div class="chat-container" id="chatContainer">
+    <div class="chat-header">
+        💬 AI 聊天助理
+        <button onclick="clearMemory()">🧹記憶清除</button>
+    </div>
+    <div class="chat-body" id="chat-box"></div>
+    <div class="chat-footer">
+        <input type="text" id="message" placeholder="輸入訊息..." onkeypress="handleKeyPress(event)" />
+        <button onclick="sendMessage()">發送</button>
+    </div>
+</div>
 
 <script>
-    // 初始化歡迎訊息
-    window.onload = function() {
-        const chatBox = document.getElementById('chat-box');
-        const botDiv = document.createElement('div');
-        botDiv.className = 'message bot';
-        botDiv.innerText = 'GPT: 你好，可以詢問我有關加密貨幣相關的問題喔！';
-        chatBox.appendChild(botDiv);
+const userId = 'user123';
+
+window.onload = function () {
+    const chatBox = document.getElementById('chat-box');
+    const botDiv = document.createElement('div');
+    botDiv.className = 'message bot';
+    botDiv.innerText = 'GPT：你好，可以詢問我有關加密貨幣相關的問題喔！';
+    chatBox.appendChild(botDiv);
+};
+
+// 切換視窗，並切換按鈕動畫
+function toggleChat() {
+    const container = document.getElementById('chatContainer');
+    const btn = document.getElementById('chatBtn');
+    const tick = document.getElementById('tickMark');
+
+    container.classList.toggle('show');
+    btn.classList.toggle('active');
+    tick.classList.toggle('active');
+}
+
+// Enter 處理
+function handleKeyPress(event) {
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        sendMessage();
     }
+}
 
-    function sendMessage() {
-        const messageInput = document.getElementById('message');
-        const message = messageInput.value.trim();
-        if (!message) return;
+// 發送訊息
+function sendMessage() {
+    const input = document.getElementById('message');
+    const msg = input.value.trim();
+    if (!msg) return;
 
+    const chatBox = document.getElementById('chat-box');
+
+    const userDiv = document.createElement('div');
+    userDiv.className = 'message user';
+    userDiv.innerText = '你：' + msg;
+    chatBox.appendChild(userDiv);
+
+    input.value = '';
+
+    const waitingDiv = document.createElement('div');
+    waitingDiv.className = 'message bot waiting';
+    waitingDiv.innerHTML = '<div class="waiting-animation"><span></span><span></span><span></span></div>';
+    chatBox.appendChild(waitingDiv);
+    chatBox.scrollTop = chatBox.scrollHeight;
+
+    fetch('/chatbot/api/chat/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            user_id: userId,
+            message: msg
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        waitingDiv.classList.remove('waiting');
+        waitingDiv.innerText = data.error ? '錯誤：' + data.error : 'GPT：' + data.reply;
+        chatBox.scrollTop = chatBox.scrollHeight;
+    })
+    .catch(() => {
+        waitingDiv.classList.remove('waiting');
+        waitingDiv.innerText = '錯誤：請求失敗';
+    });
+}
+
+// 清除記憶
+function clearMemory() {
+    fetch('/chatbot/api/chat/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            user_id: userId,
+            clear: true
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
         const chatBox = document.getElementById('chat-box');
-
-        const userDiv = document.createElement('div');
-        userDiv.className = 'message user';
-        userDiv.innerText = '你: ' + message;
-        chatBox.appendChild(userDiv);
-
-        messageInput.value = '';
-
-        fetch('/chatbot/api/chat/', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: message })
-        })
-        .then(response => response.json())
-        .then(data => {
-            const botDiv = document.createElement('div');
-            botDiv.className = 'message bot';
-
-            if (data.error) {
-                botDiv.innerText = '錯誤: ' + data.error;
-            } else {
-                botDiv.innerText = 'GPT: ' + data.reply;
-            }
-
-            chatBox.appendChild(botDiv);
-            chatBox.scrollTop = chatBox.scrollHeight;
-        })
-        .catch(err => {
-            const errDiv = document.createElement('div');
-            errDiv.className = 'message bot';
-            errDiv.innerText = '錯誤: 請求失敗';
-            chatBox.appendChild(errDiv);
-        });
-    }
+        chatBox.innerHTML = '';
+        const welcomeDiv = document.createElement('div');
+        welcomeDiv.className = 'message bot';
+        welcomeDiv.innerText = 'GPT：你好，可以詢問我有關加密貨幣相關的問題喔！';
+        chatBox.appendChild(welcomeDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    })
+    .catch(() => {
+        alert('清除失敗');
+    });
+}
 </script>
 
 </body>
