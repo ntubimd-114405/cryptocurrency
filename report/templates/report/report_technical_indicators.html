@@ -17,8 +17,8 @@
 
 
 
-
 <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
 <script>
   const ohlcData = {{ ohlc_json|safe }};
   const rsiData = {{ rsi_json|safe }};
@@ -45,16 +45,16 @@
     line: { color: 'orange' }
   };
 
-  const ma50 = {
+  const ma60 = {
     x: ohlcData.map(d => d.x),
-    y: {{ ma50_data|safe }},
+    y: {{ ma60_data|safe }},
     type: 'scatter',
     mode: 'lines',
     name: 'MA60',
     line: { color: 'green' }
   };
 
-  Plotly.newPlot('klineChart', [traceKline, ma20, ma50], {
+  Plotly.newPlot('klineChart', [traceKline, ma20, ma60], {
     title: 'K 線圖與均線',
     xaxis: { title: '日期' },
     yaxis: { title: '價格' }

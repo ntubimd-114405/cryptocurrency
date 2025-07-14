@@ -6,15 +6,23 @@ class WeeklyReport(models.Model):
     year = models.IntegerField()
     week = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
+    #要加開始時間
+    #要加結束時間
 
     summary = models.TextField()
+    news_summary = models.TextField()
     word_frequencies = models.JSONField()
     ma20_data = models.JSONField()
-    ma50_data = models.JSONField()
+    ma60_data = models.JSONField()
     ohlc_data = models.JSONField()
     rsi_data = models.JSONField()
     macd_data = models.JSONField()
     macd_signal_data = models.JSONField()
+    coin_analysis = models.TextField()
+    financial_data_json = models.JSONField(null=True)
+    indicator_data_json = models.JSONField(null=True)
+    bitcoin_data_json = models.JSONField(null=True)
+    long_term_analysis = models.TextField(null=True)
 
     class Meta:
         unique_together = ('user', 'year', 'week')

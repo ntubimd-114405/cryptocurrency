@@ -18,7 +18,12 @@
 <div class="chart-container">
   <div id="tabContents"></div>
 </div>
-
+{% if long_term_analysis %}
+  <div class="text-block mt-5">
+    <h2>📈 長期趨勢分析</h2>
+    <p>{{ long_term_analysis|linebreaks }}</p>
+  </div>
+{% endif %}
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
