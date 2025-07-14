@@ -17,7 +17,7 @@ from django.utils.timezone import now
 from django.db import IntegrityError
 
 from .models import WeeklyReport
-from main.models import CoinHistory
+from main.models import CoinHistory,Coin
 from news.models import Article
 from other.models import FinancialData, IndicatorValue, BitcoinMetricData
 
@@ -27,7 +27,7 @@ from data_analysis.text_generation.chatgpt_api import call_chatgpt
 
 def load_price_data_from_db(coin_id, start_date=None, end_date=None):
     queryset = CoinHistory.objects.filter(coin_id=coin_id)
-
+    name = Coin.objects.get(id=1).coinname
     if start_date:
         queryset = queryset.filter(date__gte=start_date)
     if end_date:
@@ -61,7 +61,7 @@ def load_price_data_from_db(coin_id, start_date=None, end_date=None):
     for col in ['Open', 'High', 'Low', 'Close', 'Volume']:
         daily_df[col] = daily_df[col].astype(float)
 
-    return daily_df
+    return name,daily_df
 
 # 假資料生成器（方便測試）
 def fake_load_price_data_from_db():
@@ -125,8 +125,8 @@ def add_technical_indicators(df):
 
 def get_recent_articles():
 
-    recent_time = timezone.now() - timedelta(days=30)
-    articles = Article.objects.filter(time__gte=recent_time).order_by('-time')[:10]
+    recent_time = timezone.now() - timedelta(days=7)
+    articles = Article.objects.filter(time__gte=recent_time).order_by('-time')[:100]
     return articles
 
 # 詞頻處理（英文）
@@ -160,7 +160,7 @@ def decimal_to_float(data_list):
 
 # 主視圖：weekly report
 def full_month_data_view():
-    today = date.today()
+    today = timezone.now().date()
     start_date = today - timedelta(days=120)
 
     # 📈 FinancialData 資料
@@ -202,135 +202,90 @@ def report_list(request):
     return render(request, 'weekly_report_list.html', context)
 
 
-'''
-def weekly_report_view(request):
-
-    # 實際或假資料（目前使用假資料）
-    df = load_price_data_from_db(1)
-    #df = fake_load_price_data_from_db()
-    df = add_technical_indicators(df).tail(30)
-    
-    ma20_data = df['ma20'].tolist()
-    ma50_data = df['ma60'].tolist()
-
-    recent_articles = get_recent_articles()
-    news_text = """
-    Bitcoin ETF approval sparks optimism in the crypto market, boosting investor confidence. 
-    Inflation concerns ease as macroeconomic indicators stabilize. 
-    FUD from regulators persists, with discussions on stricter crypto oversight. 
-    Ethereum shows resilience despite market volatility, driven by DeFi growth. 
-    Solana gains traction with faster transaction speeds and lower fees. 
-    Institutional adoption of cryptocurrencies accelerates, with major firms allocating funds to BTC and ETH. 
-    Market sentiment remains cautiously optimistic, with analysts predicting a bullish trend for Q4. 
-    Stablecoins face scrutiny over transparency, raising questions about reserve backing. 
-    Decentralized finance continues to innovate, attracting new users globally. 
-    Crypto exchanges report record trading volumes amid heightened market activity.
-    """
-
-    word_freqs = process_word_frequencies(news_text)
-
-    summary = """
-    本週BTC價格穩定上升，市場對ETF審批反應積極，整體情緒偏正面。
-    Ethereum和Solana表現強勁，DeFi和機構採用推動市場增長。
-    監管不確定性仍存，穩定幣透明度問題引發關注。
-    """
-
-    context = {
-        'summary': summary,
-        'word_freqs_json': json.dumps(word_freqs),
-        'ma20_data': json.dumps(decimal_to_float(ma20_data)),
-        'ma50_data': json.dumps(decimal_to_float(ma50_data)),
-        'ohlc_json': json.dumps(df['ohlc'].tolist()),
-        'rsi_json': json.dumps(df['rsi_point'].dropna().tolist()),
-        'macd_json': json.dumps(df['macd_bar'].dropna().tolist()),
-        'macd_signal_json': json.dumps(df['macd_signal_line'].dropna().tolist()),
-        'articles': recent_articles,
-    }
-
-    # 合併 full_month_data 的 dict
-    context.update(full_month_data_view())
-
-    return render(request, 'weekly_report.html', context)
-'''
-
-@login_required
-def weekly_report_view(request):
-    today = now().date()
-    year, week, _ = today.isocalendar()
-    user = request.user
-
-    # 嘗試從資料庫讀取週報
-    try:
-        report = WeeklyReport.objects.get(user=user, year=year, week=week)
-        context = {
-            'summary': report.summary,
-            'word_freqs_json': json.dumps(report.word_frequencies),
-            'ma20_data': json.dumps(report.ma20_data),
-            'ma50_data': json.dumps(report.ma50_data),
-            'ohlc_json': json.dumps(report.ohlc_data),
-            'rsi_json': json.dumps(report.rsi_data),
-            'macd_json': json.dumps(report.macd_data),
-            'macd_signal_json': json.dumps(report.macd_signal_data),
-        }
-    except WeeklyReport.DoesNotExist:
-        # 若無，則即時產生
-        df = load_price_data_from_db(1)
-        df = add_technical_indicators(df).tail(30)
-
-        ma20_data = decimal_to_float(df['ma20'].tolist())
-        ma50_data = decimal_to_float(df['ma60'].tolist())
-
-        summary = "..."  # 自動摘要
-        news_text = "..."  # 統一處理新聞文字
-        word_freqs = process_word_frequencies(news_text)
-
-        report = WeeklyReport.objects.create(
-            user=user,
-            year=year,
-            week=week,
-            summary=summary,
-            word_frequencies=word_freqs,
-            ma20_data=ma20_data,
-            ma50_data=ma50_data,
-            ohlc_data=df['ohlc'].tolist(),
-            rsi_data=df['rsi_point'].dropna().tolist(),
-            macd_data=df['macd_bar'].dropna().tolist(),
-            macd_signal_data=df['macd_signal_line'].dropna().tolist()
-        )
-
-        context = {
-            'summary': report.summary,
-            'word_freqs_json': json.dumps(report.word_frequencies),
-            'ma20_data': json.dumps(report.ma20_data),
-            'ma50_data': json.dumps(report.ma50_data),
-            'ohlc_json': json.dumps(report.ohlc_data),
-            'rsi_json': json.dumps(report.rsi_data),
-            'macd_json': json.dumps(report.macd_data),
-            'macd_signal_json': json.dumps(report.macd_signal_data),
-        }
-
-    # 額外加上共用 JSON（不用重複計算）
-    context.update(full_month_data_view())
-
-    return render(request, 'weekly_report.html', context)
-
-
 @login_required
 def generate_weekly_report(request):
     user = request.user
     today = now().date()
     year, week, _ = today.isocalendar()
+    start_date = today - timedelta(days=today.weekday())
 
     # 重新計算資料
-    df = load_price_data_from_db(1)  # 或 user.id，視你的邏輯
+    coin,df = load_price_data_from_db(1)  # 或 user.id，視你的邏輯
     df = add_technical_indicators(df).tail(30)
 
     ma20_data = decimal_to_float(df['ma20'].tolist())
-    ma50_data = decimal_to_float(df['ma60'].tolist())
+    ma60_data = decimal_to_float(df['ma60'].tolist())
 
-    summary = "..."  # 你的自動摘要邏輯
-    news_text = "..."  # 你的新聞文字
+    
+
+    recent_articles = get_recent_articles()
+    news_text = " ".join([i.title for i in recent_articles])
     word_freqs = process_word_frequencies(news_text)
+    news_summary = call_chatgpt(
+        system="你是一位專業的財經新聞編輯，擅長撰寫自然流暢的摘要，並用 HTML 格式輸出，全部變中文。",
+        text=f"""請將以下新聞標題與網址整理成一段文章摘要，請用自然流暢的中文撰寫，不用條列、不要列清單，請以「文章敘述方式」串接每則新聞，並將每則新聞標題作為超連結嵌入，格式回傳一段完整 HTML <div>內容</div>要包含<a url="">，不要有額外文字或說明。
+        以下是新聞：
+        {str([(i.title, i.url) for i in recent_articles])}
+        """
+    ).strip("```").strip("html")
+    
+    data = {
+        "MA20": list(ma20_data[-7:]),
+        "MA60": list(ma60_data[-7:]),
+        "RSI": df['rsi_point'].dropna().tail(7).tolist(),
+        "MACD": df['macd_bar'].dropna().tail(7).tolist(),
+        "MACD_Signal": df['macd_signal_line'].dropna().tail(7).tolist(),
+        "OHLC": df['ohlc'].dropna().tail(7).tolist(),
+    }
+    formatted = json.dumps(data, ensure_ascii=False)
+
+    coin_analysis = call_chatgpt(
+        system="你是一位專業金融分析師，請用 HTML <div> 包裝你的技術分析評論。",
+        text=f"""請依據以下加密貨幣 {coin} 的技術分析資料進行簡潔評論，描述目前市場趨勢與可能的變化，避免逐筆說明，只需總體分析與解釋。請輸出為一段 HTML <div>...</div>，不要額外文字：
+        {formatted}
+        """
+    ).strip("```").strip("html")
+
+    summary = call_chatgpt(
+        system="你是一位擅長撰寫財經總結的分析師。",
+        text=f"""
+        請你以專業金融分析師口吻，綜合以下兩部分內容，撰寫一段中文市場總結。  
+        請先用段落簡短介紹市場狀況，  
+        接著用 HTML 的 <table> 元素，建立一個兩欄的表格，  
+        左欄標題為「利多因素」，右欄標題為「利空因素」，  
+        整段內容用 <div> 包起來，且不要額外文字。
+
+        1. 技術分析評論：
+        {coin_analysis}
+
+        2. 近期新聞摘要：
+        {news_summary}
+        """
+    ).strip("```").strip("html").strip()
+
+    # 📊 中長期觀點資料整合
+    monthly_data = full_month_data_view()
+    financial_json = monthly_data['financial_data_json']
+    indicator_json = monthly_data['indicator_data_json']
+    bitcoin_json = monthly_data['bitcoin_data_json']
+
+    long_term_analysis = call_chatgpt(
+        system="你是一位金融市場研究員，請撰寫中長期觀察與趨勢預測。",
+        text=f"""
+        請你以金融分析師身份，根據以下三類資料，撰寫一段純文字格式的中長期市場觀察與趨勢預測分析。
+        請避免逐筆列舉資料，僅需從總體層面做出解釋與預測，語氣請保持客觀、專業，避免使用過多不確定詞。
+        請直接輸出文字，不要使用 HTML 格式與額外標記。
+        資料如下：
+        1. 金融價格資料（financial_data_json）：
+        {financial_json[:100]}
+
+        2. 技術指標資料（indicator_data_json）：
+        {indicator_json[:100]}
+
+        3. 比特幣鏈上指標資料（bitcoin_data_json）：
+        {bitcoin_json[:100]}
+        """
+    ).strip("```").strip("html").strip()
 
     # 更新或新增本週報告
     WeeklyReport.objects.update_or_create(
@@ -339,13 +294,19 @@ def generate_weekly_report(request):
         week=week,
         defaults={
             'summary': summary,
+            'news_summary': news_summary,
             'word_frequencies': word_freqs,
             'ma20_data': ma20_data,
-            'ma50_data': ma50_data,
+            'ma60_data': ma60_data,
             'ohlc_data': df['ohlc'].tolist(),
             'rsi_data': df['rsi_point'].dropna().tolist(),
             'macd_data': df['macd_bar'].dropna().tolist(),
             'macd_signal_data': df['macd_signal_line'].dropna().tolist(),
+            'coin_analysis':coin_analysis,
+            'financial_data_json': financial_json,
+            'indicator_data_json': indicator_json,
+            'bitcoin_data_json': bitcoin_json,
+            'long_term_analysis': long_term_analysis,
         }
     )
 
@@ -358,13 +319,19 @@ def view_weekly_report_by_id(request, report_id):
 
     context = {
         'summary': report.summary,
+        'news_summary': report.news_summary,
         'word_freqs_json': json.dumps(report.word_frequencies),
         'ma20_data': json.dumps(report.ma20_data),
-        'ma50_data': json.dumps(report.ma50_data),
+        'ma60_data': json.dumps(report.ma60_data),
         'ohlc_json': json.dumps(report.ohlc_data),
         'rsi_json': json.dumps(report.rsi_data),
         'macd_json': json.dumps(report.macd_data),
         'macd_signal_json': json.dumps(report.macd_signal_data),
+        'coin_analysis':report.coin_analysis,
+        'financial_data_json': report.financial_data_json,
+        'indicator_data_json': report.indicator_data_json,
+        'bitcoin_data_json': report.bitcoin_data_json,
+        'long_term_analysis': report.long_term_analysis,
     }
 
     # 也可以把共用的 full_month_data 加進 context，如果需要

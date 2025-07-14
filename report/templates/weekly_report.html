@@ -3,7 +3,7 @@
 {% block title %}個人化報告{% endblock %}
 {% block content %}
 
-{% include 'report_download.html' %}  {# PDF 匯出按鈕等 #}
+{% include 'report/report_download.html' %}  {# PDF 匯出按鈕等 #}
 <form action="{% url 'generate_weekly_report' %}" method="post">
   {% csrf_token %}
   <button type="submit">重新生成本週報告</button>
@@ -13,12 +13,15 @@
         <h1>加密貨幣每週投資報告</h1>
     </div>
 
-    {% include 'report_market_overview.html' %}
-    {% include 'report_technical_indicators.html' %}
-    {% include 'report_coin_analysis.html' %}
-    {% include 'recent_news.html' %}
-    {% include 'report_wordcloud.html' %}  
-    {% include 'monthly_data_report.html' %}
+    {% include 'report/report_market_overview.html' %}
+    {% include 'report/report_technical_indicators.html' %}
+    {% include 'report/report_coin_analysis.html' %}
+    {% include 'report/recent_news.html' %}
+    {% include 'report/report_wordcloud.html' %}  
+    {% include 'report/monthly_data_report.html' %}
+    {% include "report/report_watchlist.html" %}
+    {% include "report/report_trend_prediction.html" %}
+    {% include "report/report_important_events.html" %}
 </div>
 
 {% endblock %}

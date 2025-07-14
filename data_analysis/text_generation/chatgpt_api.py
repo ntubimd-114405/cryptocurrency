@@ -7,7 +7,7 @@ env_path = Path(__file__).resolve().parents[2] / '.env'
 load_dotenv(dotenv_path=env_path)
 api = os.getenv('API_KEY')
 
-def call_chatgpt(text):
+def call_chatgpt(system,text):
 
     # ✅ 使用你申請到的 URL 和 API KEY
     url = 'https://free.v36.cm/v1/chat/completions'
@@ -20,6 +20,7 @@ def call_chatgpt(text):
     data = {
         "model": "gpt-4o-mini",
         "messages": [
+            {"role": "system", "content": system},
             {"role": "user", "content": text}
         ]
     }
