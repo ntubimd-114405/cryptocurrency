@@ -221,13 +221,20 @@ def generate_weekly_report(request):
     recent_articles = get_recent_articles()
     news_text = " ".join([i.title for i in recent_articles])
     word_freqs = process_word_frequencies(news_text)
+
     news_summary = call_chatgpt(
-        system="你是一位專業的財經新聞編輯，擅長撰寫自然流暢的摘要，並用 HTML 格式輸出，全部變中文。",
-        text=f"""請將以下新聞標題與網址整理成一段文章摘要，請用自然流暢的中文撰寫，不用條列、不要列清單，請以「文章敘述方式」串接每則新聞，並將每則新聞標題作為超連結嵌入，格式回傳一段完整 HTML <div>內容</div>要包含<a url="">，不要有額外文字或說明。
-        以下是新聞：
-        {str([(i.title, i.url) for i in recent_articles])}
-        """
+        system="你是一位專業的財經新聞編輯，擅長撰寫自然流暢的摘要，請用中文回覆，輸出必須是 HTML 格式，且所有新聞標題都需以超連結形式呈現。",
+        text=f"""請將以下新聞標題與網址整理成一段文章摘要，要求：
+    - 使用自然流暢的中文撰寫，不要條列、不要列清單。
+    - 請用一段 HTML <div> 包住全文。
+    - 新聞標題必須用<a href="網址">標題</a> 格式放入，務必用正確的 href 屬性，不要用 url=""。
+    - 不要有除 <div> 與 <a> 以外的額外 HTML 標籤或文字說明。
+
+    以下是新聞清單，請將其轉成符合上述要求的摘要：
+    {str([(i.title, i.url) for i in recent_articles])}
+    """
     ).strip("```").strip("html")
+
     
     data = {
         "MA20": list(ma20_data[-7:]),
@@ -338,3 +345,26 @@ def view_weekly_report_by_id(request, report_id):
     context.update(full_month_data_view())
 
     return render(request, 'weekly_report.html', context)
+
+
+
+
+from django.shortcuts import render
+from django.contrib.auth.models import User
+from data_analysis.crypto_ai_agent.qa_agent import create_qa_function
+
+qa = create_qa_function()
+
+def ask_question_view(request):
+    answer = ""
+    question = ""
+
+    if request.method == "POST":
+        question = request.POST.get("question", "")
+        user = User.objects.first()  # 實務上你應用 request.user
+        answer = qa(question, user)
+
+    return render(request, "ask.html", {
+        "question": question,
+        "answer": answer,
+    })

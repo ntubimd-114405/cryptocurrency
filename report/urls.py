@@ -1,8 +1,9 @@
 from django.urls import path
-from .views import view_weekly_report_by_id,report_list,generate_weekly_report
+from . import views
 
 urlpatterns = [
-    path('', report_list, name='weekly_report_list'),
-    path('generate/', generate_weekly_report, name='generate_weekly_report'),
-    path('report/<int:report_id>/', view_weekly_report_by_id, name='view_weekly_report_by_id'),
+    path('', views.report_list, name='weekly_report_list'),
+    path('generate/', views.generate_weekly_report, name='generate_weekly_report'),
+    path('report/<int:report_id>/', views.view_weekly_report_by_id, name='view_weekly_report_by_id'),
+    path('ask/', views.ask_question_view, name='ask_question'),
 ]
