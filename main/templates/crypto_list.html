@@ -183,12 +183,21 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
 $(document).ready(function() {
-    $('.favorite-icon').on('click', function() {
+    // 綁定整個 td 點擊事件
+    $('td:has(.favorite-icon)').on('click', function(event) {
+        // 如果點擊的不是 svg 本身，就觸發 svg 的點擊事件
+        if (!$(event.target).hasClass('favorite-icon')) {
+            $(this).find('.favorite-icon').trigger('click');
+        }
+    });
+
+    $('.favorite-icon').on('click', function(event) {
+        event.stopPropagation(); // 防止冒泡，避免觸發 td 的 click 又觸發 svg click 兩次
+
         var coinId = $(this).data('coin-id');
-        var isFavorite = $(this).attr('fill') === 'red'; // 檢查愛心是否已經變成紅色
+        var isFavorite = $(this).attr('fill') === 'red';
         var heartIcon = $(this);
 
-        // 發送 AJAX 請求，添加或移除最愛
         $.ajax({
             url: isFavorite ? "{% url 'remove_from_favorites' 0 %}".replace('0', coinId) : "{% url 'add_to_favorites' 0 %}".replace('0', coinId),
             method: 'POST',
@@ -197,7 +206,6 @@ $(document).ready(function() {
             },
             success: function(response) {
                 if (response.status === 'success') {
-                    // 根據當前最愛狀態，更新愛心顏色
                     heartIcon.attr('fill', isFavorite ? 'none' : 'red');
                     heartIcon.attr('stroke', isFavorite ? 'red' : 'none');
                 } else {
@@ -210,6 +218,7 @@ $(document).ready(function() {
         });
     });
 });
+
 
 const sortBy = "{{ sort_by|default_if_none:'' }}";
 const sortOrder = "{{ sort_order|default_if_none:'' }}";
