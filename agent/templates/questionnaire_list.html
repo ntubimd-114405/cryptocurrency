@@ -128,10 +128,14 @@
     .analysis:hover span:after {
         opacity: 1;
     }
-
 </style>
 
 <h1>問卷首頁</h1>
+
+<div class="modal-body" id="floatingTextContent">
+  <!-- JS 會把內容插進來 -->
+</div>
+<div id="floatingTextTarget" class="container mt-4" style="display: none;"></div>
 
 <!-- 🔹 總分析按鈕區塊 -->
 <button class="analysis">
@@ -149,7 +153,6 @@
         </a>
     </span> 
 </button>
-
 
 <table class="table table-bordered align-middle text-center">
     <thead class="table-light">
@@ -226,5 +229,78 @@
         {% endfor %}
     </tbody>
 </table>
+
+
+
+<div class="modal fade" id="infoModal" tabindex="-1" aria-labelledby="infoModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="infoModalLabel">重要提醒</h5>
+      </div>
+        <div>
+            <p>了解您是哪一類型的投資人，是成功規劃投資的第一步。透過這份問卷，您將能深入認識自己的風險承受能力、投資期限與目標。</p>
+            <p>請花點時間完成這份問卷，幫助您釐清個人投資風格與偏好。
+            <strong class="text-danger">特別提醒，問卷編號中的 2、3、4、9 將用來計算您的風險屬性分數，請務必仔細填寫。</strong></p>
+            <p>雖然這份問卷是與財務顧問溝通的良好起點，但它並不取代專業顧問所進行的全面風險評估。</p>
+            <p><strong>開始填寫，讓我們一起打造符合您需求的投資策略！</strong></p>
+        </div>
+        <template id="noticeTextTemplate">
+        <div>
+            <p>了解您是哪一類型的投資人，是成功規劃投資的第一步。透過這份問卷，您將能深入認識自己的風險承受能力、投資期限與目標。</p>
+            <p>請花點時間完成這份問卷，幫助您釐清個人投資風格與偏好。
+            <strong class="text-danger">特別提醒，問卷編號中的 2、3、4、9 將用來計算您的風險屬性分數，請務必仔細填寫。</strong></p>
+            <p>雖然這份問卷是與財務顧問溝通的良好起點，但它並不取代專業顧問所進行的全面風險評估。</p>
+            <p><strong>開始填寫，讓我們一起打造符合您需求的投資策略！</strong></p>
+        </div>
+        </template>
+        
+      <div class="modal-footer">
+        <button type="button" id="btnUnderstand" class="btn btn-primary">我了解</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const modal = new bootstrap.Modal(document.getElementById('infoModal'));
+    modal.show();
+
+    const btnUnderstand = document.getElementById('btnUnderstand');
+    const floatingTextContainer = document.getElementById('floatingTextContent');
+    const floatingTarget = document.getElementById('floatingTextTarget');
+    const template = document.getElementById('noticeTextTemplate');
+
+
+    btnUnderstand.addEventListener('click', () => {
+      modal.hide();
+
+      const clone = template.content.cloneNode(true);
+      const floatingDiv = document.createElement('div');
+      floatingDiv.className = 'floating-copy';
+      floatingDiv.appendChild(clone);
+      document.body.appendChild(floatingDiv);
+
+      const rect = floatingTextContainer.getBoundingClientRect();
+      floatingDiv.style.top = `${rect.top + window.scrollY}px`;
+      floatingDiv.style.left = `${rect.left + window.scrollX}px`;
+      floatingDiv.style.width = `${rect.width}px`;
+
+      setTimeout(() => {
+        floatingDiv.classList.add('fly-to-top');
+      }, 100);
+
+      setTimeout(() => {
+        floatingTarget.innerHTML = template.innerHTML;
+        floatingTarget.style.display = 'block';
+        floatingDiv.remove();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }, 1300);
+    });
+  });
+</script>
+
 
 {% endblock %}

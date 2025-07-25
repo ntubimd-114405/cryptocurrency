@@ -392,3 +392,25 @@ def coin_history_view(request):
         'selected_coin_name': selected_coin.coinname,  # 傳給前端用
         'chart_data': json.dumps(chart_data, cls=DecimalEncoder)
     })
+# agent/views.py
+from django.shortcuts import render
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from agent.knowledge.knowledge_agent import ask_knowledge_agent
+import json
+
+# 前端頁面
+def chat_page(request):
+    return render(request, "chat.html")
+
+# 接收 POST 問題並回覆答案
+@csrf_exempt
+def knowledge_chat_view(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        question = data.get("question", "")
+        if not question.strip():
+            return JsonResponse({"answer": "❗請輸入有效的問題"}, status=400)
+        answer = ask_knowledge_agent(question)
+        return JsonResponse({"answer": answer})
+    return JsonResponse({"error": "只接受 POST 請求"}, status=405)
