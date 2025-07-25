@@ -1,0 +1,127 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<h1>使用者回饋問卷</h1>
+
+<link rel="stylesheet" href="{% static 'css/feedback_form.css' %}">
+<div class="mb-3">
+  <label class="form-label">字體大小：</label>
+  <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setFontSize('fs-6')">小</button>
+  <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setFontSize('fs-5')">中</button>
+  <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setFontSize('fs-4')">大</button>
+</div>
+
+<div id="questionnaire" class="fs-5">
+    <form id="questionnaire-form" method="post" action="{% url 'submit_questionnaire' %}">
+        {% csrf_token %}
+        {% for question in questions %}
+            <div class="container left-aligned-container bg-light p-5 text-start">
+                <label><strong>{{ forloop.counter }}. {{ question.text }}</strong></label><br>
+
+                {% if question.question_type == 'text' %}
+                    <input type="text" name="question_{{ question.id }}" class="form-control">
+
+                {% elif question.question_type == 'rating' %}
+                    {% for i in "12345" %}
+                        <label class="me-2">
+                            <input type="radio" name="question_{{ question.id }}" value="{{ forloop.counter }}">
+                            {{ forloop.counter }}
+                        </label><br>
+                    {% endfor %}
+
+                {% elif question.question_type == 'radio' %}
+                    {% for option in question.options.all %}
+                        <label class="d-block">
+                            <input type="radio" name="question_{{ question.id }}" value="{{ option.text }}">
+                            {{ option.text }}
+                        </label>
+                    {% endfor %}
+
+                {% elif question.question_type == 'checkbox' %}
+                    {% for option in question.options.all %}
+                        <label class="d-block">
+                            <input type="checkbox" name="question_{{ question.id }}" value="{{ option.text }}">
+                            {{ option.text }}
+                        </label>
+                    {% endfor %}
+
+                {% elif question.question_type == 'select' %}
+                    <select name="question_{{ question.id }}" class="form-select">
+                        {% for option in question.options.all %}
+                            <option value="{{ option.text }}">{{ option.text }}</option>
+                        {% endfor %}
+                    </select>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </form>
+
+    <div class="floating-bar-modern">
+        <a href="{% url 'home' %}" class="modern-btn secondary">🏠 返回上頁</a>
+        <button type="button" class="modern-btn primary" onclick="confirmSubmit()">🚀 提交問卷</button>
+    </div>
+</div>
+
+<!-- 字體調整與取消單選功能 -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    let isFormEdited = false;
+    const form = document.getElementById("questionnaire-form");
+
+    // ✅ 字體大小調整功能
+    window.setFontSize = function(sizeClass) {
+      const container = document.getElementById('questionnaire');
+      container.classList.remove('fs-4', 'fs-5', 'fs-6');
+      container.classList.add(sizeClass);
+    };
+
+    // ✅ 支援取消單選選項（一定要放在 DOMContentLoaded 內）
+    form.querySelectorAll('input[type=radio]').forEach(radio => {
+      radio.addEventListener('click', function () {
+        if (this.wasChecked) {
+          this.checked = false;
+          this.wasChecked = false;
+          isFormEdited = true;  // ⬅️ 這邊也要標記為已修改！
+        } else {
+          const radios = document.getElementsByName(this.name);
+          radios.forEach(r => r.wasChecked = false);
+          this.wasChecked = true;
+        }
+      });
+    });
+
+    // ✅ 標記使用者是否有修改表單（input/change 都算）
+    form.querySelectorAll("input, textarea, select").forEach(el => {
+      el.addEventListener("input", () => {
+        isFormEdited = true;
+      });
+      el.addEventListener("change", () => {
+        isFormEdited = true;
+      });
+    });
+
+    // ✅ 攔截原始表單提交，移除離開提示
+    form.addEventListener("submit", () => {
+      window.onbeforeunload = null;
+    });
+
+    // ✅ 若表單已修改，離開時提示
+    window.onbeforeunload = function () {
+      if (isFormEdited) {
+        return "您確定要離開頁面嗎？目前填寫的資料將會遺失。";
+      }
+    };
+  });
+
+  // ✅ 提交確認提示（綁定浮動按鈕）
+  function confirmSubmit() {
+    const form = document.getElementById("questionnaire-form");
+    if (confirm("您確定要送出問卷嗎？")) {
+        window.onbeforeunload = null;
+        form.submit();  // 提交後由後端決定導去哪
+    }
+}
+</script>
+
+{% endblock %}
