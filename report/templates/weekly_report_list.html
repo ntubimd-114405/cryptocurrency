@@ -5,7 +5,34 @@
 
 <h1>{{ request.user.username }} 的週報記錄</h1>
 
-<a href="{% url 'generate_weekly_report' %}" class="btn btn-primary">生成本週報告</a>
+<form action="{% url 'generate_weekly_report' %}" method="post" class="mb-3">
+  {% csrf_token %}
+  <div class="row g-2 align-items-center">
+    <div class="col-auto">
+      <label for="yearSelect" class="col-form-label">年份</label>
+    </div>
+    <div class="col-auto">
+      <select id="yearSelect" name="year" class="form-select">
+        {% for y in year_list %}
+          <option value="{{ y }}" {% if y == this_year %}selected{% endif %}>{{ y }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="col-auto">
+      <label for="weekSelect" class="col-form-label">週數</label>
+    </div>
+    <div class="col-auto">
+      <select id="weekSelect" name="week" class="form-select">
+        <!-- 週數選項將由 JS 動態產生 -->
+      </select>
+    </div>
+
+    <div class="col-auto">
+      <button type="submit" class="btn btn-success">產生該週報告</button>
+    </div>
+  </div>
+</form>
 
 <table class="table table-bordered align-middle text-center">
   <thead class="table-light">
@@ -29,5 +56,35 @@
   <tr><td colspan="4">尚未產生任何報告</td></tr>
   {% endfor %}
 </table>
+
+<script>
+  // 從後端傳入的 weeks_by_year 物件，確保它是有效的 JSON
+  const weeksByYear = {{ weeks_by_year|safe }};
+  const yearSelect = document.getElementById('yearSelect');
+  const weekSelect = document.getElementById('weekSelect');
+  const initialYear = {{ this_year }};
+  const initialWeek = {{ this_week }};
+
+  function updateWeekOptions(selectedYear) {
+    const weeks = weeksByYear[selectedYear] || [];
+    weekSelect.innerHTML = '';
+    weeks.forEach(w => {
+      const option = document.createElement('option');
+      option.value = w;
+      option.textContent = `第 ${w} 週`;
+      if(selectedYear == initialYear && w == initialWeek){
+        option.selected = true;
+      }
+      weekSelect.appendChild(option);
+    });
+  }
+
+  yearSelect.addEventListener('change', () => {
+    updateWeekOptions(yearSelect.value);
+  });
+
+  // 初次載入時設定當前年份週數選項
+  updateWeekOptions(initialYear);
+</script>
 
 {% endblock %}

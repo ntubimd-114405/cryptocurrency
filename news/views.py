@@ -18,8 +18,6 @@ def home(request):
 def news_detail(request, article_id):
     article = get_object_or_404(Article, pk=article_id)
     content = article.content
-    paragraphs = re.split(r'([。!?])', content)
-    paragraphs = [f'{paragraphs[i]}{paragraphs[i+1]}' for i in range(0, len(paragraphs)-1, 2)]
     
     if request.method == 'POST':
         content = request.POST.get('content')
@@ -42,7 +40,7 @@ def news_detail(request, article_id):
         return redirect('news_detail', article_id=article.id)
 
     comments = article.comments.all()
-    return render(request, 'news_detail.html', {'article': article, 'comments': comments, 'paragraphs': paragraphs})
+    return render(request, 'news_detail.html', {'article': article, 'comments': comments, 'content': content})
 
 
 def news_home(request):

@@ -15,6 +15,7 @@ from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 from django.utils.timezone import now
 from django.db import IntegrityError
+from django.urls import reverse
 
 from .models import WeeklyReport
 from main.models import CoinHistory,Coin
@@ -22,7 +23,7 @@ from news.models import Article
 from other.models import FinancialData, IndicatorValue, BitcoinMetricData
 
 from data_analysis.text_generation.chatgpt_api import call_chatgpt
-
+from data_analysis.crypto_ai_agent.news_agent import run_news_agent
 
 
 def load_price_data_from_db(coin_id, start_date=None, end_date=None):
@@ -196,18 +197,58 @@ def report_list(request):
     user = request.user
     reports = WeeklyReport.objects.filter(user=user).order_by('-year', '-week')
 
+    today = now().date()
+    this_year, this_week, _ = today.isocalendar()
+
+    # 年份範圍：2022到今年
+    year_list = list(range(2022, this_year + 1))
+
+    # 建立一個 dict，key: 年，value: 該年可選週數列表
+    weeks_by_year = {}
+    for year in year_list:
+        if year == this_year:
+            weeks_by_year[year] = list(range(1, this_week + 1))  # 今年限定到本週
+        else:
+            weeks_by_year[year] = list(range(1, 54))  # 其他年份全週
+
     context = {
         'reports': reports,
+        'year_list': year_list,
+        'weeks_by_year': weeks_by_year,
+        'this_year': this_year,
+        'this_week': this_week,
     }
+
     return render(request, 'weekly_report_list.html', context)
+
+
+
+def convert_id_and_newline(text: str) -> str:
+    pattern = r"\(id:(\d+)\)"
+
+    def replace_func(match):
+        article_id = match.group(1)
+        url = reverse('news_detail', kwargs={'article_id': article_id})
+        return f'<a href="{url}">(id:{article_id})</a>'
+
+    # 換連結
+    replaced_text = re.sub(pattern, replace_func, text)
+    # 換行轉成 <br>
+    replaced_text = replaced_text.replace('\n', '<br>')
+
+    return replaced_text
 
 
 @login_required
 def generate_weekly_report(request):
     user = request.user
     today = now().date()
-    year, week, _ = today.isocalendar()
-    start_date = today - timedelta(days=today.weekday())
+    year = int(request.POST.get("year", today.isocalendar()[0]))
+    week = int(request.POST.get("week", today.isocalendar()[1]))
+    print(year,week)
+    # ✅ 根據 year 和 week 計算出 start_date（週一）與 end_date（週日）
+    start_date = date.fromisocalendar(year, week, 1)
+    end_date = start_date + timedelta(days=6)
 
     # 重新計算資料
     coin,df = load_price_data_from_db(1)  # 或 user.id，視你的邏輯
@@ -222,19 +263,8 @@ def generate_weekly_report(request):
     news_text = " ".join([i.title for i in recent_articles])
     word_freqs = process_word_frequencies(news_text)
 
-    news_summary = call_chatgpt(
-        system="你是一位專業的財經新聞編輯，擅長撰寫自然流暢的摘要，請用中文回覆，輸出必須是 HTML 格式，且所有新聞標題都需以超連結形式呈現。",
-        text=f"""請將以下新聞標題與網址整理成一段文章摘要，要求：
-    - 使用自然流暢的中文撰寫，不要條列、不要列清單。
-    - 請用一段 HTML <div> 包住全文。
-    - 新聞標題必須用<a href="網址">標題</a> 格式放入，務必用正確的 href 屬性，不要用 url=""。
-    - 不要有除 <div> 與 <a> 以外的額外 HTML 標籤或文字說明。
-
-    以下是新聞清單，請將其轉成符合上述要求的摘要：
-    {str([(i.title, i.url) for i in recent_articles])}
-    """
-    ).strip("```").strip("html")
-
+    news_summary = run_news_agent("BTC") #目前寫死
+    news_summary_with_links = convert_id_and_newline(news_summary)
     
     data = {
         "MA20": list(ma20_data[-7:]),
@@ -300,8 +330,10 @@ def generate_weekly_report(request):
         year=year,
         week=week,
         defaults={
+            'start_date': start_date,
+            'end_date': end_date,
             'summary': summary,
-            'news_summary': news_summary,
+            'news_summary': news_summary_with_links,
             'word_frequencies': word_freqs,
             'ma20_data': ma20_data,
             'ma60_data': ma60_data,
@@ -339,6 +371,12 @@ def view_weekly_report_by_id(request, report_id):
         'indicator_data_json': report.indicator_data_json,
         'bitcoin_data_json': report.bitcoin_data_json,
         'long_term_analysis': report.long_term_analysis,
+        'user': report.user,
+        'year': report.year,
+        'week': report.week,
+        'start_date': report.start_date,
+        'end_date': report.end_date,
+        'created_at': report.created_at,
     }
 
     # 也可以把共用的 full_month_data 加進 context，如果需要
@@ -349,22 +387,4 @@ def view_weekly_report_by_id(request, report_id):
 
 
 
-from django.shortcuts import render
-from django.contrib.auth.models import User
-from data_analysis.crypto_ai_agent.qa_agent import create_qa_function
 
-qa = create_qa_function()
-
-def ask_question_view(request):
-    answer = ""
-    question = ""
-
-    if request.method == "POST":
-        question = request.POST.get("question", "")
-        user = User.objects.first()  # 實務上你應用 request.user
-        answer = qa(question, user)
-
-    return render(request, "ask.html", {
-        "question": question,
-        "answer": answer,
-    })
