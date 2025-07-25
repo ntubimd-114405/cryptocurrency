@@ -71,6 +71,9 @@
                         <li class="nav-item">
                             <a href="{% url 'agent:questionnaire_list' %}" class="nav-link text-white">問卷</a>
                         </li>
+                        <li class="nav-item">
+                            <a href="{% url 'feedback_form' %}" class="nav-link text-white">回饋</a>
+                        </li>
                     {% if user.is_authenticated %}
                        <li class="nav-item">
                             <a href="{% url 'ml_home' %}" class="nav-link text-white">訓練模型</a>
@@ -163,6 +166,7 @@
     <!-- Footer -->
     {% include 'footer.html' %}
     {% include "chatbot/chat.html" %}
+    {% include "track_impression.html" %}
 
 </body>
 </html>

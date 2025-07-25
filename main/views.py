@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404,redirect
 import requests
 from django.http import JsonResponse,HttpResponseRedirect
-from .models import BitcoinPrice,UserProfile,Coin,CoinHistory,User
+from .models import BitcoinPrice,UserProfile,Coin,CoinHistory,User,FeedbackQuestion,FeedbackAnswer,PageTracker
 from datetime import datetime, timedelta
 from django.core.paginator import Paginator
 # 登入頁面
@@ -17,6 +17,7 @@ from django.contrib.auth.hashers import make_password
 from django.utils.safestring import mark_safe
 import plotly.graph_objects as go
 from django.templatetags.static import static
+from django.utils.timezone import now
 import re
 
 def home(request):
@@ -684,3 +685,55 @@ def guanggao_shenfen_queren(request):
 
     # 返回渲染頁面並傳遞 ad_show 變數
     return render(request, 'home.html', {'ad_show': ad_show})
+
+@login_required
+def feedback_form_view(request):
+    questions = FeedbackQuestion.objects.prefetch_related('options').all()
+    return render(request, 'feedback_form.html', {'questions': questions})
+
+@login_required
+def submit_questionnaire(request):
+    print("收到 POST：", request.POST)
+    if request.method == "POST":
+        user = request.user
+
+        for key in request.POST:
+            if key.startswith("question_"):
+                question_id = key.split("_")[1]
+                try:
+                    question = FeedbackQuestion.objects.get(pk=question_id)
+                except FeedbackQuestion.DoesNotExist:
+                    continue
+
+                if question.question_type == "checkbox":
+                    # 多選題：取得所有選項值
+                    answers = request.POST.getlist(key)
+                    for ans in answers:
+                        FeedbackAnswer.objects.create(
+                            user=user,
+                            question=question,
+                            answer_text=ans,
+                            submitted_at=now()
+                        )
+                else:
+                    # 單選 / 滿意度 / 下拉選單 / 開放填答
+                    answer = request.POST.get(key)
+                    print(f"儲存：user={user}, question={question.id}, answer={answer}")
+                    if answer:
+                        FeedbackAnswer.objects.create(
+                            user=user,
+                            question=question,
+                            answer_text=answer,
+                            submitted_at=now()
+                        )
+
+        return redirect('/')
+
+@csrf_exempt
+def track_impression(request):
+    data = json.loads(request.body)
+    page = data.get("page", "/")
+    tracker, _ = PageTracker.objects.get_or_create(page_name=page)
+    tracker.impressions += 1
+    tracker.save()
+    return JsonResponse({'status': 'ok'})
