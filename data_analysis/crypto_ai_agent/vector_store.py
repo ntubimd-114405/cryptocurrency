@@ -4,7 +4,7 @@ import os
 from typing import Optional
 from news.models import Article
 from langchain_ollama import OllamaEmbeddings
-from langchain_chroma import Chroma
+from langchain_community.vectorstores import Chroma  # ✅ 正確
 from langchain_core.documents import Document
 
 def initialize_news_vector_store(

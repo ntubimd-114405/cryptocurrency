@@ -265,6 +265,28 @@
         display: flex;
         flex-direction: column;
     }
+
+    /* 預設問題按鈕樣式 */
+    .chat-suggestions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 10px;
+      border-top: 1px solid #eee;
+      background-color: #fff;
+    }
+    .chat-suggestions button {
+      background-color: #f0f0f0;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 15px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: background-color 0.3s;
+    }
+    .chat-suggestions button:hover {
+      background-color: #ddd;
+    }
   </style>
 </head>
 <body>
@@ -282,6 +304,13 @@
         <button onclick="clearMemory()">🧹記憶清除</button>
     </div>
     <div class="chat-body" id="chat-box"></div>
+    <!-- ✅ 預設問題按鈕區 -->
+    <div class="chat-suggestions">
+      <button onclick="sendPresetMessage('這個網站是做什麼的？')">網站介紹</button>
+      <button onclick="sendPresetMessage('我該怎麼使用這個聊天機器人？')">使用教學</button>
+      <button onclick="sendPresetMessage('有哪些加密貨幣可以查詢？')">幣種查詢</button>
+    </div>
+
     <div class="chat-footer">
         <input type="text" id="message" placeholder="輸入訊息..." onkeypress="handleKeyPress(event)" />
         <button onclick="sendMessage()">發送</button>
@@ -317,6 +346,30 @@ function handleKeyPress(event) {
         sendMessage();
     }
 }
+const presetAnswers = {
+    "這個網站是做什麼的？": "此網站是一個加密貨幣投資推薦平台，提供大量相關數據供使用者參考與分析。",
+    "我該怎麼使用這個聊天機器人？": "請直接輸入你的問題，例如「比特幣今天走勢如何？」或點選上方快捷問題。",
+    "有哪些加密貨幣可以查詢？": "目前支援查詢如：比特幣（BTC）、以太幣（ETH）、幣安幣（BNB）等主流加密貨幣。"
+};
+
+function sendPresetMessage(msg) {
+    const chatBox = document.getElementById('chat-box');
+
+    // 顯示使用者訊息
+    const userDiv = document.createElement('div');
+    userDiv.className = 'message user';
+    userDiv.innerText = '你：' + msg;
+    chatBox.appendChild(userDiv);
+
+    // 顯示靜態回答
+    const botDiv = document.createElement('div');
+    botDiv.className = 'message bot';
+    botDiv.innerText = 'GPT：' + (presetAnswers[msg] || '很抱歉，沒有對應的預設回答');
+    chatBox.appendChild(botDiv);
+
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
 
 // 發送訊息
 function sendMessage() {
