@@ -62,7 +62,7 @@ def chat_api(request):
                 'Content-Type': 'application/json',
             }
             data = {
-                "model": "gpt-4o-mini",
+                "model": "gpt-3.5-turbo-0125",
                 "messages": chat_history
             }
 
