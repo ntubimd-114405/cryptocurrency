@@ -8,6 +8,8 @@ from datetime import date,datetime,timedelta
 import numpy as np
 import pandas as pd
 import ta
+from sklearn.feature_extraction.text import CountVectorizer
+
 from django.utils import timezone
 from django.conf import settings
 from django.shortcuts import render, get_object_or_404,redirect
@@ -18,13 +20,11 @@ from django.db import IntegrityError
 from django.urls import reverse
 
 from .models import WeeklyReport
-from main.models import CoinHistory,Coin
+from main.models import CoinHistory,Coin,UserProfile, BitcoinPrice
 from news.models import Article
 from other.models import FinancialData, IndicatorValue, BitcoinMetricData
-
 from data_analysis.text_generation.chatgpt_api import call_chatgpt
 from data_analysis.crypto_ai_agent.news_agent import run_news_agent
-
 
 def load_price_data_from_db(coin_id, start_date=None, end_date=None):
     queryset = CoinHistory.objects.filter(coin_id=coin_id)
@@ -124,35 +124,44 @@ def add_technical_indicators(df):
 
     return df
 
-def get_recent_articles():
+def get_recent_articles(start, end):
+    # 假設 start 和 end 是 datetime.date 或 datetime.datetime 物件
+    # 如果是日期，轉成 timezone-aware datetime 的區間
+    if isinstance(start, (date,)):
+        start = timezone.make_aware(datetime.combine(start, datetime.min.time()))
+    if isinstance(end, (date,)):
+        end = timezone.make_aware(datetime.combine(end, datetime.max.time()))
 
-    recent_time = timezone.now() - timedelta(days=7)
-    articles = Article.objects.filter(time__gte=recent_time).order_by('-time')[:100]
+    articles = Article.objects.filter(time__gte=start, time__lte=end).order_by('-time')
     return articles
 
-# 詞頻處理（英文）
-def process_word_frequencies(news_text):
-    stop_words = {
-        'from', 'with', 'as', 'in', 'the', 'to', 'and', 'on', 'for', 'of', 'by', 
-        'at', 'is', 'are', 'has', 'have', 'over', 'about', 'amid'
-    }
-    words = re.sub(r'[^\w\s]', '', news_text.lower()).split()
-    words = [word for word in words if word not in stop_words]
-    counter = Counter(words)
 
-    key_words = {
-        'bitcoin': 1.5,
-        'etf': 1.5,
-        'crypto': 1.3,
-        'ethereum': 1.3,
-        'solana': 1.2,
-        'defi': 1.2,
-        'market': 1.1,
-        'inflation': 1.1
-    }
-    word_freqs = [(word, count * key_words.get(word, 1.0)) for word, count in counter.items()]
-    word_freqs = sorted(word_freqs, key=lambda x: x[1], reverse=True)[:30]
-    return word_freqs
+def process_word_frequency_sklearn(news_texts, top_n=30, max_features=1000):
+    stop_words = [
+        'the', 'in', 'to', 'and', 'of', 'on', 'for', 'with', 'at', 'by', 'a', 'an',
+        'is', 'are', 'was', 'were', 'has', 'have', 'it', 'this', 'that', 'as', 'but', 'or', 'if',
+        's', 'u', 'k'  # 額外噪音過濾
+    ]
+    if isinstance(news_texts, str):
+        news_texts = [news_texts]
+
+    vectorizer = CountVectorizer(
+        stop_words=stop_words,   # 可放預設的 'english' 或自訂停用詞列表
+        max_features=max_features
+    )
+    word_count_matrix = vectorizer.fit_transform(news_texts)
+    feature_names = vectorizer.get_feature_names_out()
+
+    # 合計所有文章的詞頻
+    total_counts = word_count_matrix.sum(axis=0).A1
+
+    # 排序，取前 top_n
+    sorted_indices = total_counts.argsort()[::-1][:top_n]
+    keywords = [(feature_names[i], total_counts[i]) for i in sorted_indices]
+    results = [(word, int(freq)) for word, freq in keywords]
+    return results
+
+
 
 # Decimal 轉 float
 
@@ -224,16 +233,28 @@ def report_list(request):
 
 
 def convert_id_and_newline(text: str) -> str:
-    pattern = r"\(id:(\d+)\)"
+    # 預處理全形符號與大小寫統一
+    text = text.replace('（', '(').replace('）', ')').replace('：', ':')
+    
+    # 定義正則，支援：
+    # - (id:123)、(ID:123)
+    # - id:123、ID:123
+    # - 前面可有可無括號
+    # - 不區分大小寫
+    pattern = r"[\(]?id:(\d+)[\)]?"  # 先做簡單匹配，再做補強
+    regex = re.compile(pattern, flags=re.IGNORECASE)
 
     def replace_func(match):
         article_id = match.group(1)
-        url = reverse('news_detail', kwargs={'article_id': article_id})
-        return f'<a href="{url}">(id:{article_id})</a>'
+        try:
+            url = reverse('news_detail', kwargs={'article_id': article_id})
+            return f'<a href="{url}">(id:{article_id})</a>'
+        except:
+            return f"(id:{article_id})"
 
-    # 換連結
-    replaced_text = re.sub(pattern, replace_func, text)
-    # 換行轉成 <br>
+    # 替換成連結
+    replaced_text = regex.sub(replace_func, text)
+    # 換行處理
     replaced_text = replaced_text.replace('\n', '<br>')
 
     return replaced_text
@@ -256,16 +277,26 @@ def generate_weekly_report(request):
 
     ma20_data = decimal_to_float(df['ma20'].tolist())
     ma60_data = decimal_to_float(df['ma60'].tolist())
-
     
-
-    recent_articles = get_recent_articles()
-    news_text = " ".join([i.title for i in recent_articles])
-    word_freqs = process_word_frequencies(news_text)
-
     news_summary = run_news_agent("BTC") #目前寫死
     news_summary_with_links = convert_id_and_newline(news_summary)
-    
+
+    news_text = "\n".join([
+        " ".join(filter(None, [
+            article.title or "",
+            article.summary or "",
+            article.content or ""
+        ]))
+        for article in get_recent_articles(start_date, end_date)
+    ])
+
+    word_freqs = process_word_frequency_sklearn(news_text)
+    print(call_chatgpt(
+        system="你是一位專業金融分析師",
+        text=f"""幫我分析以下詞頻內容
+        {word_freqs}
+        """
+    ))
     data = {
         "MA20": list(ma20_data[-7:]),
         "MA60": list(ma60_data[-7:]),
@@ -352,6 +383,39 @@ def generate_weekly_report(request):
     return redirect('weekly_report_list')  # 重新導向你的週報頁
 
 
+
+
+
+def my_favorite_coins_view(request):
+    # 取得使用者最愛幣種及其最新價格
+    favorite_coins = request.user.profile.favorite_coin.all()
+    latest_prices = {}
+    for coin in favorite_coins:
+        price_obj = BitcoinPrice.objects.filter(coin=coin).order_by('-timestamp').first()
+        if price_obj:
+            latest_prices[coin.id] = price_obj
+
+    watchlist = []
+    for coin in favorite_coins:
+        price = latest_prices.get(coin.id)
+        if price:
+            watchlist.append({
+                'name': coin.coinname,
+                'symbol': coin.abbreviation,
+                'price': f"{price.usd:,.2f}",
+                'change_24h': float(price.change_24h or 0),
+                'market_cap': f"{price.market_cap:,.0f}" if price.market_cap else 'N/A',
+            })
+        else:
+            watchlist.append({
+                'name': coin.coinname,
+                'symbol': coin.abbreviation,
+                'price': 'N/A',
+                'change_24h': 0,
+                'market_cap': 'N/A',
+            })
+    return watchlist
+
 @login_required
 def view_weekly_report_by_id(request, report_id):
     report = get_object_or_404(WeeklyReport, id=report_id, user=request.user)
@@ -377,6 +441,7 @@ def view_weekly_report_by_id(request, report_id):
         'start_date': report.start_date,
         'end_date': report.end_date,
         'created_at': report.created_at,
+        'watchlist': my_favorite_coins_view(request),  # <-- 加入這行
     }
 
     # 也可以把共用的 full_month_data 加進 context，如果需要

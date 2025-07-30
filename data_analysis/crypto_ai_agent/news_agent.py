@@ -22,7 +22,7 @@ def run_news_agent(
     for doc in docs:
         meta = doc.metadata
         doc_id = getattr(doc, "id", None) or meta.get("id", "")
-        results.append(f"{doc.page_content}（{meta.get('date', '')}）(id:{doc_id})")
+        results.append(f"{doc.page_content}(id:{doc_id})")
     
     news_answer = generate_answer("\n".join(results), question)
     return news_answer
@@ -71,7 +71,7 @@ def initialize_news_vector_store(
 
         for article in articles:
             documents.append(Document(
-                page_content=f"{article.title}\n\n{article.summary}",
+                page_content=(f"{article.title}\n{article.summary}\n{article.content}")[:512],
                 metadata={
                     "url": article.url,
                     "date": str(article.time),
