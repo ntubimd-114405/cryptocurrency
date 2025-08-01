@@ -19,6 +19,9 @@ import plotly.graph_objects as go
 from django.templatetags.static import static
 from django.utils.timezone import now
 import re
+import pandas as pd
+from decimal import Decimal
+import ta
 
 def home(request):
     try:
@@ -737,3 +740,50 @@ def track_impression(request):
     tracker.impressions += 1
     tracker.save()
     return JsonResponse({'status': 'ok'})
+
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return float(obj)
+        return super().default(obj)
+
+def coin_history_api(request):
+    coin_id = request.GET.get('coin_id')
+    if not coin_id:
+        return JsonResponse({'error': '缺少 coin_id 參數'}, status=400)
+
+    try:
+        selected_coin = Coin.objects.get(id=coin_id)
+    except Coin.DoesNotExist:
+        return JsonResponse({'error': '查無此幣種'}, status=404)
+
+    thirty_days_ago = timezone.now().date() - timedelta(days=30)
+
+    queryset = (
+        CoinHistory.objects
+        .filter(coin_id=coin_id, date__gte=thirty_days_ago)
+        .select_related('coin')
+        .order_by('date')
+    )
+
+    df = pd.DataFrame.from_records(queryset.values('date', 'close_price'))
+
+    if df.empty:
+        return JsonResponse({'error': '此時間區間無資料'}, status=204)
+
+    df['date'] = pd.to_datetime(df['date'])
+    df = df.sort_values('date')
+
+    df['ema20'] = ta.trend.EMAIndicator(close=df['close_price'], window=20).ema_indicator()
+    df['rsi'] = ta.momentum.RSIIndicator(close=df['close_price'], window=14).rsi()
+    df = df.dropna(subset=['ema20', 'rsi'])
+
+    chart_data = {
+        'selected_coin_name': selected_coin.coinname,
+        'dates': df['date'].dt.strftime('%Y-%m-%d').tolist(),
+        'close': df['close_price'].tolist(),
+        'ema20': df['ema20'].round(2).tolist(),
+        'rsi': df['rsi'].round(2).tolist(),
+    }
+
+    return JsonResponse(chart_data, encoder=DecimalEncoder, safe=False)
