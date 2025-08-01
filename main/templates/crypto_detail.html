@@ -189,6 +189,11 @@
   <li class="nav-item" role="presentation">
     <button class="nav-link" id="orderbook-tab" data-bs-toggle="tab" data-bs-target="#orderbook" type="button" role="tab">即時訂單簿</button>
   </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="pointers-tab" data-bs-toggle="tab" data-bs-target="#pointers" type="button" role="tab">
+      技術指標
+    </button>
+  </li>
 </ul>
 
 <!-- 分頁內容 -->
@@ -206,6 +211,10 @@
   <!-- 即時訂單簿 -->
   <div class="tab-pane fade" id="orderbook" role="tabpanel" aria-labelledby="orderbook-tab">
     {% include 'cypto_detail/orderbook_trades.html' %}
+  </div>
+
+  <div class="tab-pane fade" id="pointers" role="tabpanel" aria-labelledby="pointers-tab">
+    {% include 'cypto_detail/pointers.html' %}
   </div>
 </div>
 {% endblock %}

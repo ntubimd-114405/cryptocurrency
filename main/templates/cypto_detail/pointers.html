@@ -1,0 +1,140 @@
+<canvas id="priceChart" width="800" height="400"></canvas>
+<canvas id="rsiChart" width="800" height="200"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+let priceChart, rsiChart;
+
+// 從路徑取得 coin_id，沒取得則預設 '1'
+function getCoinIdFromPath() {
+  const path = window.location.pathname; // 例: "/crypto/2/"
+  const parts = path.split('/').filter(Boolean); // ["crypto", "2"]
+  const lastPart = parts[parts.length - 1];
+  // 檢查是不是數字，是就回傳，不是就回傳 '1'
+  if (/^\d+$/.test(lastPart)) {
+    return lastPart;
+  }
+  return '1';
+}
+
+async function fetchChartData(coin_id) {
+  const res = await fetch(`/api/chart-data/?coin_id=${coin_id}`);
+  if (!res.ok) throw new Error("無法取得圖表資料");
+  return res.json();
+}
+
+function renderCharts(data) {
+  const ctxPrice = document.getElementById('priceChart').getContext('2d');
+  const ctxRsi = document.getElementById('rsiChart').getContext('2d');
+
+  if (priceChart) priceChart.destroy();
+  if (rsiChart) rsiChart.destroy();
+
+  priceChart = new Chart(ctxPrice, {
+      type: 'line',
+      data: {
+          labels: data.dates,
+          datasets: [
+              {
+                  label: '收盤價',
+                  data: data.close,
+                  borderColor: 'blue',
+                  fill: false,
+                  tension: 0.1
+              },
+              {
+                  label: 'EMA 20',
+                  data: data.ema20,
+                  borderColor: 'orange',
+                  fill: false,
+                  tension: 0.1
+              }
+          ]
+      },
+      options: {
+          responsive: true,
+          interaction: {
+              mode: 'index',
+              intersect: false,
+          },
+          stacked: false,
+          plugins: {
+              title: {
+                  display: true,
+                  text: `${data.selected_coin_name} - 收盤價與EMA 20`
+              }
+          },
+          scales: {
+              x: {
+                  display: true,
+                  title: {
+                      display: true,
+                      text: '日期'
+                  }
+              },
+              y: {
+                  display: true,
+                  title: {
+                      display: true,
+                      text: '價格'
+                  }
+              }
+          }
+      }
+  });
+
+  rsiChart = new Chart(ctxRsi, {
+      type: 'line',
+      data: {
+          labels: data.dates,
+          datasets: [{
+              label: 'RSI',
+              data: data.rsi,
+              borderColor: 'green',
+              fill: false,
+              tension: 0.1
+          }]
+      },
+      options: {
+          responsive: true,
+          plugins: {
+              title: {
+                  display: true,
+                  text: `${data.selected_coin_name} - RSI 指標`
+              }
+          },
+          scales: {
+              y: {
+                  min: 0,
+                  max: 100,
+                  title: {
+                      display: true,
+                      text: 'RSI 值'
+                  }
+              },
+              x: {
+                  display: true,
+                  title: {
+                      display: true,
+                      text: '日期'
+                  }
+              }
+          }
+      }
+  });
+}
+
+async function init() {
+  try {
+    let coinId = getCoinIdFromPath();
+    console.log("抓到的 coin_id:", coinId);
+    const data = await fetchChartData(coinId);
+    renderCharts(data);
+  } catch (err) {
+    alert('初始化失敗：' + err.message);
+  }
+}
+
+init();
+</script>

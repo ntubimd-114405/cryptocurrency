@@ -356,7 +356,7 @@ def coin_history_view(request):
     coin_id = request.GET.get('coin_id', coins.first().id)
     selected_coin = Coin.objects.get(id=coin_id)  # ← 取得選擇的幣
 
-    thirty_days_ago = timezone.now().date() - timedelta(days=60)
+    thirty_days_ago = timezone.now().date() - timedelta(days=30)
 
     # 取得歷史資料
     queryset = (
