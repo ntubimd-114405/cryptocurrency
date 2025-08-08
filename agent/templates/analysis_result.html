@@ -1,20 +1,66 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container mt-5">
-  <h2>分析結果</h2>
+<style>
+  /* 淡入動畫 */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  /* 淡出動畫 */
+  @keyframes fadeOut {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(20px); }
+  }
+  .fade-in {
+    opacity: 0;
+    animation: fadeIn 0.8s ease-in-out forwards;
+  }
+  .fade-out {
+    animation: fadeOut 0.5s ease-in-out forwards;
+  }
+</style>
+
+<div id="page-content" class="container mt-5 fade-in">
+
+  <div class="text-center mb-4">
+    <h2 class="fw-bold text-primary">分析結果</h2>
+    <hr class="w-25 mx-auto" style="border-top: 3px solid #0d6efd;">
+  </div>
 
   {% if analysis %}
-  <div class="alert alert-info mt-3" style="white-space: pre-wrap;">
-    {{ analysis }}
+  <div class="card shadow-sm mb-4 border-0 fade-in" style="animation-delay: 0.2s;">
+    <div class="card-header bg-primary text-white fw-bold">分析摘要</div>
+    <div class="card-body" style="white-space: pre-wrap;">{{ analysis }}</div>
   </div>
   {% endif %}
 
   {% if analysis_all %}
-  <div class="alert alert-info mt-3" style="white-space: pre-wrap;">
-    {{ analysis_all }}
+  <div class="card shadow-sm mb-4 border-0 fade-in" style="animation-delay: 0.4s;">
+    <div class="card-header bg-info text-white fw-bold">詳細分析</div>
+    <div class="card-body" style="white-space: pre-wrap;">{{ analysis_all }}</div>
   </div>
   {% endif %}
 
-  <a href="{% url 'agent:questionnaire_list' %}" class="btn btn-secondary mt-3">返回列表</a>
+  <div class="text-center" style="animation-delay: 0.6s;">
+    <a href="{% url 'agent:questionnaire_list' %}" class="btn btn-secondary px-4" id="back-button">
+      ← 返回列表
+    </a>
+  </div>
 </div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const backBtn = document.getElementById("back-button");
+    const page = document.getElementById("page-content");
+
+    backBtn.addEventListener("click", function (e) {
+      e.preventDefault(); // 阻止直接跳轉
+      page.classList.remove("fade-in");
+      page.classList.add("fade-out");
+      setTimeout(() => {
+        window.location.href = backBtn.href; // 淡出完成後跳轉
+      }, 500); // 與 fadeOut 動畫時間一致
+    });
+  });
+</script>
 {% endblock %}
