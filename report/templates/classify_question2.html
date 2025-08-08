@@ -1,10 +1,7 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>模塊選擇回覆</title>
-</head>
-<body>
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}模塊選擇回覆{% endblock %}
+{% block content %}
     <h1>請選擇您想查詢的模塊並輸入問題</h1>
 
     <form method="post">
@@ -48,5 +45,4 @@
         </div>
     {% endif %}
 
-</body>
-</html>
+{% endblock %}
