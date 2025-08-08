@@ -562,6 +562,7 @@ def classify_question(request):
         else:
             # 交給 GPT 做整合輸出
             integration_prompt = f"""
+            使用者問題{user_input}
             以下是多個不同來源的模塊輸出，請幫我整合成一段自然語言的回覆，
             保留重要數據與事件，邏輯清晰，適合直接回覆使用者：
             {chr(10).join(final_answers)}
@@ -599,6 +600,7 @@ def classify_question2(request):
             final_answers.append("請選擇至少一個模塊。")
         else:
             integration_prompt = f"""
+            使用者問題{user_input}
             以下是多個不同來源的模塊輸出，請幫我整合成一段自然語言的回覆，
             保留重要數據與事件，邏輯清晰，適合直接回覆使用者：
             {chr(10).join(final_answers)}
