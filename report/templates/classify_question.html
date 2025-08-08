@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>多模組分類與回覆</title>
+</head>
+<body>
+    <h1>多模組分類與回覆</h1>
+
+    <form method="post">
+        {% csrf_token %}
+        <label>請輸入您的問題：</label><br>
+        <textarea name="user_input" rows="3" cols="50"></textarea><br><br>
+        <button type="submit">送出</button>
+    </form>
+
+    {% if classifications %}
+        <h2>分類結果：</h2>
+        <ul>
+            {% for c in classifications %}
+                <li>{{ c }}</li>
+            {% endfor %}
+        </ul>
+
+        <h2>模組回覆：</h2>
+        {% for ans in final_answers %}
+            <div style="white-space: pre-wrap; border: 1px solid #ccc; padding: 8px; margin-bottom: 10px; font-family: monospace;">
+                {{ ans }}
+            </div>
+        {% endfor %}
+    {% endif %}
+</body>
+</html>
