@@ -28,6 +28,21 @@ class BitcoinPrice(models.Model):
     def __str__(self):
         return f"{self.coin.coinname} - {self.timestamp}"
     
+class CoinCategory(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+
+    def __str__(self):
+        return self.name
+
+
+class CoinCategoryRelation(models.Model):
+    coin = models.ForeignKey(Coin, on_delete=models.CASCADE)
+    category = models.ForeignKey(CoinCategory, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.coin.abbreviation} - {self.category.name}"
+
+    
     
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
