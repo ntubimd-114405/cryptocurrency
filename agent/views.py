@@ -163,6 +163,8 @@ def questionnaire_list(request):
     questionnaires = Questionnaire.objects.all()
 
     data = []
+    total_all_questions = 0
+    total_all_answered = 0
     for q in questionnaires:
         # 取得該問卷填寫紀錄 (可能沒有)
         record = UserQuestionnaireRecord.objects.filter(user=user, questionnaire=q).first()
@@ -173,6 +175,10 @@ def questionnaire_list(request):
 
         # 使用者回答該問卷中的多少題
         answered_questions = UserAnswer.objects.filter(user=user, question__in=questions).exclude(selected_options=None).count()
+
+        # 累計所有問卷題目與已回答題目數
+        total_all_questions += total_questions
+        total_all_answered += answered_questions
 
         if total_questions > 0:
             progress = int(answered_questions / total_questions * 100)
@@ -194,8 +200,18 @@ def questionnaire_list(request):
             'progress': progress,
         })
 
+        # 計算整體完成比例
+        if total_all_questions > 0:
+            overall_progress = int(total_all_answered / total_all_questions * 100)
+        else:
+            overall_progress = 0
+
+        overall_remaining = 100 - overall_progress
+
     return render(request, 'questionnaire_list.html', {
         'data': data,
+        'overall_progress': overall_progress,
+        'overall_remaining': overall_remaining,
     })
 
 # 重新填問卷
@@ -258,7 +274,7 @@ def analyze_user_responses(user, questionnaire, api):
     # 產生 prompt
     prompt_lines = [f"Q: {q}\nA: {a}" for q, a in qa_pairs]
     print(prompt_lines)
-    prompt = "以下是使用者的問卷回答進行分析，最後做個總結：\n\n" + "\n\n".join(prompt_lines)
+    prompt = "不需要以每個題目做出分析，只須要做出總結就可以了：\n\n" + "\n\n".join(prompt_lines)
 
     # 呼叫 v36 API
     try:
@@ -302,7 +318,7 @@ def get_total_analysis():
         analysis_blocks.append(block)
 
     prompt = (
-        "以下是多份問卷的 GPT 分析結果，請根據這些內容進行第二層的彙總分析，列出整體觀察與建議：\n\n"
+        "以下是多份問卷的 GPT 分析結果，請根據這些內容進行第二層的彙總分析，每個項目不要太多字：\n\n"
         + "\n\n".join(analysis_blocks)
     )
 
