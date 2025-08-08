@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>模塊選擇回覆</title>
+</head>
+<body>
+    <h1>請選擇您想查詢的模塊並輸入問題</h1>
+
+    <form method="post">
+        {% csrf_token %}
+        <label>請輸入您的問題：</label><br>
+        <textarea name="user_input" rows="3" cols="50">{{ user_input }}</textarea><br><br>
+
+        <label>請選擇模塊（可多選）：</label><br>
+        <input type="checkbox" name="modules" value="news" id="news" 
+            {% if 'news' in selected_modules %}checked{% endif %}>
+        <label for="news">新聞模塊</label><br>
+
+        <input type="checkbox" name="modules" value="price" id="price"
+            {% if 'price' in selected_modules %}checked{% endif %}>
+        <label for="price">價格模塊</label><br>
+
+        <input type="checkbox" name="modules" value="other" id="other"
+            {% if 'other' in selected_modules %}checked{% endif %}>
+        <label for="other">其他經濟數據模塊</label><br>
+
+        <input type="checkbox" name="modules" value="questionnaire" id="questionnaire"
+            {% if 'questionnaire' in selected_modules %}checked{% endif %}>
+        <label for="questionnaire">問卷模塊</label><br><br>
+
+        <button type="submit">送出</button>
+    </form>
+
+    {% if final_answers %}
+        <h2>模組回覆：</h2>
+        {% for ans in final_answers %}
+            <div style="white-space: pre-wrap; border:1px solid #ccc; padding:8px; margin-bottom:10px; font-family: monospace;">
+                {{ ans }}
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    {% if integrated_summary %}
+        <h2>整合回覆：</h2>
+        <div style="white-space: pre-wrap; border:1px solid #666; background:#eee; padding:10px; font-family: monospace;">
+            {{ integrated_summary }}
+        </div>
+    {% endif %}
+
+</body>
+</html>

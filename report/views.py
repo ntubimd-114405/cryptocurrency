@@ -23,6 +23,7 @@ from .models import WeeklyReport
 from main.models import CoinHistory,Coin,UserProfile, BitcoinPrice
 from news.models import Article
 from other.models import FinancialData, IndicatorValue, BitcoinMetricData
+from agent.models import Questionnaire, Question, AnswerOption, UserAnswer, UserQuestionnaireRecord
 from data_analysis.text_generation.chatgpt_api import call_chatgpt
 from data_analysis.crypto_ai_agent.news_agent import run_news_agent
 
@@ -449,7 +450,164 @@ def view_weekly_report_by_id(request, report_id):
 
     return render(request, 'weekly_report.html', context)
 
+def run_news_agent(user_input):
+    latest_news = Article.objects.order_by('-time')[:10]
+    news_list = [f"{n.title}（{n.time}）" for n in latest_news]
+    return "📰★新聞模塊\n" + "\n".join(news_list)
+
+def run_price_agent(user_input):
+    latest_prices = CoinHistory.objects.order_by('-date')[:10]
+    price_list = [
+        f"{p.coin.coinname}：{p.close_price}（{p.date}）"
+        for p in latest_prices
+    ]
+    return "💰★價格模塊\n" + "\n".join(price_list)
+
+def run_other_agent(user_input):
+    # FinancialData
+    financial_data = list(
+        FinancialData.objects.select_related("symbol")
+        .order_by("-date")[:10]
+    )
+    
+    # IndicatorValue
+    indicator_values = list(
+        IndicatorValue.objects.select_related("indicator")
+        .order_by("-date")[:10]
+    )
+    
+    # BitcoinMetricData
+    btc_metrics = list(
+        BitcoinMetricData.objects.select_related("metric")
+        .order_by("-date")[:10]
+    )
+
+    lines = ["📊★其他經濟數據模塊"]
+
+    # FinancialData
+    lines.append("[FinancialData]")
+    lines.extend([
+        f"{x.symbol.symbol} ({x.symbol.name}): 開={x.open_price}, 高={x.high_price}, 低={x.low_price}, 收={x.close_price}, 量={x.volume}（{x.date}）"
+        for x in financial_data
+    ])
+
+    # IndicatorValue
+    lines.append("[IndicatorValue]")
+    lines.extend([
+        f"{x.indicator.name}: {x.value}（{x.date}）"
+        for x in indicator_values
+    ])
+
+    # BitcoinMetricData
+    lines.append("[BitcoinMetricData]")
+    lines.extend([
+        f"{x.metric.name}: {x.value}（{x.date}）"
+        for x in btc_metrics
+    ])
+
+    return "\n".join(lines)
 
 
+def run_survey_agent(user_input):
+    latest_records = (
+        UserQuestionnaireRecord.objects
+        .select_related("user", "questionnaire")
+        .order_by("-completed_at")[:10]
+    )
+
+    records_list = [
+        f"{r.user.username} - 問卷: {r.questionnaire.title}（完成於 {r.completed_at}）"
+        for r in latest_records
+    ]
+
+    return "🧾📢★問卷模塊\n" + "\n".join(records_list)
 
 
+def classify_question(request):
+    classifications = []
+    final_answers = []
+    integrated_summary = ""
+
+    if request.method == "POST":
+        user_input = request.POST.get("user_input", "")
+
+        # GPT Prompt 分類
+        prompt = f"""
+        你是一個分類器，幫我判斷下列句子可能屬於哪些類別：
+        新聞（news）、價格（price）、其他經濟數據（other）、問卷（questionnaire）。
+        可以有多個，請以逗號分隔；如果都不屬於，請回傳 unknown。
+        輸入句子：{user_input}
+        請只輸出分類結果（如：news, price）
+        """
+        
+        result = call_chatgpt("你是一個精準的分類器", prompt)
+        classifications = [c.strip().lower() for c in result.split(",")]
+        print(result, classifications)
+        # 模組對應表
+        module_map = {
+            "news": run_news_agent,
+            "price": run_price_agent,
+            "other": run_other_agent,
+            "questionnaire": run_survey_agent
+        }
+
+        # 呼叫對應模塊
+        for c in classifications:
+            if c in module_map:
+                final_answers.append(module_map[c](user_input))
+
+        # 如果全都不匹配
+        if not final_answers:
+            final_answers.append("抱歉，我無法辨識您的問題類型。")
+        else:
+            # 交給 GPT 做整合輸出
+            integration_prompt = f"""
+            以下是多個不同來源的模塊輸出，請幫我整合成一段自然語言的回覆，
+            保留重要數據與事件，邏輯清晰，適合直接回覆使用者：
+            {chr(10).join(final_answers)}
+            """
+            integrated_summary = call_chatgpt("你是一個專業的資訊整合助理", integration_prompt)
+
+    return render(request, "classify_question.html", {
+        "classifications": classifications,
+        "final_answers": final_answers,
+        "integrated_summary": integrated_summary
+    })
+
+
+def classify_question2(request):
+    final_answers = []
+    integrated_summary = ""
+    selected_modules = []
+
+    module_map = {
+        "news": run_news_agent,
+        "price": run_price_agent,
+        "other": run_other_agent,
+        "questionnaire": run_survey_agent
+    }
+
+    if request.method == "POST":
+        user_input = request.POST.get("user_input", "")
+        selected_modules = request.POST.getlist("modules")  # 接收多選框列表
+
+        for m in selected_modules:
+            if m in module_map:
+                final_answers.append(module_map[m](user_input))
+
+        if not final_answers:
+            final_answers.append("請選擇至少一個模塊。")
+        else:
+            integration_prompt = f"""
+            以下是多個不同來源的模塊輸出，請幫我整合成一段自然語言的回覆，
+            保留重要數據與事件，邏輯清晰，適合直接回覆使用者：
+            {chr(10).join(final_answers)}
+            """
+            integrated_summary = call_chatgpt("你是一個專業的資訊整合助理", integration_prompt)
+
+    return render(request, "classify_question2.html", {
+        "final_answers": final_answers,
+        "integrated_summary": integrated_summary,
+        "selected_modules": selected_modules,
+        "user_input": user_input if request.method == "POST" else ""
+    })

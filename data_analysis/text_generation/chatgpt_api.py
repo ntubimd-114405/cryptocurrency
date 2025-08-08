@@ -12,7 +12,7 @@ def call_chatgpt(system,text):
     # ✅ 使用你申請到的 URL 和 API KEY
     url = 'https://free.v36.cm/v1/chat/completions'
     headers = {
-        'Authorization': 'Bearer sk-f1VURcs4pENfXVMwCc1953E5717a4f33A7DcBd2c3133F71c',
+        'Authorization': f'Bearer {api}',
         'Content-Type': 'application/json',
     }
 
