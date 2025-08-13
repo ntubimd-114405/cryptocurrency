@@ -1,20 +1,47 @@
 {% extends "base.html" %}
 {% block content %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!-- Plugin: 顯示數值在圖上 -->
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+
 <style>
+    .chart-container {
+    max-width: 300px;
+    margin: 30px auto;
+  }
+
   /* 淡入動畫 */
   @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
+
   /* 淡出動畫 */
   @keyframes fadeOut {
-    from { opacity: 1; transform: translateY(0); }
-    to { opacity: 0; transform: translateY(20px); }
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    to {
+      opacity: 0;
+      transform: translateY(20px);
+    }
   }
+
   .fade-in {
     opacity: 0;
     animation: fadeIn 0.8s ease-in-out forwards;
   }
+
   .fade-out {
     animation: fadeOut 0.5s ease-in-out forwards;
   }
@@ -47,6 +74,98 @@
     </a>
   </div>
 </div>
+
+<h2>風險屬性分析結果</h2>
+
+{% if average_score %}
+<p><strong>平均分數：</strong> {{ average_score }}</p>
+<p><strong>風險屬性：</strong> {{ risk_type }}</p>
+<p><strong>資產建議配置：</strong> {{ suggestion }}</p>
+
+<!-- 圖表區塊 -->
+<div class="chart-container">
+  <canvas id="allocationChart"></canvas>
+</div>
+
+<script>
+  const allocationData = [
+    {% if risk_type == "保守型" %}
+  60, 30, 10, 0, 0
+  {% elif risk_type == "穩健型" %}
+  20, 40, 30, 10, 0
+  {% elif risk_type == "積極型" %}
+  0, 30, 40, 20, 10
+  {% else %}
+  0, 0, 0, 0, 0
+  {% endif %}
+  ];
+
+  const allocationLabels = ['穩定幣', '主流幣', '成長幣', '迷因幣', '小幣'];
+
+  const ctx = document.getElementById('allocationChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'pie',
+    data: {
+      labels: allocationLabels,
+      datasets: [{
+        data: allocationData,
+        backgroundColor: ['#6c757d', '#007bff', '#28a745', '#ffc107', '#dc3545'],
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          display: false  // ✅ 移除圖例
+        },
+        datalabels: {
+          color: '#fff',
+          align: 'center',
+          font: {
+            size: 14,
+            weight: 'bold'
+          },
+          formatter: function (value, context) {
+            if (value === 0) return '';
+            const label = context.chart.data.labels[context.dataIndex];
+            return `${label}\n${value}%`;
+          }
+        }
+      }
+    },
+    plugins: [ChartDataLabels]
+  });
+</script>
+<h3 style="margin-top: 40px;">風險屬性分級說明</h3>
+<table border="1" cellspacing="0" cellpadding="8" style="border-collapse: collapse; margin-top: 10px;">
+  <thead style="background-color: #f2f2f2;">
+    <tr>
+      <th>平均分數區間</th>
+      <th>風險屬性</th>
+      <th>資產配置建議</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>0 – 2.5</td>
+      <td>保守型</td>
+      <td>60% 穩定幣、30% 主流幣、10% 成長幣</td>
+    </tr>
+    <tr>
+      <td>2.51 – 4</td>
+      <td>穩健型</td>
+      <td>40% 主流幣、30% 成長幣、20% 穩定幣、10% 迷因幣</td>
+    </tr>
+    <tr>
+      <td>4.01 以上</td>
+      <td>積極型</td>
+      <td>40% 成長幣、30% 主流幣、20% 迷因幣、10% 小幣</td>
+    </tr>
+  </tbody>
+</table>
+{% else %}
+<p>{{ suggestion }}</p>
+{% endif %}
 
 <script>
   document.addEventListener("DOMContentLoaded", function () {
