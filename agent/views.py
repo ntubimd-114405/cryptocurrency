@@ -344,10 +344,56 @@ def get_total_analysis():
 
     return content
 
-def analyze_all_questionnaires(request):
-    result = get_total_analysis()
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from .models import UserAnswer
+
+RISK_QUESTIONNAIRE_IDS = [2, 3, 4, 9]
+
+def analysis_result_view(request):
+    user = request.user
+
+    # ✅ 取得全部分析結果（原 analyze_all_questionnaires）
+    total_analysis = get_total_analysis()
+
+    # ✅ 取得使用者的問卷風險分析（原 risk_analysis_view）
+    user_answers = UserAnswer.objects.filter(
+        user=user,
+        question__questionnaire__id__in=RISK_QUESTIONNAIRE_IDS
+    ).prefetch_related("selected_options")
+
+    total_score = 0
+    answer_count = 0
+
+    for ans in user_answers:
+        for option in ans.selected_options.all():
+            total_score += option.score
+            answer_count += 1
+
+    if answer_count == 0:
+        risk_type = "無法評估"
+        suggestion = "請至少填寫第 2、3、4、9 題任一題，才能分析風險屬性。"
+        average = None
+    else:
+        average = total_score / answer_count
+        if average <= 2.5:
+            risk_type = "保守型"
+            suggestion = "建議配置：60% 穩定幣、30% 主流幣、10% 成長幣"
+        elif average <= 4:
+            risk_type = "穩健型"
+            suggestion = "建議配置：40% 主流幣、30% 成長幣、20% 穩定幣、10% 迷因幣"
+        else:
+            risk_type = "積極型"
+            suggestion = "建議配置：40% 成長幣、30% 主流幣、20% 迷因幣、10% 小幣"
+
+    # ✅ 最後渲染同一個 analysis_result.html
     return render(request, "analysis_result.html", {
-        "analysis": result
+        "analysis": total_analysis,
+        "total_score": total_score,
+        "average_score": round(average, 2) if average is not None else None,
+        "risk_type": risk_type,
+        "answered_questionnaire_count": len(RISK_QUESTIONNAIRE_IDS),
+        "suggestion": suggestion,
     })
     
 @login_required

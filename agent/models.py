@@ -33,6 +33,7 @@ class AnswerOption(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='answer_options', verbose_name="所屬題目")
     content = models.CharField(max_length=200, verbose_name="答案選項")
     order = models.PositiveIntegerField(verbose_name="選項排序")
+    score = models.IntegerField(default=0, verbose_name="風險分數")
 
     def __str__(self):
         return self.content
