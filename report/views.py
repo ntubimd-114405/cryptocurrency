@@ -18,6 +18,8 @@ from django.contrib.auth.decorators import login_required
 from django.utils.timezone import now
 from django.db import IntegrityError
 from django.urls import reverse
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 
 from .models import WeeklyReport
 from main.models import CoinHistory,Coin,UserProfile, BitcoinPrice
@@ -450,79 +452,144 @@ def view_weekly_report_by_id(request, report_id):
 
     return render(request, 'weekly_report.html', context)
 
-def run_news_agent(user_input):
-    latest_news = Article.objects.order_by('-time')[:10]
+def run_news_agent(user_input, start_date=None, end_date=None):
+    queryset = Article.objects.order_by('-time')
+    if start_date:
+        queryset = queryset.filter(time__date__gte=start_date)
+    if end_date:
+        queryset = queryset.filter(time__date__lte=end_date)
+    latest_news = queryset[:10]
     news_list = [f"{n.title}（{n.time}）" for n in latest_news]
     return "📰★新聞模塊\n" + "\n".join(news_list)
 
-def run_price_agent(user_input):
-    latest_prices = CoinHistory.objects.order_by('-date')[:10]
-    price_list = [
-        f"{p.coin.coinname}：{p.close_price}（{p.date}）"
-        for p in latest_prices
-    ]
+def run_price_agent(user_input, start_date=None, end_date=None):
+    queryset = CoinHistory.objects.order_by('-date')
+    if start_date:
+        queryset = queryset.filter(date__gte=start_date)
+    if end_date:
+        queryset = queryset.filter(date__lte=end_date)
+    latest_prices = queryset[:10]
+    price_list = [f"{p.coin.coinname}：{p.close_price}（{p.date}）" for p in latest_prices]
     return "💰★價格模塊\n" + "\n".join(price_list)
 
-def run_other_agent(user_input):
-    # FinancialData
-    financial_data = list(
-        FinancialData.objects.select_related("symbol")
-        .order_by("-date")[:10]
-    )
-    
-    # IndicatorValue
-    indicator_values = list(
-        IndicatorValue.objects.select_related("indicator")
-        .order_by("-date")[:10]
-    )
-    
-    # BitcoinMetricData
-    btc_metrics = list(
-        BitcoinMetricData.objects.select_related("metric")
-        .order_by("-date")[:10]
-    )
+def run_other_agent(user_input, start_date=None, end_date=None):
+    financial_data = FinancialData.objects.select_related("symbol").order_by("-date")
+    indicator_values = IndicatorValue.objects.select_related("indicator").order_by("-date")
+    btc_metrics = BitcoinMetricData.objects.select_related("metric").order_by("-date")
+
+    if start_date:
+        financial_data = financial_data.filter(date__gte=start_date)
+        indicator_values = indicator_values.filter(date__gte=start_date)
+        btc_metrics = btc_metrics.filter(date__gte=start_date)
+    if end_date:
+        financial_data = financial_data.filter(date__lte=end_date)
+        indicator_values = indicator_values.filter(date__lte=end_date)
+        btc_metrics = btc_metrics.filter(date__lte=end_date)
 
     lines = ["📊★其他經濟數據模塊"]
-
-    # FinancialData
     lines.append("[FinancialData]")
-    lines.extend([
-        f"{x.symbol.symbol} ({x.symbol.name}): 開={x.open_price}, 高={x.high_price}, 低={x.low_price}, 收={x.close_price}, 量={x.volume}（{x.date}）"
-        for x in financial_data
-    ])
-
-    # IndicatorValue
+    lines.extend([f"{x.symbol.symbol} ({x.symbol.name}): 開={x.open_price}, 高={x.high_price}, 低={x.low_price}, 收={x.close_price}, 量={x.volume}（{x.date}）" for x in financial_data[:10]])
     lines.append("[IndicatorValue]")
-    lines.extend([
-        f"{x.indicator.name}: {x.value}（{x.date}）"
-        for x in indicator_values
-    ])
-
-    # BitcoinMetricData
+    lines.extend([f"{x.indicator.name}: {x.value}（{x.date}）" for x in indicator_values[:10]])
     lines.append("[BitcoinMetricData]")
-    lines.extend([
-        f"{x.metric.name}: {x.value}（{x.date}）"
-        for x in btc_metrics
-    ])
-
+    lines.extend([f"{x.metric.name}: {x.value}（{x.date}）" for x in btc_metrics[:10]])
     return "\n".join(lines)
 
-
-def run_survey_agent(user_input):
-    latest_records = (
-        UserQuestionnaireRecord.objects
-        .select_related("user", "questionnaire")
-        .order_by("-completed_at")[:10]
-    )
-
-    records_list = [
-        f"{r.user.username} - 問卷: {r.questionnaire.title}（完成於 {r.completed_at}）"
-        for r in latest_records
-    ]
-
+def run_survey_agent(user_input, start_date=None, end_date=None):
+    queryset = UserQuestionnaireRecord.objects.select_related("user", "questionnaire").order_by("-completed_at")
+    if start_date:
+        queryset = queryset.filter(completed_at__date__gte=start_date)
+    if end_date:
+        queryset = queryset.filter(completed_at__date__lte=end_date)
+    latest_records = queryset[:10]
+    records_list = [f"{r.user.username} - 問卷: {r.questionnaire.title}（完成於 {r.completed_at}）" for r in latest_records]
     return "🧾📢★問卷模塊\n" + "\n".join(records_list)
 
+def parse_date_range_from_input(user_input):
+    """用 GPT 解析使用者輸入的時間範圍，回傳 start_date, end_date"""
+    today_str = datetime.today().strftime("%Y-%m-%d")
+    prompt = f"""
+    你是一個專業的財經助理：
+    使用者輸入以下句子，請判斷他想查詢的時間範圍。
+    如果說「1M」、「本月」、「過去一個月」、「7D」、「今天」等，請回傳開始與結束日期，
+    格式為 YYYY-MM-DD，今天是 {today_str}。
+    如果沒有指定時間，請回傳空值。
+    輸入句子：{user_input}
+    請只用 JSON 格式輸出，例如：{{"start_date": "2025-07-13", "end_date": "2025-08-13"}}
+    """
+    result = call_chatgpt("時間解析助理", prompt)
+    print(user_input,result)
+    try:
+        data = json.loads(result)
+        return data.get("start_date"), data.get("end_date")
+    except:
+        return None, None
+    
 
+@csrf_exempt
+def classify_question_api(request):
+    classifications = []
+    final_answers = []
+    integrated_summary = ""
+
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+        user_input = data.get("user_input", "")
+        selected_modules = data.get("selected_modules", [])
+
+        # 分類 GPT
+        classification_prompt = f"""
+        你是一個分類器，幫我判斷下列句子可能屬於哪些類別：
+        新聞（news）、價格（price）、其他經濟數據（other）、問卷（questionnaire）。
+        可以有多個，請以逗號分隔；如果都不屬於，請回傳 ()。
+        輸入句子：{user_input}
+        請只輸出分類結果（如：news, price）
+        """
+        result = call_chatgpt("你是一個精準的分類器", classification_prompt)
+        classifications = [c.strip().lower() for c in result.split(",")]
+        combined = list(set(selected_modules + classifications))
+
+        # 解析使用者想查詢的時間
+        start_date, end_date = parse_date_range_from_input(user_input)
+
+        module_map = {
+            "news": run_news_agent,
+            "price": run_price_agent,
+            "other": run_other_agent,
+            "questionnaire": run_survey_agent
+        }
+
+        for module_name in combined:
+            if module_name in module_map:
+                final_answers.append(module_map[module_name](user_input, start_date, end_date))
+
+        if not final_answers:
+            final_answers.append("抱歉，我無法辨識您的問題類型或您未選擇相關模組。")
+        else:
+            integration_prompt = f"""
+            使用者問題：{user_input}
+            以下是多個不同來源的模塊輸出，請幫我整合成一段自然語言的回覆，
+            保留重要數據與事件，邏輯清晰，適合直接回覆使用者：
+            {chr(10).join(final_answers)}
+            """
+            integrated_summary = call_chatgpt("你是一個專業的資訊整合助理", integration_prompt)
+
+    return JsonResponse({
+        "classifications": combined,
+        "final_answers": final_answers,
+        "integrated_summary": integrated_summary
+    }, json_dumps_params={"ensure_ascii": False})
+
+
+
+
+def chat_view(request):
+    return render(request, "chat2.html")
+'''
 def classify_question(request):
     classifications = []
     final_answers = []
@@ -576,6 +643,7 @@ def classify_question(request):
     })
 
 
+
 def classify_question2(request):
     final_answers = []
     integrated_summary = ""
@@ -613,3 +681,4 @@ def classify_question2(request):
         "selected_modules": selected_modules,
         "user_input": user_input if request.method == "POST" else ""
     })
+    '''

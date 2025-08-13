@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}AI 聊天{% endblock %}
+
+{% block main %}
+<div class="chat-container-page1">
+  <div class="chat-messages"></div>
+  <div class="module-select">
+    <label><input type="checkbox" value="news" checked> 新聞</label>
+    <label><input type="checkbox" value="price" checked> 價格</label>
+    <label><input type="checkbox" value="other" checked> 其他經濟數據</label>
+    <label><input type="checkbox" value="questionnaire" checked> 問卷</label>
+  </div>
+  <div class="chat-input">
+    <input type="text" class="userInput-page1" placeholder="輸入訊息..." />
+    <button class="sendBtn-page1" type="button">送出</button>
+  </div>
+</div>
+
+<meta name="csrf-token" content="{{ csrf_token }}">
+
+<style>
+.chat-container-page1 {
+  max-width: 800px;
+  margin: 20px auto;
+  background: white;
+  border-radius: 24px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  display: flex;
+  flex-direction: column;
+  height: 80vh;
+  min-height: 500px;
+  overflow: hidden;
+}
+.chat-messages {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  min-height: 200px;
+}
+.message {
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  border-radius: 16px;
+  max-width: 75%;
+  word-wrap: break-word;
+}
+.user { background: #d0ebff; align-self: flex-end; }
+.bot { background: #f1f3f5; align-self: flex-start; }
+.module-tags { margin-top: 6px; font-size: 0.85rem; color: #555; }
+.module-tags span {
+  background: #e0e0e0;
+  border-radius: 12px;
+  padding: 2px 8px;
+  margin-right: 4px;
+  display: inline-block;
+}
+.chat-input { display: flex; border-top: 1px solid #ccc; }
+.chat-input input { flex: 1; padding: 12px; border: none; outline: none; font-size: 16px; }
+.chat-input button {
+  background: linear-gradient(135deg, #4facfe, #00f2fe);
+  color: white; border: none; padding: 12px 20px;
+  font-size: 16px; cursor: pointer; transition: 0.2s;
+}
+.chat-input button:hover { opacity: 0.9; }
+</style>
+
+<script>
+(function(){
+  const container = document.querySelector(".chat-container-page1");
+  if (!container) return;
+
+  const sendBtn = container.querySelector(".sendBtn-page1");
+  const input = container.querySelector(".userInput-page1");
+  const messages = container.querySelector(".chat-messages");
+  const csrftoken = document.querySelector('[name=csrf-token]').content;
+
+  function appendMessage(messagesContainer, text, sender, isTag=false) {
+    const div = document.createElement('div');
+    div.className = `message ${sender}`;
+    if (isTag) {
+      const tagDiv = document.createElement('div');
+      tagDiv.className = 'module-tags';
+      text.split(', ').forEach(t => {
+        const span = document.createElement('span');
+        span.textContent = t;
+        tagDiv.appendChild(span);
+      });
+      div.appendChild(tagDiv);
+    } else {
+      div.textContent = text;
+    }
+    messagesContainer.appendChild(div);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
+
+  async function sendMessage() {
+    const selectedModules = Array.from(container.querySelectorAll(".module-select input:checked"))
+      .map(cb => cb.value);
+    const text = input.value.trim();
+    if (!text) return;
+
+    appendMessage(messages, text, "user");
+    input.value = '';
+
+    try {
+      const response = await fetch('/report/api/classify/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
+        body: JSON.stringify({ user_input: text, selected_modules: selectedModules })
+      });
+      const data = await response.json();
+
+      if (data.classifications) appendMessage(messages, '分類：' + data.classifications.join(', '), 'bot', true);
+      if (data.final_answers) data.final_answers.forEach(ans => appendMessage(messages, ans, 'bot'));
+      if (data.integrated_summary) appendMessage(messages, '整合回覆：' + data.integrated_summary, 'bot');
+
+    } catch (err) {
+      console.error(err);
+      appendMessage(messages, '發生錯誤，請稍後再試。', 'bot');
+    }
+  }
+
+  sendBtn.addEventListener("click", sendMessage);
+  input.addEventListener("keypress", function(e) {
+    if (e.key === "Enter") sendMessage();
+  });
+})();
+</script>
+{% endblock %}
