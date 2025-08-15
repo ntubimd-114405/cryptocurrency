@@ -39,7 +39,7 @@ def call_free_chatgpt_api(request):
     # ✅ 使用你申請到的 URL 和 API KEY
     url = 'https://free.v36.cm/v1/chat/completions'
     headers = {
-        'Authorization': 'Bearer sk-f1VURcs4pENfXVMwCc1953E5717a4f33A7DcBd2c3133F71c',
+        'Authorization': f'Bearer {api}',
         'Content-Type': 'application/json',
     }
 
@@ -195,6 +195,7 @@ def questionnaire_list(request):
 
         data.append({
             'questionnaire': q,
+            'description': q.description,
             'last_completed': record.completed_at if record else None,
             'status': status,
             'progress': progress,
@@ -418,7 +419,7 @@ def coin_history_view(request):
     coin_id = request.GET.get('coin_id', coins.first().id)
     selected_coin = Coin.objects.get(id=coin_id)  # ← 取得選擇的幣
 
-    thirty_days_ago = timezone.now().date() - timedelta(days=30)
+    thirty_days_ago = timezone.now().date() - timedelta(days=60)
 
     # 取得歷史資料
     queryset = (

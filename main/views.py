@@ -757,7 +757,7 @@ def coin_history_api(request):
     except Coin.DoesNotExist:
         return JsonResponse({'error': '查無此幣種'}, status=404)
 
-    thirty_days_ago = timezone.now().date() - timedelta(days=30)
+    thirty_days_ago = timezone.now().date() - timedelta(days=60)
 
     queryset = (
         CoinHistory.objects
