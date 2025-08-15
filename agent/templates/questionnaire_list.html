@@ -60,7 +60,13 @@
         {% for item in data %}
         <tr>
             <td>{{ item.questionnaire.id }}</td>
-            <td>{{ item.questionnaire.title }}</td>
+            <td class="tooltip table table-bordered align-middle text-center">
+                {{ item.questionnaire.title }}
+                
+                {% if item.questionnaire.description %}
+                    <span class="tooltip-text">{{ item.questionnaire.description }}</span>
+                {% endif %}
+            </td>
             <td>
                 {% if item.last_completed %}
                     {{ item.last_completed|date:"Y-m-d H:i" }}

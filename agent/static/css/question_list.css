@@ -121,3 +121,34 @@
 .analysis:hover span:after {
     opacity: 1;
 }
+
+.tooltip {
+  position: relative;
+  opacity: 1;
+  --bs-tooltip-font-size: 16px;
+}
+
+.tooltip-text {
+  visibility: hidden;
+  opacity: 0;
+  width: 300px;
+  background-color: rgba(0, 0, 0, 0.85);
+  color: #fff;
+  text-align: left;
+  padding: 8px;
+  border-radius: 6px;
+  font-size: 14px;
+  line-height: 1.4;
+
+  position: absolute;
+  z-index: 1;
+  bottom: 125%; /* 顯示在標題上方 */
+  left: 50%;
+  transform: translateX(-50%);
+  transition: opacity 0.3s;
+}
+
+.tooltip:hover .tooltip-text {
+  visibility: visible;
+  opacity: 1;
+}
