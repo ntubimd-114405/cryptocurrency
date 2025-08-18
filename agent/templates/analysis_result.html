@@ -1,4 +1,7 @@
 {% extends "base.html" %}
+
+{% block title %}分析結果{% endblock %}
+
 {% block content %}
 <!-- Chart.js -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -6,7 +9,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
 
 <style>
-    .chart-container {
+  .chart-container {
     max-width: 300px;
     margin: 30px auto;
   }
@@ -75,111 +78,349 @@
   </div>
 </div>
 
-<h2>風險屬性分析結果</h2>
+<h2 class="mb-4">風險屬性分析結果</h2>
 
 {% if average_score %}
-<p><strong>平均分數：</strong> {{ average_score }}</p>
-<p><strong>風險屬性：</strong> {{ risk_type }}</p>
-<p><strong>資產建議配置：</strong> {{ suggestion }}</p>
-
-<!-- 圖表區塊 -->
-<div class="chart-container">
-  <canvas id="allocationChart"></canvas>
+<!-- 分析結果 -->
+<div class="table-responsive mb-4">
+  <table class="table table-bordered text-center">
+    <tbody>
+      <tr>
+        <th>風險屬性&nbsp;&nbsp;<a href="#more-content" class="more-link"><small>了解更多...</small></th>
+        <th>資產建議配置&nbsp;&nbsp;<a href="#more-content" class="more-link"><small>了解更多...</small></a></th>
+      </tr>
+      <tr>
+        <td>{{ risk_type }}</td>
+        <td>{{ suggestion }}</td>
+      </tr>
+    </tbody>
+  </table>
 </div>
 
-<script>
-  const allocationData = [
-    {% if risk_type == "保守型" %}
-  60, 30, 10, 0, 0
-  {% elif risk_type == "穩健型" %}
-  20, 40, 30, 10, 0
-  {% elif risk_type == "積極型" %}
-  0, 30, 40, 20, 10
-  {% else %}
-  0, 0, 0, 0, 0
-  {% endif %}
-  ];
 
-  const allocationLabels = ['穩定幣', '主流幣', '成長幣', '迷因幣', '小幣'];
+<div class="row mb-5">
+  <!-- 圓餅圖 左側 -->
+  <div class="col-lg-6 col-12 text-center mb-4 mb-lg-0">
+    <!-- 百分比篩選拉桿 -->
+    <div class="mb-4">
+      <h5 class="mb-2">
+        投資幣種與金額
+      </h5>
+    </div>
 
-  const ctx = document.getElementById('allocationChart').getContext('2d');
-  new Chart(ctx, {
-    type: 'pie',
-    data: {
-      labels: allocationLabels,
-      datasets: [{
-        data: allocationData,
-        backgroundColor: ['#6c757d', '#007bff', '#28a745', '#ffc107', '#dc3545'],
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        legend: {
-          display: false  // ✅ 移除圖例
-        },
-        datalabels: {
-          color: '#fff',
-          align: 'center',
-          font: {
-            size: 14,
-            weight: 'bold'
+    <div class="chart-container" style="max-width: 80%; margin: 0 auto;">
+      <canvas id="allocationChart"></canvas>
+    </div>
+  </div>
+
+  <!-- 推薦幣種表格 右側 -->
+  <div class="col-lg-6 col-12">
+    <div class="table-responsive mb-4">
+      <table class="table table-bordered text-center">
+        <thead class="table-light">
+          <tr>
+            <th>類別</th>
+            <th>推薦幣種</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if recommended_coins %}
+          {% for category, coins in recommended_coins.items %}
+          <tr>
+            <td>{{ category }}</td>
+            <td>
+              {% if coins %}
+              {{ coins|join:"、" }}
+              {% else %}
+              暫無推薦
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+          {% else %}
+          <tr>
+            <td colspan="2">暫無推薦</td>
+          </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 投資金額輸入與計算 放在表格下方 -->
+    <h3 class="mt-4 text-center">選擇投資幣種與金額</h3>
+    <div class="mb-3" style="max-width: 300px; margin: 0 auto;">
+      <input type="number" id="investmentAmount" class="form-control" placeholder="請輸入投資金額" />
+    </div>
+
+    <div class="mb-3 text-center">
+      <label class="form-check-label me-2"><input type="checkbox" class="coinCheckbox" value="穩定幣" checked> 穩定幣</label>
+      <label class="form-check-label me-2"><input type="checkbox" class="coinCheckbox" value="主流幣" checked> 主流幣</label>
+      <label class="form-check-label me-2"><input type="checkbox" class="coinCheckbox" value="成長幣" checked> 成長幣</label>
+      <label class="form-check-label me-2"><input type="checkbox" class="coinCheckbox" value="迷因幣" checked> 迷因幣</label>
+      <label class="form-check-label"><input type="checkbox" class="coinCheckbox" value="其他" checked> 其他</label>
+    </div>
+
+    <div class="text-center mb-4">
+      <button class="btn btn-primary" id="calculateBtn">計算投入金額</button>
+    </div>
+
+    <div id="investmentResult" class="mt-3"></div>
+    <canvas id="allocationChart"></canvas>
+
+    {{ allocation_data|json_script:"allocation-data" }}
+    {{ allocation|json_script:"allocation-percent" }}
+
+
+    {% endif %}
+
+
+    <!-- JS 控制區 -->
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const allocationLabels = ['穩定幣', '主流幣', '成長幣', '迷因幣', '其他'];
+        const allocationData = JSON.parse(document.getElementById('allocation-data').textContent);
+        const allocationPercent = JSON.parse(document.getElementById('allocation-percent').textContent);
+
+        let totalAmount = 0;
+
+        // 建立圓餅圖
+        const ctx = document.getElementById('allocationChart').getContext('2d');
+        const myChart = new Chart(ctx, {
+          type: 'pie',
+          data: {
+            labels: allocationLabels,
+            datasets: [{
+              data: allocationData, // 初始顯示百分比
+              backgroundColor: ['#6c757d', '#007bff', '#28a745', '#ffc107', '#dc3545'],
+            }]
           },
-          formatter: function (value, context) {
-            if (value === 0) return '';
-            const label = context.chart.data.labels[context.dataIndex];
-            return `${label}\n${value}%`;
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { display: true },
+              datalabels: {
+                color: '#fff',
+                align: 'center',
+                font: { size: 14, weight: 'bold' },
+                formatter: function (value, context) {
+                  const label = context.chart.data.labels[context.dataIndex];
+                  const checkedCoins = Array.from(document.querySelectorAll('.coinCheckbox:checked')).map(cb => cb.value);
+
+                  if (!checkedCoins.includes(label) || value === 0) return '';
+
+                  const totalRatio = checkedCoins.reduce((sum, coin) => sum + (allocationPercent[coin] || 0), 0);
+
+                  if (totalAmount === 0) return `${label}\n${Math.round(value)}%`;
+
+                  // 計算向下取整金額
+                  let allocatedAmounts = [];
+                  let sumAllocated = 0;
+                  checkedCoins.forEach(coin => {
+                    const amt = Math.floor(totalAmount * allocationPercent[coin] / totalRatio);
+                    allocatedAmounts.push({ coin, amt });
+                    sumAllocated += amt;
+                  });
+
+                  // 計算差額
+                  let remainder = totalAmount - sumAllocated;
+
+                  // 找最大比例幣種
+                  if (remainder > 0) {
+                    const maxCoin = allocatedAmounts.reduce((prev, curr) =>
+                      (allocationPercent[curr.coin] > allocationPercent[prev.coin]) ? curr : prev
+                    );
+                    maxCoin.amt += remainder;
+                  }
+
+                  const coinAmt = allocatedAmounts.find(item => item.coin === label).amt;
+                  return `${label}\n${Math.round(value)}%\n${coinAmt.toLocaleString()} 元`;
+                }
+              }
+            }
+          },
+          plugins: [ChartDataLabels]
+        });
+
+        // 計算按鈕事件
+        document.getElementById('calculateBtn').addEventListener('click', () => {
+          const amount = parseFloat(document.getElementById('investmentAmount').value);
+          if (isNaN(amount) || amount <= 0) {
+            alert("請輸入有效投資金額");
+            return;
           }
-        }
-      }
-    },
-    plugins: [ChartDataLabels]
-  });
-</script>
-<h3 style="margin-top: 40px;">風險屬性分級說明</h3>
-<table border="1" cellspacing="0" cellpadding="8" style="border-collapse: collapse; margin-top: 10px;">
-  <thead style="background-color: #f2f2f2;">
-    <tr>
-      <th>平均分數區間</th>
-      <th>風險屬性</th>
-      <th>資產配置建議</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>0 – 2.5</td>
-      <td>保守型</td>
-      <td>60% 穩定幣、30% 主流幣、10% 成長幣</td>
-    </tr>
-    <tr>
-      <td>2.51 – 4</td>
-      <td>穩健型</td>
-      <td>40% 主流幣、30% 成長幣、20% 穩定幣、10% 迷因幣</td>
-    </tr>
-    <tr>
-      <td>4.01 以上</td>
-      <td>積極型</td>
-      <td>40% 成長幣、30% 主流幣、20% 迷因幣、10% 小幣</td>
-    </tr>
-  </tbody>
-</table>
-{% else %}
-<p>{{ suggestion }}</p>
-{% endif %}
 
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-    const backBtn = document.getElementById("back-button");
-    const page = document.getElementById("page-content");
+          const checkedCoins = Array.from(document.querySelectorAll('.coinCheckbox:checked')).map(cb => cb.value);
+          if (checkedCoins.length === 0) {
+            alert("請至少選擇一種幣種");
+            return;
+          }
 
-    backBtn.addEventListener("click", function (e) {
-      e.preventDefault(); // 阻止直接跳轉
-      page.classList.remove("fade-in");
-      page.classList.add("fade-out");
-      setTimeout(() => {
-        window.location.href = backBtn.href; // 淡出完成後跳轉
-      }, 500); // 與 fadeOut 動畫時間一致
-    });
-  });
-</script>
-{% endblock %}
+          totalAmount = amount;
+
+          // 更新圓餅圖資料，只顯示勾選的幣種
+          myChart.data.datasets[0].data = allocationLabels.map(label =>
+            checkedCoins.includes(label) ? allocationData[allocationLabels.indexOf(label)] : 0
+          );
+          myChart.update();
+
+          // 向下取整 + 補差法計算結果清單
+          let allocatedAmounts = [];
+          let sumAllocated = 0;
+
+          // 計算總比例（只包含勾選幣種）
+          const totalRatio = checkedCoins.reduce((sum, c) => sum + allocationPercent[c], 0);
+
+          // 先向下取整
+          checkedCoins.forEach(coin => {
+            const amt = Math.floor(amount * allocationPercent[coin] / totalRatio);
+            allocatedAmounts.push({ coin, amt });
+            sumAllocated += amt;
+          });
+
+          // 計算差額
+          let remainder = amount - sumAllocated;
+
+          // 補到最大比例幣種
+          if (remainder > 0) {
+            const maxCoin = allocatedAmounts.reduce((prev, curr) =>
+              allocationPercent[curr.coin] > allocationPercent[prev.coin] ? curr : prev
+            );
+            maxCoin.amt += remainder;
+          }
+
+          // 顯示結果
+          let resultHtml = `<h5>本次預計投入金額：${amount.toLocaleString()} 元</h5>`;
+          resultHtml += "<h5>各類幣種建議投入金額：</h5><ul style='list-style:none; padding:0;'>";
+          allocatedAmounts.forEach(item => {
+            resultHtml += `<li>${item.coin}：${item.amt.toLocaleString()} 元</li>`;
+          });
+          resultHtml += "</ul>";
+          document.getElementById('investmentResult').innerHTML = resultHtml;
+
+          document.getElementById('investmentAmount').value = '';
+        });
+
+        
+      });
+    </script>
+
+    <!-- Accordion -->
+    <div class="accordion mt-5" id="accordionExample">
+
+      <!-- 風險屬性分級說明 -->
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="headingRisk">
+          <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseRisk"
+            aria-expanded="true" aria-controls="collapseRisk">
+            風險屬性分級說明
+          </button>
+        </h2>
+        <div id="collapseRisk" class="accordion-collapse collapse show" aria-labelledby="headingRisk"
+          data-bs-parent="#accordionExample">
+          <div class="accordion-body">
+            <table class="table table-bordered">
+              <thead class="table-light">
+                <tr>
+                  <th>平均分數區間</th>
+                  <th>風險屬性</th>
+                  <th>資產配置建議</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>0 ~ 2.5</td>
+                  <td>保守型</td>
+                  <td>60% 穩定幣、30% 主流幣、10% 成長幣</td>
+                </tr>
+                <tr>
+                  <td>2.51 ~ 4</td>
+                  <td>穩健型</td>
+                  <td>40% 主流幣、30% 成長幣、20% 穩定幣、10% 迷因幣</td>
+                </tr>
+                <tr>
+                  <td>4.01 以上</td>
+                  <td>積極型</td>
+                  <td>40% 成長幣、30% 主流幣、20% 迷因幣、10% 其他</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 幣種分類說明 -->
+      <div class="accordion-item" id="more-content">
+        <h2 class="accordion-header" id="headingCoins">
+          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+            data-bs-target="#collapseCoins" aria-expanded="false" aria-controls="collapseCoins">
+            幣種分類說明
+          </button>
+        </h2>
+        <div id="collapseCoins" class="accordion-collapse collapse" aria-labelledby="headingCoins"
+          data-bs-parent="#accordionExample">
+          <div class="accordion-body">
+            <table class="table table-bordered">
+              <thead class="table-light">
+                <tr>
+                  <th>分類</th>
+                  <th>定義</th>
+                  <th>特徵 / 分類依據</th>
+                  <th>用途 / 適合族群</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>穩定幣</td>
+                  <td>價格與法幣掛鉤的加密貨幣</td>
+                  <td>波動低，依法幣錨定</td>
+                  <td>避險、交易媒介、資金停泊；適合降低風險者</td>
+                </tr>
+                <tr>
+                  <td>主流幣</td>
+                  <td>市值高、流動性強的加密貨幣</td>
+                  <td>市值排名靠前、生態成熟</td>
+                  <td>投資核心資產，長期穩健成長</td>
+                </tr>
+                <tr>
+                  <td>成長幣</td>
+                  <td>具有技術創新或應用潛力的幣種</td>
+                  <td>市值中等、技術或生態發展</td>
+                  <td>追求資本增值，中風險中報酬</td>
+                </tr>
+                <tr>
+                  <td>迷因幣</td>
+                  <td>以社群熱度或迷因文化驅動的幣種</td>
+                  <td>缺乏明確應用，價格受社群影響大</td>
+                  <td>高風險短線投機</td>
+                </tr>
+                <tr>
+                  <td>其他</td>
+                  <td>未明確歸類於前四類的幣種</td>
+                  <td>市值小、特殊用途或小眾幣</td>
+                  <td>補充投資、增加多元化，高風險</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function () {
+        const backBtn = document.getElementById("back-button");
+        const page = document.getElementById("page-content");
+
+        backBtn.addEventListener("click", function (e) {
+          e.preventDefault();
+          page.classList.remove("fade-in");
+          page.classList.add("fade-out");
+          setTimeout(() => {
+            window.location.href = backBtn.href;
+          }, 500);
+        });
+      });
+    </script>
+
+    {% endblock %}
