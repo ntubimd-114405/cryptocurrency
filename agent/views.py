@@ -348,16 +348,19 @@ def get_total_analysis():
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from .models import UserAnswer
+from main.models import Coin, CoinCategory, CoinCategoryRelation
+import random
 
 RISK_QUESTIONNAIRE_IDS = [2, 3, 4, 9]
 
+@login_required
 def analysis_result_view(request):
     user = request.user
 
     # ✅ 取得全部分析結果（原 analyze_all_questionnaires）
     total_analysis = get_total_analysis()
 
-    # ✅ 取得使用者的問卷風險分析（原 risk_analysis_view）
+    # ✅ 取得使用者的問卷風險分析
     user_answers = UserAnswer.objects.filter(
         user=user,
         question__questionnaire__id__in=RISK_QUESTIONNAIRE_IDS
@@ -375,19 +378,69 @@ def analysis_result_view(request):
         risk_type = "無法評估"
         suggestion = "請至少填寫第 2、3、4、9 題任一題，才能分析風險屬性。"
         average = None
+        allocation = {}
+        recommended_coins = {}
     else:
         average = total_score / answer_count
+
+        # 🎯 浮動比例插值演算法
+        # 分數區間 0 ~ 5
+        ratio = min(max(average / 5, 0), 1)
+        allocation = {
+            "穩定幣": 0.6 * (1 - ratio),             # 越保守越高
+            "主流幣": 0.3,                            # 主流幣固定中間值
+            "成長幣": 0.1 + 0.3 * ratio,              # 從 0.1 漸漸到 0.4
+            "迷因幣": 0.0 + 0.2 * ratio,              # 從 0 漸漸到 0.2
+            "其他": 0.0 + 0.1 * ratio,                # 從 0 漸漸到 0.1
+        }
+
+        # normalize 確保總和 = 1
+        total = sum(allocation.values())
+        allocation = {k: round(v/total, 2) for k, v in allocation.items()}
+
+        # 根據平均分數判斷風險屬性（保留原本分類）
         if average <= 2.5:
             risk_type = "保守型"
-            suggestion = "建議配置：60% 穩定幣、30% 主流幣、10% 成長幣"
         elif average <= 4:
             risk_type = "穩健型"
-            suggestion = "建議配置：40% 主流幣、30% 成長幣、20% 穩定幣、10% 迷因幣"
         else:
             risk_type = "積極型"
-            suggestion = "建議配置：40% 成長幣、30% 主流幣、20% 迷因幣、10% 小幣"
 
-    # ✅ 最後渲染同一個 analysis_result.html
+        # 🪙 取得幣種推薦（分類 -> 幣種名稱清單）
+        recommended_coins = {}
+        for category_name, ratio_value in allocation.items():
+            try:
+                category = CoinCategory.objects.get(name=category_name)
+                coins_in_category = Coin.objects.filter(
+                    coincategoryrelation__category=category
+                )
+                if coins_in_category.exists():
+                    num_to_pick = max(1, round(10 * ratio_value))
+                    selected = random.sample(
+                        list(coins_in_category),
+                        min(num_to_pick, coins_in_category.count())
+                    )
+                    recommended_coins[category_name] = [coin.coinname for coin in selected]
+                else:
+                    recommended_coins[category_name] = []
+            except CoinCategory.DoesNotExist:
+                recommended_coins[category_name] = []
+
+        # 組建文字建議（百分比）
+        suggestion ="、".join(
+            [f"{int(v*100)}% {k}" for k, v in allocation.items() if v > 0]
+        )
+
+    # 📊 allocation_data 給前端圖表
+    allocation_data = [
+        int(allocation.get("穩定幣", 0) * 100),
+        int(allocation.get("主流幣", 0) * 100),
+        int(allocation.get("成長幣", 0) * 100),
+        int(allocation.get("迷因幣", 0) * 100),
+        int(allocation.get("其他", 0) * 100),
+    ]
+
+    # ✅ 渲染結果
     return render(request, "analysis_result.html", {
         "analysis": total_analysis,
         "total_score": total_score,
@@ -395,7 +448,12 @@ def analysis_result_view(request):
         "risk_type": risk_type,
         "answered_questionnaire_count": len(RISK_QUESTIONNAIRE_IDS),
         "suggestion": suggestion,
+        "recommended_coins": recommended_coins,
+        "allocation_data": allocation_data,
+        "allocation": allocation,
     })
+
+
     
 @login_required
 def analyze_view(request, questionnaire_id):
