@@ -3,33 +3,32 @@
 {% block title %}虛擬貨幣評論區{% endblock %}
 
 {% block content %}
-<h1><a href="{% url 'analyze_sentiment_by_id' article.id %}">重新分析文章情緒</a></h1>
 <div class="container mt-4">
     <!-- 顯示新聞內容 -->
     <div class="row">
         <div class="col-md-8 offset-md-2">
             <h1 class="text-center">{{ article.title }}</h1>
+
+            <p class="text-center mt-3">
+                <a href="{{ article.url }}" target="_blank" class="btn btn-outline-primary">
+                    🔗 前往新聞來源
+                </a>
+            </p>
+
+            {% if article.image_url %}
+                <img class="card-img-top" src="{{ article.image_url }}" alt="新聞圖片" class="img-fluid rounded">
+            {% elif article.website.icon_url %}
+                <a href="{{ article.url }}" target="_blank">
+                    <img src="{{ article.website.icon_url }}" alt="網站 Logo" class="img-fluid rounded">
+                </a>
+            {% else %}
+                <p class="text-center text-muted">無圖片</p>
+            {% endif %}
+
             <div class="content">
                 <div class="accordion" id="accordionExample">
-                    {% for paragraph in paragraphs %}
-                    <div class="accordion-item">
-                        <h2 class="accordion-header" id="heading{{ forloop.counter }}">
-                            <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}"
-                                type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ forloop.counter }}"
-                                aria-expanded="{{ forloop.first|yesno:'true,false' }}"
-                                aria-controls="collapse{{ forloop.counter }}">
-                                文字段落 {{ forloop.counter }}
-                            </button>
-                        </h2>
-                        <div id="collapse{{ forloop.counter }}"
-                            class="accordion-collapse collapse {% if forloop.first %}show{% endif %}"
-                            aria-labelledby="heading{{ forloop.counter }}" data-bs-parent="#accordionExample">
-                            <div class="accordion-body">
-                                {{ paragraph }}
-                            </div>
-                        </div>
-                    </div>
-                    {% endfor %}
+                    <h2 class="text-center">內文</h2>
+                    {{ article.content }}
                 </div>
             </div>
         </div>

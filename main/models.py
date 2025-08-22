@@ -28,6 +28,21 @@ class BitcoinPrice(models.Model):
     def __str__(self):
         return f"{self.coin.coinname} - {self.timestamp}"
     
+class CoinCategory(models.Model):
+    name = models.CharField(max_length=100, unique=True)
+
+    def __str__(self):
+        return self.name
+
+
+class CoinCategoryRelation(models.Model):
+    coin = models.ForeignKey(Coin, on_delete=models.CASCADE)
+    category = models.ForeignKey(CoinCategory, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return f"{self.coin.abbreviation} - {self.category.name}"
+
+    
     
 class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
@@ -111,3 +126,37 @@ class SignIn(models.Model):
         else:
             self.consecutive_sign_in_count = 1  # 重置连续签到为1
         self.save()
+
+# 題目類型選項
+QUESTION_TYPES = [
+    ('text', '開放填答'),
+    ('radio', '單選'),
+    ('checkbox', '複選'),
+    ('rating', '滿意度'),
+    ('select', '下拉選單'),
+]
+
+class FeedbackQuestion(models.Model):
+    text = models.CharField(max_length=255)
+    question_type = models.CharField(max_length=20, choices=QUESTION_TYPES, default='text')
+    required = models.BooleanField(default=True)
+
+    def __str__(self):
+        return self.text
+
+class FeedbackOption(models.Model):
+    question = models.ForeignKey(FeedbackQuestion, on_delete=models.CASCADE, related_name='options')
+    text = models.CharField(max_length=100)
+
+    def __str__(self):
+        return f"{self.question.text} - {self.text}"
+
+class FeedbackAnswer(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="使用者")
+    question = models.ForeignKey(FeedbackQuestion, on_delete=models.CASCADE)
+    answer_text = models.TextField()  # 儲存使用者選的選項或文字
+    submitted_at = models.DateTimeField(auto_now_add=True)
+
+class PageTracker(models.Model):
+    page_name = models.CharField(max_length=100, unique=True)
+    impressions = models.IntegerField(default=0)

@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% block title %}個人風險屬性分析{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <div class="card p-4 shadow">
+    <div class="row">
+      <!-- 左邊區塊：風險屬性＋表格＋推薦幣種 -->
+      <div class="col-lg-8">
+        <h2 class="mb-4">風險屬性評估結果</h2>
+        <p style="font-size: 1.5rem; font-weight: bold;">
+          您的風險屬性為：
+          <span class="text-primary">{{ risk_type }}</span>
+        </p>
+
+        <table class="table table-bordered text-center mb-4">
+          <thead class="table-light">
+            <tr>
+              <th>風險屬性</th>
+              <th>穩定幣</th>
+              <th>主流幣</th>
+              <th>成長幣</th>
+              <th>高風險幣</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr {% if risk_type == "保守型" %} class="table-primary" {% endif %}>
+              <td>保守型</td>
+              <td>60%</td>
+              <td>30%（BTC、ETH）</td>
+              <td>10%（SOL）</td>
+              <td>—</td>
+            </tr>
+            <tr {% if risk_type == "穩健型" %} class="table-primary" {% endif %}>
+              <td>穩健型</td>
+              <td>30%</td>
+              <td>40%</td>
+              <td>20%</td>
+              <td>10%</td>
+            </tr>
+            <tr {% if risk_type == "積極型" %} class="table-primary" {% endif %}>
+              <td>積極型</td>
+              <td>10%</td>
+              <td>30%</td>
+              <td>40%</td>
+              <td>20%</td>
+            </tr>
+            <tr {% if risk_type == "超積極型" %} class="table-primary" {% endif %}>
+              <td>超積極型</td>
+              <td>—</td>
+              <td>20%</td>
+              <td>40%</td>
+              <td>40%（DOGE、PEPE）</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h5 class="mb-3">推薦幣種清單</h5>
+        <div class="row">
+          {% for coin in coins %}
+            <div class="col-md-4">
+              <div class="card mb-3 shadow-sm">
+                <div class="card-body">
+                  <h5 class="card-title">{{ coin.symbol }}</h5>
+                  <p class="card-text">{{ coin.name }}</p>
+                </div>
+              </div>
+            </div>
+          {% empty %}
+            <p>目前無幣種推薦。</p>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- 右邊區塊：圓餅圖 -->
+      <div class="col-lg-4 d-flex flex-column align-items-center justify-content-start mt-4 mt-lg-0">
+        <h5 class="mb-3">建議資產配置圖表</h5>
+        <canvas id="assetChart" style="max-width: 100%;"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Chart.js datalabels 插件 -->
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
+<script>
+  // 1. 註冊插件
+  Chart.register(ChartDataLabels);
+
+  // 2. 分類與資料
+  const riskType = "{{ risk_type }}";
+  let labels = [], data = [];
+
+  if (riskType === "保守型") {
+    labels = ['穩定幣', '主流幣', '成長幣'];
+    data = [60, 30, 10];
+  } else if (riskType === "穩健型") {
+    labels = ['穩定幣', '主流幣', '成長幣', '高風險幣'];
+    data = [30, 40, 20, 10];
+  } else if (riskType === "積極型") {
+    labels = ['穩定幣', '主流幣', '成長幣', '高風險幣'];
+    data = [10, 30, 40, 20];
+  } else if (riskType === "超積極型") {
+    labels = ['主流幣', '成長幣', '高風險幣'];
+    data = [20, 40, 40];
+  }
+
+  // 3. 畫圖
+  const ctx = document.getElementById('assetChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'pie',
+    data: {
+      labels: labels,
+      datasets: [{
+        data: data,
+        backgroundColor: ['#36A2EB', '#4BC0C0', '#FFCE56', '#FF6384'],
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      plugins: {
+        // 4. 顯示文字在圖上
+        datalabels: {
+          color: '#fff',
+          font: {
+            weight: 'bold',
+            size: 14
+          },
+          formatter: (value, context) => {
+            const label = context.chart.data.labels[context.dataIndex];
+            return label + '\n' + value + '%';
+          }
+        },
+        legend: {
+          position: 'bottom'
+        }
+      }
+    },
+    plugins: [ChartDataLabels]
+  });
+</script>
+{% endblock %}

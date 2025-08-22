@@ -39,7 +39,7 @@ def call_free_chatgpt_api(request):
     # ✅ 使用你申請到的 URL 和 API KEY
     url = 'https://free.v36.cm/v1/chat/completions'
     headers = {
-        'Authorization': 'Bearer sk-f1VURcs4pENfXVMwCc1953E5717a4f33A7DcBd2c3133F71c',
+        'Authorization': f'Bearer {api}',
         'Content-Type': 'application/json',
     }
 
@@ -162,7 +162,11 @@ def questionnaire_list(request):
     user = request.user
     questionnaires = Questionnaire.objects.all()
 
+    # ---------- 初始化累加變數 ----------
     data = []
+    total_all_questions = 0
+    total_all_answered = 0
+
     for q in questionnaires:
         # 取得該問卷填寫紀錄 (可能沒有)
         record = UserQuestionnaireRecord.objects.filter(user=user, questionnaire=q).first()
@@ -173,6 +177,10 @@ def questionnaire_list(request):
 
         # 使用者回答該問卷中的多少題
         answered_questions = UserAnswer.objects.filter(user=user, question__in=questions).exclude(selected_options=None).count()
+
+        # 累計所有問卷題目與已回答題目數
+        total_all_questions += total_questions
+        total_all_answered += answered_questions
 
         if total_questions > 0:
             progress = int(answered_questions / total_questions * 100)
@@ -189,13 +197,22 @@ def questionnaire_list(request):
 
         data.append({
             'questionnaire': q,
+            'description': q.description,
             'last_completed': record.completed_at if record else None,
             'status': status,
             'progress': progress,
         })
 
+
+    # ---------- 計算整體完成比例 ----------
+    overall_progress = int(total_all_answered / total_all_questions * 100) if total_all_questions > 0 else 0
+    overall_remaining = 100 - overall_progress
+
+
     return render(request, 'questionnaire_list.html', {
         'data': data,
+        'overall_progress': overall_progress,
+        'overall_remaining': overall_remaining,
     })
 
 # 重新填問卷
@@ -258,7 +275,7 @@ def analyze_user_responses(user, questionnaire, api):
     # 產生 prompt
     prompt_lines = [f"Q: {q}\nA: {a}" for q, a in qa_pairs]
     print(prompt_lines)
-    prompt = "以下是使用者的問卷回答進行分析，最後做個總結：\n\n" + "\n\n".join(prompt_lines)
+    prompt = "不需要以每個題目做出分析，只須要做出總結就可以了：\n\n" + "\n\n".join(prompt_lines)
 
     # 呼叫 v36 API
     try:
@@ -302,7 +319,7 @@ def get_total_analysis():
         analysis_blocks.append(block)
 
     prompt = (
-        "以下是多份問卷的 GPT 分析結果，請根據這些內容進行第二層的彙總分析，列出整體觀察與建議：\n\n"
+        "以下是多份問卷的 GPT 分析結果，請根據這些內容進行第二層的彙總分析，每個項目不要太多字：\n\n"
         + "\n\n".join(analysis_blocks)
     )
 
@@ -328,11 +345,152 @@ def get_total_analysis():
 
     return content
 
-def analyze_all_questionnaires(request):
-    result = get_total_analysis()
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from .models import UserAnswer
+from main.models import Coin, CoinCategory, CoinCategoryRelation
+import random
+
+RISK_QUESTIONNAIRE_IDS = [2, 3, 4, 9]
+
+@login_required
+def analysis_result_view(request):
+    user = request.user
+
+    # ✅ 取得全部分析結果（原 analyze_all_questionnaires）
+    total_analysis = get_total_analysis()
+
+    # ✅ 取得使用者的問卷風險分析
+    user_answers = UserAnswer.objects.filter(
+        user=user,
+        question__questionnaire__id__in=RISK_QUESTIONNAIRE_IDS
+    ).prefetch_related("selected_options")
+
+    total_score = 0
+    answer_count = 0
+
+    for ans in user_answers:
+        for option in ans.selected_options.all():
+            total_score += option.score
+            answer_count += 1
+
+    if answer_count == 0:
+        risk_type = "無法評估"
+        suggestion = "請至少填寫第 2、3、4、9 題任一題，才能分析風險屬性。"
+        average = None
+        allocation = {}
+        recommended_coins = {}
+    else:
+        average = total_score / answer_count
+
+        # 🎯 浮動比例插值演算法
+        # 分數區間 0 ~ 5
+        ratio = min(max(average / 5, 0), 1)
+        allocation = {
+            "穩定幣": 0.6 * (1 - ratio),             # 越保守越高
+            "主流幣": 0.3,                            # 主流幣固定中間值
+            "成長幣": 0.1 + 0.3 * ratio,              # 從 0.1 漸漸到 0.4
+            "迷因幣": 0.0 + 0.2 * ratio,              # 從 0 漸漸到 0.2
+            "其他": 0.0 + 0.1 * ratio,                # 從 0 漸漸到 0.1
+        }
+
+        # normalize 確保總和 = 1
+        total = sum(allocation.values())
+        allocation = {k: round(v/total, 2) for k, v in allocation.items()}
+
+        # 根據平均分數判斷風險屬性（保留原本分類）
+        if average <= 2.5:
+            risk_type = "保守型"
+        elif average <= 4:
+            risk_type = "穩健型"
+        else:
+            risk_type = "積極型"
+
+        # 🪙 取得幣種推薦（分類 -> 幣種名稱清單）
+        recommended_coins = {}
+        for category_name, ratio_value in allocation.items():
+            try:
+                category = CoinCategory.objects.get(name=category_name)
+                coins_in_category = Coin.objects.filter(
+                    coincategoryrelation__category=category
+                )
+                if coins_in_category.exists():
+                    num_to_pick = max(1, round(10 * ratio_value))
+                    selected = random.sample(
+                        list(coins_in_category),
+                        min(num_to_pick, coins_in_category.count())
+                    )
+                    recommended_coins[category_name] = [coin.coinname for coin in selected]
+                else:
+                    recommended_coins[category_name] = []
+            except CoinCategory.DoesNotExist:
+                recommended_coins[category_name] = []
+
+        # 組建文字建議（百分比）
+        suggestion ="、".join(
+            [f"{int(v*100)}% {k}" for k, v in allocation.items() if v > 0]
+        )
+
+    # 📊 allocation_data 給前端圖表
+    allocation_data = [
+        int(allocation.get("穩定幣", 0) * 100),
+        int(allocation.get("主流幣", 0) * 100),
+        int(allocation.get("成長幣", 0) * 100),
+        int(allocation.get("迷因幣", 0) * 100),
+        int(allocation.get("其他", 0) * 100),
+    ]
+    
+    questionnaires = Questionnaire.objects.all()
+    selected_questionnaires = questionnaires.filter(id__in=RISK_QUESTIONNAIRE_IDS)
+
+    selected_progress_list = []  # 存每份問卷的題數和百分比
+    total_questions_all = 0
+    answered_questions_all = 0
+
+    for q in selected_questionnaires:
+        questions = q.questions.all()
+        total_questions = questions.count()
+        answered_questions = UserAnswer.objects.filter(
+            user=user,
+            question__in=questions
+        ).exclude(selected_options=None).count()
+
+        # 個別進度：題數 & 百分比
+        progress_dict = {
+            "answered": answered_questions,
+            "total": total_questions,
+            "percent": int(answered_questions / total_questions * 100) if total_questions > 0 else 0,
+        }
+        selected_progress_list.append(progress_dict)
+
+        # 累加到總進度計算
+        total_questions_all += total_questions
+        answered_questions_all += answered_questions
+
+    # ---------- 總進度 ----------
+    overall_progress = {
+        "answered": answered_questions_all,
+        "total": total_questions_all,
+        "percent": int(answered_questions_all / total_questions_all * 100) if total_questions_all > 0 else 0,
+    }
+
+    # ✅ 渲染結果
     return render(request, "analysis_result.html", {
-        "analysis": result
+        "analysis": total_analysis,
+        "total_score": total_score,
+        "average_score": round(average, 2) if average is not None else None,
+        "risk_type": risk_type,
+        "answered_questionnaire_count": len(RISK_QUESTIONNAIRE_IDS),
+        "suggestion": suggestion,
+        "recommended_coins": recommended_coins,
+        "allocation_data": allocation_data,
+        "allocation": allocation,
+        "overall_progress": overall_progress,
+        "selected_progress_list": selected_progress_list,
     })
+
+
+
     
 @login_required
 def analyze_view(request, questionnaire_id):
@@ -392,3 +550,25 @@ def coin_history_view(request):
         'selected_coin_name': selected_coin.coinname,  # 傳給前端用
         'chart_data': json.dumps(chart_data, cls=DecimalEncoder)
     })
+# agent/views.py
+from django.shortcuts import render
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from agent.knowledge.knowledge_agent import ask_knowledge_agent
+import json
+
+# 前端頁面
+def chat_page(request):
+    return render(request, "chat.html")
+
+# 接收 POST 問題並回覆答案
+@csrf_exempt
+def knowledge_chat_view(request):
+    if request.method == "POST":
+        data = json.loads(request.body)
+        question = data.get("question", "")
+        if not question.strip():
+            return JsonResponse({"answer": "❗請輸入有效的問題"}, status=400)
+        answer = ask_knowledge_agent(question)
+        return JsonResponse({"answer": answer})
+    return JsonResponse({"error": "只接受 POST 請求"}, status=405)

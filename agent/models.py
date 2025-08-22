@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 
 class Questionnaire(models.Model):
     title = models.CharField(max_length=200, verbose_name="問卷名稱")
+    description = models.TextField(verbose_name="問卷簡介", blank=True, null=True)  # 新增欄位
 
     def __str__(self):
         return self.title
@@ -33,6 +34,7 @@ class AnswerOption(models.Model):
     question = models.ForeignKey(Question, on_delete=models.CASCADE, related_name='answer_options', verbose_name="所屬題目")
     content = models.CharField(max_length=200, verbose_name="答案選項")
     order = models.PositiveIntegerField(verbose_name="選項排序")
+    score = models.IntegerField(default=0, verbose_name="風險分數")
 
     def __str__(self):
         return self.content

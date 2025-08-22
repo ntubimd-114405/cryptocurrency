@@ -6,8 +6,11 @@
 {% include 'report/report_download.html' %}  {# PDF 匯出按鈕等 #}
 <form action="{% url 'generate_weekly_report' %}" method="post">
   {% csrf_token %}
-  <button type="submit">重新生成本週報告</button>
+  <input type="hidden" name="year" value="{{ year }}">
+  <input type="hidden" name="week" value="{{ week }}">
+  <button type="submit">重新生成第 {{ week }} 週報告</button>
 </form>
+
 <div id="reportContent">
     <div class="text-block">
         <h1>加密貨幣每週投資報告</h1>

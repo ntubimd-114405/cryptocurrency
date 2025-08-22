@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>AI 加密貨幣助理</title>
+  <style>
+    body { font-family: Arial; background: #f9f9f9; padding: 2rem; }
+    .container {
+      max-width: 600px; margin: auto; background: white;
+      padding: 2rem; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    input, button {
+      font-size: 16px; padding: 0.5rem; margin-top: 1rem;
+    }
+    input { width: 80%; margin-right: 10px; }
+    #answer {
+      margin-top: 1rem; white-space: pre-wrap; background: #eef;
+      padding: 1rem; border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🧠 AI 加密貨幣助理</h2>
+    <p>請輸入你的問題，例如：「什麼是主流幣？」</p>
+    <input type="text" id="question" placeholder="請輸入你的問題">
+    <button onclick="askAgent()">送出</button>
+    <div id="answer"></div>
+  </div>
+
+  <script>
+    function askAgent() {
+      const question = document.getElementById("question").value.trim();
+      if (!question) {
+        document.getElementById("answer").innerText = "❗請輸入問題";
+        return;
+      }
+      document.getElementById("answer").innerText = "⌛ 回覆中...";
+
+      fetch("/agent/ask/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": getCookie("csrftoken")
+        },
+        body: JSON.stringify({ question: question })
+      })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById("answer").innerText = data.answer || "❗ 沒有回應";
+      })
+      .catch(() => {
+        document.getElementById("answer").innerText = "❗ 發生錯誤，請稍後再試";
+      });
+    }
+
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== "") {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === name + "=") {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+  </script>
+</body>
+</html>

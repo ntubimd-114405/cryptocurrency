@@ -2,6 +2,7 @@ from django.urls import path,include
 from . import views
 from django.conf import settings
 from django.conf.urls.static import static
+from .views import track_impression
 
 urlpatterns = [
     path('', views.home, name='home'),  # 將路徑連結到視圖
@@ -16,6 +17,9 @@ urlpatterns = [
     path('favorites/', views.favorite_coins, name='favorite_coins'),
     path('register/', views.register_view, name='register'),
     path('crypto_prices_ajax/', views.crypto_prices_ajax, name='crypto_prices_ajax'),
+    path('feedback/', views.feedback_form_view, name='feedback_form'),
+    path('submit/', views.submit_questionnaire, name='submit_questionnaire'),
+    path('api/track_impression/', track_impression),
 
     # 忘記密碼
     # path('password_reset/', views.CustomPasswordResetView.as_view(), name='password_reset'),
@@ -32,6 +36,7 @@ urlpatterns = [
     
     path('coin-history/<int:coin_id>/', views.coin_history, name='coin_history'),
     path('crypto/<int:coin_id>/', views.crypto_detail, name='crypto_detail'),
+    path('api/chart-data/', views.coin_history_api, name='coin_history_api'),
 
     path('membership/', views.membership_plans, name='membership_plans'), # 會員頁面
     path('upgrade_to_premium/', views.upgrade_to_premium, name='upgrade_to_premium'), #升級會員

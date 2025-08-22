@@ -6,8 +6,8 @@ class WeeklyReport(models.Model):
     year = models.IntegerField()
     week = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
-    #要加開始時間
-    #要加結束時間
+    start_date = models.DateField(null=True, blank=True)
+    end_date = models.DateField(null=True, blank=True)
 
     summary = models.TextField()
     news_summary = models.TextField()

@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {% block title %}{{ questionnaire.title }}{% endblock %}
-
+{% load static %}
 {% block content %}
 <style>
 .font-size-inherit {
@@ -115,8 +115,12 @@
                 (複選題)
             {% endif %}
             </p>
-
-
+            <!-- 圖片 -->
+            {% if question.id == 6 %}
+              <div class="mt-3 text-right">
+                <img src="{% static 'images/map.png' %}" alt="地圖" class="img-fluid" style="max-width: 400px;">
+              </div>
+            {% endif %}
 
             {% if question.question_type == 'single' %}
                 {% for option in question.answer_options.all %}
@@ -152,7 +156,6 @@
       🚀 提交問卷
     </button>
 </div>
-
 </div>
 
 <!-- 字體調整與取消單選功能 -->

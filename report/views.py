@@ -8,6 +8,8 @@ from datetime import date,datetime,timedelta
 import numpy as np
 import pandas as pd
 import ta
+from sklearn.feature_extraction.text import CountVectorizer
+
 from django.utils import timezone
 from django.conf import settings
 from django.shortcuts import render, get_object_or_404,redirect
@@ -15,15 +17,17 @@ from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 from django.utils.timezone import now
 from django.db import IntegrityError
+from django.urls import reverse
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 
 from .models import WeeklyReport
-from main.models import CoinHistory,Coin
+from main.models import CoinHistory,Coin,UserProfile, BitcoinPrice
 from news.models import Article
 from other.models import FinancialData, IndicatorValue, BitcoinMetricData
-
+from agent.models import Questionnaire, Question, AnswerOption, UserAnswer, UserQuestionnaireRecord
 from data_analysis.text_generation.chatgpt_api import call_chatgpt
-
-
+from data_analysis.crypto_ai_agent.news_agent import run_news_agent
 
 def load_price_data_from_db(coin_id, start_date=None, end_date=None):
     queryset = CoinHistory.objects.filter(coin_id=coin_id)
@@ -123,35 +127,43 @@ def add_technical_indicators(df):
 
     return df
 
-def get_recent_articles():
+def get_recent_articles(start, end):
+    # 假設 start 和 end 是 datetime.date 或 datetime.datetime 物件
+    # 如果是日期，轉成 timezone-aware datetime 的區間
+    if isinstance(start, (date,)):
+        start = timezone.make_aware(datetime.combine(start, datetime.min.time()))
+    if isinstance(end, (date,)):
+        end = timezone.make_aware(datetime.combine(end, datetime.max.time()))
 
-    recent_time = timezone.now() - timedelta(days=7)
-    articles = Article.objects.filter(time__gte=recent_time).order_by('-time')[:100]
+    articles = Article.objects.filter(time__gte=start, time__lte=end).order_by('-time')
     return articles
 
-# 詞頻處理（英文）
-def process_word_frequencies(news_text):
-    stop_words = {
-        'from', 'with', 'as', 'in', 'the', 'to', 'and', 'on', 'for', 'of', 'by', 
-        'at', 'is', 'are', 'has', 'have', 'over', 'about', 'amid'
-    }
-    words = re.sub(r'[^\w\s]', '', news_text.lower()).split()
-    words = [word for word in words if word not in stop_words]
-    counter = Counter(words)
 
-    key_words = {
-        'bitcoin': 1.5,
-        'etf': 1.5,
-        'crypto': 1.3,
-        'ethereum': 1.3,
-        'solana': 1.2,
-        'defi': 1.2,
-        'market': 1.1,
-        'inflation': 1.1
-    }
-    word_freqs = [(word, count * key_words.get(word, 1.0)) for word, count in counter.items()]
-    word_freqs = sorted(word_freqs, key=lambda x: x[1], reverse=True)[:30]
-    return word_freqs
+def process_word_frequency_sklearn(news_texts, top_n=30, max_features=1000):
+    stop_words = [
+        'the', 'in', 'to', 'and', 'of', 'on', 'for', 'with', 'at', 'by', 'a', 'an',
+        'is', 'are', 'was', 'were', 'has', 'have', 'it', 'this', 'that', 'as', 'but', 'or', 'if',
+        's', 'u', 'k'  # 額外噪音過濾
+    ]
+    if isinstance(news_texts, str):
+        news_texts = [news_texts]
+    vectorizer = CountVectorizer(
+        stop_words=stop_words,   # 可放預設的 'english' 或自訂停用詞列表
+        max_features=max_features
+        )
+    word_count_matrix = vectorizer.fit_transform(news_texts)
+    feature_names = vectorizer.get_feature_names_out()
+
+    # 合計所有文章的詞頻
+    total_counts = word_count_matrix.sum(axis=0).A1
+
+    # 排序，取前 top_n
+    sorted_indices = total_counts.argsort()[::-1][:top_n]
+    keywords = [(feature_names[i], total_counts[i]) for i in sorted_indices]
+    results = [(word, int(freq)) for word, freq in keywords]
+    return results
+
+
 
 # Decimal 轉 float
 
@@ -196,18 +208,70 @@ def report_list(request):
     user = request.user
     reports = WeeklyReport.objects.filter(user=user).order_by('-year', '-week')
 
+    today = now().date()
+    this_year, this_week, _ = today.isocalendar()
+
+    # 年份範圍：2022到今年
+    year_list = list(range(2022, this_year + 1))
+
+    # 建立一個 dict，key: 年，value: 該年可選週數列表
+    weeks_by_year = {}
+    for year in year_list:
+        if year == this_year:
+            weeks_by_year[year] = list(range(1, this_week + 1))  # 今年限定到本週
+        else:
+            weeks_by_year[year] = list(range(1, 54))  # 其他年份全週
+
     context = {
         'reports': reports,
+        'year_list': year_list,
+        'weeks_by_year': weeks_by_year,
+        'this_year': this_year,
+        'this_week': this_week,
     }
+
     return render(request, 'weekly_report_list.html', context)
+
+
+
+def convert_id_and_newline(text: str) -> str:
+    # 預處理全形符號與大小寫統一
+    text = text.replace('（', '(').replace('）', ')').replace('：', ':')
+    
+    # 定義正則，支援：
+    # - (id:123)、(ID:123)
+    # - id:123、ID:123
+    # - 前面可有可無括號
+    # - 不區分大小寫
+    pattern = r"[\(]?id:(\d+)[\)]?"  # 先做簡單匹配，再做補強
+    regex = re.compile(pattern, flags=re.IGNORECASE)
+
+    def replace_func(match):
+        article_id = match.group(1)
+        try:
+            url = reverse('news_detail', kwargs={'article_id': article_id})
+            return f'<a href="{url}">(id:{article_id})</a>'
+        except:
+            return f"(id:{article_id})"
+
+    # 替換成連結
+    replaced_text = regex.sub(replace_func, text)
+    # 換行處理
+    replaced_text = replaced_text.replace('\n', '<br>')
+
+    return replaced_text
 
 
 @login_required
 def generate_weekly_report(request):
     user = request.user
     today = now().date()
-    year, week, _ = today.isocalendar()
-    start_date = today - timedelta(days=today.weekday())
+    year = int(request.POST.get("year", today.isocalendar()[0]))
+    week = int(request.POST.get("week", today.isocalendar()[1]))
+    print(year,week)
+    # ✅ 根據 year 和 week 計算出 start_date（週一）與 end_date（週日）
+    start_date = date.fromisocalendar(year, week, 1)
+    end_date = start_date + timedelta(days=6)
 
     # 重新計算資料
     coin,df = load_price_data_from_db(1)  # 或 user.id，視你的邏輯
@@ -215,27 +279,26 @@ def generate_weekly_report(request):
 
     ma20_data = decimal_to_float(df['ma20'].tolist())
     ma60_data = decimal_to_float(df['ma60'].tolist())
-
     
+    news_summary = run_news_agent("BTC") #目前寫死
+    news_summary_with_links = convert_id_and_newline(news_summary)
 
-    recent_articles = get_recent_articles()
-    news_text = " ".join([i.title for i in recent_articles])
-    word_freqs = process_word_frequencies(news_text)
+    news_text = "\n".join([
+        " ".join(filter(None, [
+            article.title or "",
+            article.summary or "",
+            article.content or ""
+        ]))
+        for article in get_recent_articles(start_date, end_date)
+    ])
 
-    news_summary = call_chatgpt(
-        system="你是一位專業的財經新聞編輯，擅長撰寫自然流暢的摘要，請用中文回覆，輸出必須是 HTML 格式，且所有新聞標題都需以超連結形式呈現。",
-        text=f"""請將以下新聞標題與網址整理成一段文章摘要，要求：
-    - 使用自然流暢的中文撰寫，不要條列、不要列清單。
-    - 請用一段 HTML <div> 包住全文。
-    - 新聞標題必須用<a href="網址">標題</a> 格式放入，務必用正確的 href 屬性，不要用 url=""。
-    - 不要有除 <div> 與 <a> 以外的額外 HTML 標籤或文字說明。
-
-    以下是新聞清單，請將其轉成符合上述要求的摘要：
-    {str([(i.title, i.url) for i in recent_articles])}
-    """
-    ).strip("```").strip("html")
-
-    
+    word_freqs = process_word_frequency_sklearn(news_text)
+    print(call_chatgpt(
+        system="你是一位專業金融分析師",
+        text=f"""幫我分析以下詞頻內容
+        {word_freqs}
+        """
+    ))
     data = {
         "MA20": list(ma20_data[-7:]),
         "MA60": list(ma60_data[-7:]),
@@ -300,8 +363,10 @@ def generate_weekly_report(request):
         year=year,
         week=week,
         defaults={
+            'start_date': start_date,
+            'end_date': end_date,
             'summary': summary,
-            'news_summary': news_summary,
+            'news_summary': news_summary_with_links,
             'word_frequencies': word_freqs,
             'ma20_data': ma20_data,
             'ma60_data': ma60_data,
@@ -319,6 +384,39 @@ def generate_weekly_report(request):
 
     return redirect('weekly_report_list')  # 重新導向你的週報頁
 
+
+
+
+
+def my_favorite_coins_view(request):
+    # 取得使用者最愛幣種及其最新價格
+    favorite_coins = request.user.profile.favorite_coin.all()
+    latest_prices = {}
+    for coin in favorite_coins:
+        price_obj = BitcoinPrice.objects.filter(coin=coin).order_by('-timestamp').first()
+        if price_obj:
+            latest_prices[coin.id] = price_obj
+
+    watchlist = []
+    for coin in favorite_coins:
+        price = latest_prices.get(coin.id)
+        if price:
+            watchlist.append({
+                'name': coin.coinname,
+                'symbol': coin.abbreviation,
+                'price': f"{price.usd:,.2f}",
+                'change_24h': float(price.change_24h or 0),
+                'market_cap': f"{price.market_cap:,.0f}" if price.market_cap else 'N/A',
+            })
+        else:
+            watchlist.append({
+                'name': coin.coinname,
+                'symbol': coin.abbreviation,
+                'price': 'N/A',
+                'change_24h': 0,
+                'market_cap': 'N/A',
+            })
+    return watchlist
 
 @login_required
 def view_weekly_report_by_id(request, report_id):
@@ -339,6 +437,13 @@ def view_weekly_report_by_id(request, report_id):
         'indicator_data_json': report.indicator_data_json,
         'bitcoin_data_json': report.bitcoin_data_json,
         'long_term_analysis': report.long_term_analysis,
+        'user': report.user,
+        'year': report.year,
+        'week': report.week,
+        'start_date': report.start_date,
+        'end_date': report.end_date,
+        'created_at': report.created_at,
+        'watchlist': my_favorite_coins_view(request),  # <-- 加入這行
     }
 
     # 也可以把共用的 full_month_data 加進 context，如果需要
@@ -347,24 +452,292 @@ def view_weekly_report_by_id(request, report_id):
     return render(request, 'weekly_report.html', context)
 
 
+def parse_coin_from_input(user_input):
+    """
+    用 GPT 解析使用者輸入的幣種。
+    如果沒有提到，預設回傳 'BTC'。
+    """
+    prompt = f"""
+    你是一個專業的加密貨幣助理。
+    使用者會輸入一句話，可能會提到想查的幣種，例如「比特幣、BTC、bitcoin、以太坊、ETH、solana」等。
+    如果有提到幣種，請回傳對應的常用代號（symbol），例如：
+    - 比特幣 → BTC
+    - 以太坊 → ETH
+    - 狗狗幣 → DOGE
+    - Solana → SOL
+    - 其他就回傳最常見的交易所代號
+    
+    如果沒有提到任何幣種，請回傳 "BTC"。
+    
+    使用者輸入：{user_input}
+    
+    請只輸出代號，不要其他文字。
+    """
+
+    result = call_chatgpt("你是一個幣種解析助理", prompt)
+    coin_symbol = result.strip().upper()
+    return coin_symbol if coin_symbol else "BTC"
 
 
-from django.shortcuts import render
-from django.contrib.auth.models import User
-from data_analysis.crypto_ai_agent.qa_agent import create_qa_function
 
-qa = create_qa_function()
+def run_news_agent(user_input, start_date=None, end_date=None):
+    queryset = Article.objects.order_by('-time')
+    if start_date:
+        queryset = queryset.filter(time__date__gte=start_date)
+    if end_date:
+        queryset = queryset.filter(time__date__lte=end_date)
+    latest_news = queryset[:10]
+    news_list = [f"{n.title}（{n.time}）" for n in latest_news]
+    return "📰★新聞模塊\n" + "\n".join(news_list)
 
-def ask_question_view(request):
-    answer = ""
-    question = ""
+from django.db.models import Min, Max, Sum
+from django.db.models import DateField
+from django.db.models.functions import Cast
 
-    if request.method == "POST":
-        question = request.POST.get("question", "")
-        user = User.objects.first()  # 實務上你應用 request.user
-        answer = qa(question, user)
+def parse_safe_date(date_str):
+    """將字串轉成 date，失敗回傳 None"""
+    if not date_str:
+        return None
+    try:
+        return datetime.strptime(date_str, "%Y-%m-%d").date()
+    except Exception:
+        return None
 
-    return render(request, "ask.html", {
-        "question": question,
-        "answer": answer,
-    })
+def run_price_agent(user_input, start_date=None, end_date=None):
+    coin_symbol = parse_coin_from_input(user_input)
+    # 確認幣種存在
+    if not Coin.objects.filter(abbreviation=coin_symbol).exists():
+        return {"text": f"⚠️ 抱歉，系統內沒有找到 {coin_symbol} 的資料。", "extra_data": []}
+
+    qs = CoinHistory.objects.filter(coin__abbreviation=coin_symbol)
+    if not qs.exists():
+        return {"text": f"⚠️ 模組 price 執行失敗：{coin_symbol} 暫無資料", "extra_data": []}
+
+    # 安全轉換傳入日期
+    if start_date:
+        start_date = parse_safe_date(str(start_date))
+    if end_date:
+        end_date = parse_safe_date(str(end_date))
+
+    # 如果沒傳日期或解析失敗 → 用資料庫最新 7 天有資料的日期
+    if start_date is None or end_date is None:
+        latest_days = (
+            qs.annotate(day=Cast("date", output_field=DateField()))
+            .values("day")
+            .distinct()
+            .order_by("-day")[:7]
+        )
+        latest_days = sorted([d["day"] for d in latest_days])
+        if not latest_days:
+            return {"text": f"⚠️ 模組 price 執行失敗：{coin_symbol} 暫無資料", "extra_data": []}
+        start_date = latest_days[0]
+        end_date = latest_days[-1]
+
+    # 聚合查詢
+    queryset = qs.annotate(day=Cast("date", output_field=DateField())) \
+             .filter(day__gte=start_date, day__lte=end_date)
+    daily_range = (
+        queryset.annotate(day=Cast("date", output_field=DateField()))
+        .values("day", "coin__coinname")
+        .annotate(
+            first_time=Min("date"),
+            last_time=Max("date"),
+            high_price=Max("high_price"),
+            low_price=Min("low_price"),
+            volume=Sum("volume"),
+        )
+        .order_by("day")
+    )
+    results = []
+    for d in daily_range:
+        first_record = qs.filter(date=d["first_time"]).first()
+        last_record = qs.filter(date=d["last_time"]).first()
+        results.append({
+            "day": d["day"].strftime("%Y-%m-%d"),
+            "coin": d["coin__coinname"],
+            "open": float(first_record.open_price) if first_record else None,
+            "high": float(d["high_price"]),
+            "low": float(d["low_price"]),
+            "close": float(last_record.close_price) if last_record else None,
+            "volume": float(d["volume"]),
+        })
+
+    if not results:
+        return {"text": f"⚠️ 模組 price 執行失敗：{coin_symbol} 在 {start_date} 至 {end_date} 之間沒有資料", "extra_data": []}
+
+    text_output = "\n".join([
+        f"{d['coin']}：開={d['open']} 高={d['high']} 低={d['low']} 收={d['close']} 量={d['volume']}（{d['day']}）"
+        for d in results
+    ])
+
+    return {"text": f"💰★價格模塊（日級，{coin_symbol}）\n{text_output}", "extra_data": results}
+
+
+
+
+
+
+def run_other_agent(user_input, start_date=None, end_date=None):
+    financial_data = FinancialData.objects.select_related("symbol").order_by("-date")
+    indicator_values = IndicatorValue.objects.select_related("indicator").order_by("-date")
+    btc_metrics = BitcoinMetricData.objects.select_related("metric").order_by("-date")
+
+    if start_date:
+        financial_data = financial_data.filter(date__gte=start_date)
+        indicator_values = indicator_values.filter(date__gte=start_date)
+        btc_metrics = btc_metrics.filter(date__gte=start_date)
+    if end_date:
+        financial_data = financial_data.filter(date__lte=end_date)
+        indicator_values = indicator_values.filter(date__lte=end_date)
+        btc_metrics = btc_metrics.filter(date__lte=end_date)
+
+    lines = ["📊★其他經濟數據模塊"]
+    lines.append("[FinancialData]")
+    lines.extend([f"{x.symbol.symbol} ({x.symbol.name}): 開={x.open_price}, 高={x.high_price}, 低={x.low_price}, 收={x.close_price}, 量={x.volume}（{x.date}）" for x in financial_data[:10]])
+    lines.append("[IndicatorValue]")
+    lines.extend([f"{x.indicator.name}: {x.value}（{x.date}）" for x in indicator_values[:10]])
+    lines.append("[BitcoinMetricData]")
+    lines.extend([f"{x.metric.name}: {x.value}（{x.date}）" for x in btc_metrics[:10]])
+    return "\n".join(lines)
+
+def run_survey_agent(user_input, start_date=None, end_date=None):
+    queryset = UserQuestionnaireRecord.objects.select_related("user", "questionnaire").order_by("-completed_at")
+    if start_date:
+        queryset = queryset.filter(completed_at__date__gte=start_date)
+    if end_date:
+        queryset = queryset.filter(completed_at__date__lte=end_date)
+    latest_records = queryset[:10]
+    records_list = [f"{r.user.username} - 問卷: {r.questionnaire.title}（完成於 {r.completed_at}）" for r in latest_records]
+    return "🧾📢★問卷模塊\n" + "\n".join(records_list)
+
+def parse_date_range_from_input(user_input):
+    """用 GPT 解析使用者輸入的時間範圍，回傳 start_date, end_date"""
+    today_str = datetime.today().strftime("%Y-%m-%d")
+    prompt = f"""
+    你是一個專業的財經助理：
+    使用者輸入以下句子，請判斷他想查詢的時間範圍。
+    如果說「1M」、「本月」、「過去一個月」、「7D」、「今天」等，請回傳開始與結束日期，
+    格式為 YYYY-MM-DD，今天是 {today_str}。
+    如果沒有指定時間，請回傳空值。
+    輸入句子：{user_input}
+    請只用 JSON 格式輸出，例如：{{"start_date": "2025-07-13", "end_date": "2025-08-13"}}
+    """
+    result = call_chatgpt("時間解析助理", prompt)
+    print(user_input, result)
+    try:
+        data = json.loads(result)
+
+        # 把空字串轉成 None
+        start_date = data.get("start_date") or None
+        end_date = data.get("end_date") or None
+
+        return start_date, end_date
+    except:
+        return None, None
+    
+
+@csrf_exempt
+def classify_question_api(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "Only POST allowed"}, status=405)
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    user_input = data.get("user_input", "").strip()
+    selected_modules = data.get("selected_modules", [])
+
+    # ------------------------
+    # GPT 分類器
+    # ------------------------
+    classification_prompt = f"""
+    你是一個分類器，幫我判斷下列句子可能屬於哪些類別：
+    新聞（news）、價格（price）、其他經濟數據（other）、問卷（questionnaire）。
+    可以有多個，請以逗號分隔；如果都不屬於，請回傳 ()。
+    輸入句子：{user_input}
+    請只輸出分類結果（如：news, price）
+    """
+    result = call_chatgpt("你是一個精準的分類器", classification_prompt)
+    classifications = [c.strip().lower() for c in result.split(",") if c.strip()]
+    combined = list(set(selected_modules + classifications))
+
+    # ------------------------
+    # 解析使用者時間範圍
+    # ------------------------
+    start_date, end_date = parse_date_range_from_input(user_input)
+
+    # ------------------------
+    # 模組映射
+    # ------------------------
+    module_map = {
+        #"news": run_news_agent,
+        "price": run_price_agent,
+        #"other": run_other_agent,
+        #"questionnaire": run_survey_agent
+    }
+
+    # ------------------------
+    # 統一儲存格式：列表 dict
+    # ------------------------
+    final_answers = []
+
+    for module_name in combined:
+        if module_name in module_map:
+            #try:
+            answer = module_map[module_name](user_input, start_date, end_date)
+            # 如果模組回傳 dict，拆成 text + chart_data + extra_data
+            if isinstance(answer, dict):
+                final_answers.append({
+                    "module": module_name,
+                    "text": answer.get("text", ""),
+                    "data": answer.get("extra_data", [])
+                })
+            else:
+                # 單純文字模組
+                final_answers.append({
+                    "module": module_name,
+                    "text": str(answer),
+                    "data": []
+                })
+            '''
+            except Exception as e:
+                final_answers.append({
+                    "module": module_name,
+                    "text": f"⚠️ 模組 {module_name} 執行失敗：{str(e)}",
+                    "data": []
+                })'''
+    if not final_answers:
+        final_answers.append({
+            "module": "none",
+            "text": "抱歉，我無法辨識您的問題類型或您未選擇相關模組。",
+            "data": []
+        })
+
+    # ------------------------
+    # 可選整合文字（GPT）
+    # ------------------------
+    integrated_summary = ""
+    try:
+        integration_prompt = f"""
+        使用者問題：{user_input}
+        以下是多個不同來源的模塊輸出，請幫我整合成一段自然語言的回覆，
+        保留重要數據與事件，邏輯清晰，適合直接回覆使用者：
+        {chr(10).join([f['text'] for f in final_answers])}
+        """
+        # integrated_summary = call_chatgpt("你是一個專業的資訊整合助理", integration_prompt)
+    except Exception as e:
+        integrated_summary = f"⚠️ 整合失敗：{str(e)}"
+
+    return JsonResponse({
+        "classifications": combined,
+        "final_answers": final_answers,
+        "integrated_summary": integrated_summary
+    }, json_dumps_params={"ensure_ascii": False})
+
+
+
+
+def chat_view(request):
+    return render(request, "chat2.html")

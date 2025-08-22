@@ -19,6 +19,10 @@
         </td>
         <td class="p-2">${{ coin.market_cap }}</td>
       </tr>
+      {% empty %}
+      <tr>
+        <td colspan="4" class="text-center p-2">尚無追蹤幣種</td>
+      </tr>
       {% endfor %}
     </tbody>
   </table>
