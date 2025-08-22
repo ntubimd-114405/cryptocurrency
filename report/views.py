@@ -147,11 +147,10 @@ def process_word_frequency_sklearn(news_texts, top_n=30, max_features=1000):
     ]
     if isinstance(news_texts, str):
         news_texts = [news_texts]
-
     vectorizer = CountVectorizer(
         stop_words=stop_words,   # 可放預設的 'english' 或自訂停用詞列表
         max_features=max_features
-    )
+        )
     word_count_matrix = vectorizer.fit_transform(news_texts)
     feature_names = vectorizer.get_feature_names_out()
 
@@ -452,6 +451,35 @@ def view_weekly_report_by_id(request, report_id):
 
     return render(request, 'weekly_report.html', context)
 
+
+def parse_coin_from_input(user_input):
+    """
+    用 GPT 解析使用者輸入的幣種。
+    如果沒有提到，預設回傳 'BTC'。
+    """
+    prompt = f"""
+    你是一個專業的加密貨幣助理。
+    使用者會輸入一句話，可能會提到想查的幣種，例如「比特幣、BTC、bitcoin、以太坊、ETH、solana」等。
+    如果有提到幣種，請回傳對應的常用代號（symbol），例如：
+    - 比特幣 → BTC
+    - 以太坊 → ETH
+    - 狗狗幣 → DOGE
+    - Solana → SOL
+    - 其他就回傳最常見的交易所代號
+    
+    如果沒有提到任何幣種，請回傳 "BTC"。
+    
+    使用者輸入：{user_input}
+    
+    請只輸出代號，不要其他文字。
+    """
+
+    result = call_chatgpt("你是一個幣種解析助理", prompt)
+    coin_symbol = result.strip().upper()
+    return coin_symbol if coin_symbol else "BTC"
+
+
+
 def run_news_agent(user_input, start_date=None, end_date=None):
     queryset = Article.objects.order_by('-time')
     if start_date:
@@ -462,15 +490,92 @@ def run_news_agent(user_input, start_date=None, end_date=None):
     news_list = [f"{n.title}（{n.time}）" for n in latest_news]
     return "📰★新聞模塊\n" + "\n".join(news_list)
 
+from django.db.models import Min, Max, Sum
+from django.db.models import DateField
+from django.db.models.functions import Cast
+
+def parse_safe_date(date_str):
+    """將字串轉成 date，失敗回傳 None"""
+    if not date_str:
+        return None
+    try:
+        return datetime.strptime(date_str, "%Y-%m-%d").date()
+    except Exception:
+        return None
+
 def run_price_agent(user_input, start_date=None, end_date=None):
-    queryset = CoinHistory.objects.order_by('-date')
+    coin_symbol = parse_coin_from_input(user_input)
+    # 確認幣種存在
+    if not Coin.objects.filter(abbreviation=coin_symbol).exists():
+        return {"text": f"⚠️ 抱歉，系統內沒有找到 {coin_symbol} 的資料。", "extra_data": []}
+
+    qs = CoinHistory.objects.filter(coin__abbreviation=coin_symbol)
+    if not qs.exists():
+        return {"text": f"⚠️ 模組 price 執行失敗：{coin_symbol} 暫無資料", "extra_data": []}
+
+    # 安全轉換傳入日期
     if start_date:
-        queryset = queryset.filter(date__gte=start_date)
+        start_date = parse_safe_date(str(start_date))
     if end_date:
-        queryset = queryset.filter(date__lte=end_date)
-    latest_prices = queryset[:10]
-    price_list = [f"{p.coin.coinname}：{p.close_price}（{p.date}）" for p in latest_prices]
-    return "💰★價格模塊\n" + "\n".join(price_list)
+        end_date = parse_safe_date(str(end_date))
+
+    # 如果沒傳日期或解析失敗 → 用資料庫最新 7 天有資料的日期
+    if start_date is None or end_date is None:
+        latest_days = (
+            qs.annotate(day=Cast("date", output_field=DateField()))
+            .values("day")
+            .distinct()
+            .order_by("-day")[:7]
+        )
+        latest_days = sorted([d["day"] for d in latest_days])
+        if not latest_days:
+            return {"text": f"⚠️ 模組 price 執行失敗：{coin_symbol} 暫無資料", "extra_data": []}
+        start_date = latest_days[0]
+        end_date = latest_days[-1]
+
+    # 聚合查詢
+    queryset = qs.annotate(day=Cast("date", output_field=DateField())) \
+             .filter(day__gte=start_date, day__lte=end_date)
+    daily_range = (
+        queryset.annotate(day=Cast("date", output_field=DateField()))
+        .values("day", "coin__coinname")
+        .annotate(
+            first_time=Min("date"),
+            last_time=Max("date"),
+            high_price=Max("high_price"),
+            low_price=Min("low_price"),
+            volume=Sum("volume"),
+        )
+        .order_by("day")
+    )
+    results = []
+    for d in daily_range:
+        first_record = qs.filter(date=d["first_time"]).first()
+        last_record = qs.filter(date=d["last_time"]).first()
+        results.append({
+            "day": d["day"].strftime("%Y-%m-%d"),
+            "coin": d["coin__coinname"],
+            "open": float(first_record.open_price) if first_record else None,
+            "high": float(d["high_price"]),
+            "low": float(d["low_price"]),
+            "close": float(last_record.close_price) if last_record else None,
+            "volume": float(d["volume"]),
+        })
+
+    if not results:
+        return {"text": f"⚠️ 模組 price 執行失敗：{coin_symbol} 在 {start_date} 至 {end_date} 之間沒有資料", "extra_data": []}
+
+    text_output = "\n".join([
+        f"{d['coin']}：開={d['open']} 高={d['high']} 低={d['low']} 收={d['close']} 量={d['volume']}（{d['day']}）"
+        for d in results
+    ])
+
+    return {"text": f"💰★價格模塊（日級，{coin_symbol}）\n{text_output}", "extra_data": results}
+
+
+
+
+
 
 def run_other_agent(user_input, start_date=None, end_date=None):
     financial_data = FinancialData.objects.select_related("symbol").order_by("-date")
@@ -518,65 +623,112 @@ def parse_date_range_from_input(user_input):
     請只用 JSON 格式輸出，例如：{{"start_date": "2025-07-13", "end_date": "2025-08-13"}}
     """
     result = call_chatgpt("時間解析助理", prompt)
-    print(user_input,result)
+    print(user_input, result)
     try:
         data = json.loads(result)
-        return data.get("start_date"), data.get("end_date")
+
+        # 把空字串轉成 None
+        start_date = data.get("start_date") or None
+        end_date = data.get("end_date") or None
+
+        return start_date, end_date
     except:
         return None, None
     
 
 @csrf_exempt
 def classify_question_api(request):
-    classifications = []
+    if request.method != "POST":
+        return JsonResponse({"error": "Only POST allowed"}, status=405)
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    user_input = data.get("user_input", "").strip()
+    selected_modules = data.get("selected_modules", [])
+
+    # ------------------------
+    # GPT 分類器
+    # ------------------------
+    classification_prompt = f"""
+    你是一個分類器，幫我判斷下列句子可能屬於哪些類別：
+    新聞（news）、價格（price）、其他經濟數據（other）、問卷（questionnaire）。
+    可以有多個，請以逗號分隔；如果都不屬於，請回傳 ()。
+    輸入句子：{user_input}
+    請只輸出分類結果（如：news, price）
+    """
+    result = call_chatgpt("你是一個精準的分類器", classification_prompt)
+    classifications = [c.strip().lower() for c in result.split(",") if c.strip()]
+    combined = list(set(selected_modules + classifications))
+
+    # ------------------------
+    # 解析使用者時間範圍
+    # ------------------------
+    start_date, end_date = parse_date_range_from_input(user_input)
+
+    # ------------------------
+    # 模組映射
+    # ------------------------
+    module_map = {
+        #"news": run_news_agent,
+        "price": run_price_agent,
+        #"other": run_other_agent,
+        #"questionnaire": run_survey_agent
+    }
+
+    # ------------------------
+    # 統一儲存格式：列表 dict
+    # ------------------------
     final_answers = []
+
+    for module_name in combined:
+        if module_name in module_map:
+            #try:
+            answer = module_map[module_name](user_input, start_date, end_date)
+            # 如果模組回傳 dict，拆成 text + chart_data + extra_data
+            if isinstance(answer, dict):
+                final_answers.append({
+                    "module": module_name,
+                    "text": answer.get("text", ""),
+                    "data": answer.get("extra_data", [])
+                })
+            else:
+                # 單純文字模組
+                final_answers.append({
+                    "module": module_name,
+                    "text": str(answer),
+                    "data": []
+                })
+            '''
+            except Exception as e:
+                final_answers.append({
+                    "module": module_name,
+                    "text": f"⚠️ 模組 {module_name} 執行失敗：{str(e)}",
+                    "data": []
+                })'''
+    if not final_answers:
+        final_answers.append({
+            "module": "none",
+            "text": "抱歉，我無法辨識您的問題類型或您未選擇相關模組。",
+            "data": []
+        })
+
+    # ------------------------
+    # 可選整合文字（GPT）
+    # ------------------------
     integrated_summary = ""
-
-    if request.method == "POST":
-        try:
-            data = json.loads(request.body)
-        except json.JSONDecodeError:
-            return JsonResponse({"error": "Invalid JSON"}, status=400)
-
-        user_input = data.get("user_input", "")
-        selected_modules = data.get("selected_modules", [])
-
-        # 分類 GPT
-        classification_prompt = f"""
-        你是一個分類器，幫我判斷下列句子可能屬於哪些類別：
-        新聞（news）、價格（price）、其他經濟數據（other）、問卷（questionnaire）。
-        可以有多個，請以逗號分隔；如果都不屬於，請回傳 ()。
-        輸入句子：{user_input}
-        請只輸出分類結果（如：news, price）
+    try:
+        integration_prompt = f"""
+        使用者問題：{user_input}
+        以下是多個不同來源的模塊輸出，請幫我整合成一段自然語言的回覆，
+        保留重要數據與事件，邏輯清晰，適合直接回覆使用者：
+        {chr(10).join([f['text'] for f in final_answers])}
         """
-        result = call_chatgpt("你是一個精準的分類器", classification_prompt)
-        classifications = [c.strip().lower() for c in result.split(",")]
-        combined = list(set(selected_modules + classifications))
-
-        # 解析使用者想查詢的時間
-        start_date, end_date = parse_date_range_from_input(user_input)
-
-        module_map = {
-            "news": run_news_agent,
-            "price": run_price_agent,
-            "other": run_other_agent,
-            "questionnaire": run_survey_agent
-        }
-
-        for module_name in combined:
-            if module_name in module_map:
-                final_answers.append(module_map[module_name](user_input, start_date, end_date))
-
-        if not final_answers:
-            final_answers.append("抱歉，我無法辨識您的問題類型或您未選擇相關模組。")
-        else:
-            integration_prompt = f"""
-            使用者問題：{user_input}
-            以下是多個不同來源的模塊輸出，請幫我整合成一段自然語言的回覆，
-            保留重要數據與事件，邏輯清晰，適合直接回覆使用者：
-            {chr(10).join(final_answers)}
-            """
-            integrated_summary = call_chatgpt("你是一個專業的資訊整合助理", integration_prompt)
+        # integrated_summary = call_chatgpt("你是一個專業的資訊整合助理", integration_prompt)
+    except Exception as e:
+        integrated_summary = f"⚠️ 整合失敗：{str(e)}"
 
     return JsonResponse({
         "classifications": combined,
@@ -589,96 +741,3 @@ def classify_question_api(request):
 
 def chat_view(request):
     return render(request, "chat2.html")
-'''
-def classify_question(request):
-    classifications = []
-    final_answers = []
-    integrated_summary = ""
-
-    if request.method == "POST":
-        user_input = request.POST.get("user_input", "")
-
-        # GPT Prompt 分類
-        prompt = f"""
-        你是一個分類器，幫我判斷下列句子可能屬於哪些類別：
-        新聞（news）、價格（price）、其他經濟數據（other）、問卷（questionnaire）。
-        可以有多個，請以逗號分隔；如果都不屬於，請回傳 unknown。
-        輸入句子：{user_input}
-        請只輸出分類結果（如：news, price）
-        """
-        
-        result = call_chatgpt("你是一個精準的分類器", prompt)
-        classifications = [c.strip().lower() for c in result.split(",")]
-        print(result, classifications)
-        # 模組對應表
-        module_map = {
-            "news": run_news_agent,
-            "price": run_price_agent,
-            "other": run_other_agent,
-            "questionnaire": run_survey_agent
-        }
-
-        # 呼叫對應模塊
-        for c in classifications:
-            if c in module_map:
-                final_answers.append(module_map[c](user_input))
-
-        # 如果全都不匹配
-        if not final_answers:
-            final_answers.append("抱歉，我無法辨識您的問題類型。")
-        else:
-            # 交給 GPT 做整合輸出
-            integration_prompt = f"""
-            使用者問題{user_input}
-            以下是多個不同來源的模塊輸出，請幫我整合成一段自然語言的回覆，
-            保留重要數據與事件，邏輯清晰，適合直接回覆使用者：
-            {chr(10).join(final_answers)}
-            """
-            integrated_summary = call_chatgpt("你是一個專業的資訊整合助理", integration_prompt)
-
-    return render(request, "classify_question.html", {
-        "classifications": classifications,
-        "final_answers": final_answers,
-        "integrated_summary": integrated_summary
-    })
-
-
-
-def classify_question2(request):
-    final_answers = []
-    integrated_summary = ""
-    selected_modules = []
-
-    module_map = {
-        "news": run_news_agent,
-        "price": run_price_agent,
-        "other": run_other_agent,
-        "questionnaire": run_survey_agent
-    }
-
-    if request.method == "POST":
-        user_input = request.POST.get("user_input", "")
-        selected_modules = request.POST.getlist("modules")  # 接收多選框列表
-
-        for m in selected_modules:
-            if m in module_map:
-                final_answers.append(module_map[m](user_input))
-
-        if not final_answers:
-            final_answers.append("請選擇至少一個模塊。")
-        else:
-            integration_prompt = f"""
-            使用者問題{user_input}
-            以下是多個不同來源的模塊輸出，請幫我整合成一段自然語言的回覆，
-            保留重要數據與事件，邏輯清晰，適合直接回覆使用者：
-            {chr(10).join(final_answers)}
-            """
-            integrated_summary = call_chatgpt("你是一個專業的資訊整合助理", integration_prompt)
-
-    return render(request, "classify_question2.html", {
-        "final_answers": final_answers,
-        "integrated_summary": integrated_summary,
-        "selected_modules": selected_modules,
-        "user_input": user_input if request.method == "POST" else ""
-    })
-    '''
