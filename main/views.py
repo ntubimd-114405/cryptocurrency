@@ -684,3 +684,70 @@ def guanggao_shenfen_queren(request):
 
     # 返回渲染頁面並傳遞 ad_show 變數
     return render(request, 'home.html', {'ad_show': ad_show})
+
+
+from django.shortcuts import render
+from django.db.models import OuterRef, Subquery
+from .models import Coin, BitcoinPrice
+
+def favorite_coins(request):
+    if not request.user.is_authenticated:
+        return render(request, 'favorites.html', {'favorite_cryptos': []})
+
+    # 取最新價格資料
+    latest_price = BitcoinPrice.objects.filter(
+        coin=OuterRef('pk')
+    ).order_by('-timestamp')
+
+    # 注入最新價格欄位
+    favorite_cryptos = request.user.profile.favorite_coin.annotate(
+        usd_display=Subquery(latest_price.values('usd')[:1]),
+        market_cap_display=Subquery(latest_price.values('market_cap')[:1]),
+        volume_24h_display=Subquery(latest_price.values('volume_24h')[:1]),
+        change_24h=Subquery(latest_price.values('change_24h')[:1])
+    )
+
+    return render(request, 'favorite_coins.html', {
+        'favorite_cryptos': favorite_cryptos
+    })
+
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from main.models import UserProfile, BitcoinPrice, Coin
+
+@login_required
+def favorite_coins(request):
+    # 取得使用者收藏的幣種
+    profile = request.user.profile
+    favorite_coins = profile.favorite_coin.all()
+
+    favorite_cryptos = []
+    for coin in favorite_coins:
+        # 取得最新價格資料
+        latest_price = BitcoinPrice.objects.filter(coin=coin).order_by('-timestamp').first()
+        if latest_price:
+            favorite_cryptos.append({
+                'id': coin.id,
+                'coinname': coin.coinname,
+                'logo_url': coin.logo_url,
+                'usd_display': "{:,.2f}".format(latest_price.usd),
+                'market_cap_display': "{:,.2f}".format(latest_price.market_cap or 0),
+                'volume_24h_display': "{:,.2f}".format(latest_price.volume_24h or 0),
+                'change_24h': latest_price.change_24h or 0,
+            })
+        else:
+            # 沒有價格資料時填 0
+            favorite_cryptos.append({
+                'id': coin.id,
+                'coinname': coin.coinname,
+                'logo_url': coin.logo_url,
+                'usd_display': "0.00",
+                'market_cap_display': "0.00",
+                'volume_24h_display': "0.00",
+                'change_24h': 0,
+            })
+
+    context = {
+        'favorite_cryptos': favorite_cryptos,
+    }
+    return render(request, 'favorite_coins.html', context)
