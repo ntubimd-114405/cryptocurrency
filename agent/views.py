@@ -162,9 +162,11 @@ def questionnaire_list(request):
     user = request.user
     questionnaires = Questionnaire.objects.all()
 
+    # ---------- 初始化累加變數 ----------
     data = []
     total_all_questions = 0
     total_all_answered = 0
+
     for q in questionnaires:
         # 取得該問卷填寫紀錄 (可能沒有)
         record = UserQuestionnaireRecord.objects.filter(user=user, questionnaire=q).first()
@@ -201,13 +203,11 @@ def questionnaire_list(request):
             'progress': progress,
         })
 
-        # 計算整體完成比例
-        if total_all_questions > 0:
-            overall_progress = int(total_all_answered / total_all_questions * 100)
-        else:
-            overall_progress = 0
 
-        overall_remaining = 100 - overall_progress
+    # ---------- 計算整體完成比例 ----------
+    overall_progress = int(total_all_answered / total_all_questions * 100) if total_all_questions > 0 else 0
+    overall_remaining = 100 - overall_progress
+
 
     return render(request, 'questionnaire_list.html', {
         'data': data,
@@ -439,6 +439,40 @@ def analysis_result_view(request):
         int(allocation.get("迷因幣", 0) * 100),
         int(allocation.get("其他", 0) * 100),
     ]
+    
+    questionnaires = Questionnaire.objects.all()
+    selected_questionnaires = questionnaires.filter(id__in=RISK_QUESTIONNAIRE_IDS)
+
+    selected_progress_list = []  # 存每份問卷的題數和百分比
+    total_questions_all = 0
+    answered_questions_all = 0
+
+    for q in selected_questionnaires:
+        questions = q.questions.all()
+        total_questions = questions.count()
+        answered_questions = UserAnswer.objects.filter(
+            user=user,
+            question__in=questions
+        ).exclude(selected_options=None).count()
+
+        # 個別進度：題數 & 百分比
+        progress_dict = {
+            "answered": answered_questions,
+            "total": total_questions,
+            "percent": int(answered_questions / total_questions * 100) if total_questions > 0 else 0,
+        }
+        selected_progress_list.append(progress_dict)
+
+        # 累加到總進度計算
+        total_questions_all += total_questions
+        answered_questions_all += answered_questions
+
+    # ---------- 總進度 ----------
+    overall_progress = {
+        "answered": answered_questions_all,
+        "total": total_questions_all,
+        "percent": int(answered_questions_all / total_questions_all * 100) if total_questions_all > 0 else 0,
+    }
 
     # ✅ 渲染結果
     return render(request, "analysis_result.html", {
@@ -451,7 +485,10 @@ def analysis_result_view(request):
         "recommended_coins": recommended_coins,
         "allocation_data": allocation_data,
         "allocation": allocation,
+        "overall_progress": overall_progress,
+        "selected_progress_list": selected_progress_list,
     })
+
 
 
     
