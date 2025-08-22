@@ -688,3 +688,168 @@ def guanggao_shenfen_queren(request):
 
     # 返回渲染頁面並傳遞 ad_show 變數
     return render(request, 'home.html', {'ad_show': ad_show})
+
+from django.shortcuts import render
+from django.db.models import OuterRef, Subquery
+from .models import Coin, BitcoinPrice
+
+def favorite_coins(request):
+    if not request.user.is_authenticated:
+        return render(request, 'favorites.html', {'favorite_cryptos': []})
+
+    # 取最新價格資料
+    latest_price = BitcoinPrice.objects.filter(
+        coin=OuterRef('pk')
+    ).order_by('-timestamp')
+
+    # 注入最新價格欄位
+    favorite_cryptos = request.user.profile.favorite_coin.annotate(
+        usd_display=Subquery(latest_price.values('usd')[:1]),
+        market_cap_display=Subquery(latest_price.values('market_cap')[:1]),
+        volume_24h_display=Subquery(latest_price.values('volume_24h')[:1]),
+        change_24h=Subquery(latest_price.values('change_24h')[:1])
+    )
+
+    return render(request, 'favorite_coins.html', {
+        'favorite_cryptos': favorite_cryptos
+    })
+
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from main.models import UserProfile, BitcoinPrice, Coin
+
+@login_required
+def favorite_coins(request):
+    # 取得使用者收藏的幣種
+    profile = request.user.profile
+    favorite_coins = profile.favorite_coin.all()
+
+    favorite_cryptos = []
+    for coin in favorite_coins:
+        # 取得最新價格資料
+        latest_price = BitcoinPrice.objects.filter(coin=coin).order_by('-timestamp').first()
+        if latest_price:
+            favorite_cryptos.append({
+                'id': coin.id,
+                'coinname': coin.coinname,
+                'logo_url': coin.logo_url,
+                'usd_display': "{:,.2f}".format(latest_price.usd),
+                'market_cap_display': "{:,.2f}".format(latest_price.market_cap or 0),
+                'volume_24h_display': "{:,.2f}".format(latest_price.volume_24h or 0),
+                'change_24h': latest_price.change_24h or 0,
+            })
+        else:
+            # 沒有價格資料時填 0
+            favorite_cryptos.append({
+                'id': coin.id,
+                'coinname': coin.coinname,
+                'logo_url': coin.logo_url,
+                'usd_display': "0.00",
+                'market_cap_display': "0.00",
+                'volume_24h_display': "0.00",
+                'change_24h': 0,
+            })
+
+    context = {
+        'favorite_cryptos': favorite_cryptos,
+    }
+    return render(request, 'favorite_coins.html', context)
+
+@login_required
+def feedback_form_view(request):
+    questions = FeedbackQuestion.objects.prefetch_related('options').all()
+    return render(request, 'feedback_form.html', {'questions': questions})
+
+@login_required
+def submit_questionnaire(request):
+    print("收到 POST：", request.POST)
+    if request.method == "POST":
+        user = request.user
+
+        for key in request.POST:
+            if key.startswith("question_"):
+                question_id = key.split("_")[1]
+                try:
+                    question = FeedbackQuestion.objects.get(pk=question_id)
+                except FeedbackQuestion.DoesNotExist:
+                    continue
+
+                if question.question_type == "checkbox":
+                    # 多選題：取得所有選項值
+                    answers = request.POST.getlist(key)
+                    for ans in answers:
+                        FeedbackAnswer.objects.create(
+                            user=user,
+                            question=question,
+                            answer_text=ans,
+                            submitted_at=now()
+                        )
+                else:
+                    # 單選 / 滿意度 / 下拉選單 / 開放填答
+                    answer = request.POST.get(key)
+                    print(f"儲存：user={user}, question={question.id}, answer={answer}")
+                    if answer:
+                        FeedbackAnswer.objects.create(
+                            user=user,
+                            question=question,
+                            answer_text=answer,
+                            submitted_at=now()
+                        )
+
+        return redirect('/')
+
+@csrf_exempt
+def track_impression(request):
+    data = json.loads(request.body)
+    page = data.get("page", "/")
+    tracker, _ = PageTracker.objects.get_or_create(page_name=page)
+    tracker.impressions += 1
+    tracker.save()
+    return JsonResponse({'status': 'ok'})
+
+class DecimalEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, Decimal):
+            return float(obj)
+        return super().default(obj)
+
+def coin_history_api(request):
+    coin_id = request.GET.get('coin_id')
+    if not coin_id:
+        return JsonResponse({'error': '缺少 coin_id 參數'}, status=400)
+
+    try:
+        selected_coin = Coin.objects.get(id=coin_id)
+    except Coin.DoesNotExist:
+        return JsonResponse({'error': '查無此幣種'}, status=404)
+
+    thirty_days_ago = timezone.now().date() - timedelta(days=60)
+
+    queryset = (
+        CoinHistory.objects
+        .filter(coin_id=coin_id, date__gte=thirty_days_ago)
+        .select_related('coin')
+        .order_by('date')
+    )
+
+    df = pd.DataFrame.from_records(queryset.values('date', 'close_price'))
+
+    if df.empty:
+        return JsonResponse({'error': '此時間區間無資料'}, status=204)
+
+    df['date'] = pd.to_datetime(df['date'])
+    df = df.sort_values('date')
+
+    df['ema20'] = ta.trend.EMAIndicator(close=df['close_price'], window=20).ema_indicator()
+    df['rsi'] = ta.momentum.RSIIndicator(close=df['close_price'], window=14).rsi()
+    df = df.dropna(subset=['ema20', 'rsi'])
+
+    chart_data = {
+        'selected_coin_name': selected_coin.coinname,
+        'dates': df['date'].dt.strftime('%Y-%m-%d').tolist(),
+        'close': df['close_price'].tolist(),
+        'ema20': df['ema20'].round(2).tolist(),
+        'rsi': df['rsi'].round(2).tolist(),
+    }
+
+    return JsonResponse(chart_data, encoder=DecimalEncoder, safe=False)
