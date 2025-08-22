@@ -10,26 +10,26 @@
 <h1>問卷首頁</h1>
 
 <div class="modal-body" id="floatingTextContent">
-  <!-- JS 會把內容插進來 -->
+    <!-- JS 會把內容插進來 -->
 </div>
 <div id="floatingTextTarget" class="container mt-4" style="display: none;"></div>
 
 <div style="display: flex; gap: 10px;">
-  <div style="width: 250px; height: 250px;">
-    <h4>進度完成比例</h4>  
-    <canvas id="completionChart"></canvas>
-  </div>
-  <div style="width: 250px; height: 250px;"></div>
-  <div style="width: 250px; height: 250px;">
-    <h4>ChatGpt總分析報告</h4>
-    <button class="analysis">
-        <span>
-            <a href="{% url 'agent:analysis_result_view' %}" style = "color: #fff;">
-                執行總分析
-            </a>      
-        </span>  
-    </button>
-  </div>
+    <div style="width: 250px; height: 250px;">
+        <h4>進度完成比例</h4>
+        <canvas id="completionChart"></canvas>
+    </div>
+    <div style="width: 250px; height: 250px;"></div>
+    <div style="width: 250px; height: 250px;">
+        <h4>ChatGpt總分析報告</h4>
+        <button class="analysis">
+            <span>
+                <a href="{% url 'agent:analysis_result_view' %}" style="color: #fff;">
+                    執行總分析
+                </a>
+            </span>
+        </button>
+    </div>
 </div>
 
 
@@ -37,21 +37,25 @@
 
 <!-- 🔹 總分析按鈕區塊 -->
 
-<button class = "analysis">
+<button class="analysis">
     <span>
-        <a href="{% url 'agent:history' %}" style = "color: #fff;">
+        <a href="{% url 'agent:history' %}" style="color: #fff;">
             報表
         </a>
-    </span> 
+    </span>
+    
 </button>
 
+<h2>問卷完成長條圖</h2>
+
+<!-- Canvas -->
 <table class="table table-bordered align-middle text-center">
     <thead class="table-light">
         <tr>
             <th>問卷編號</th>
             <th>問卷名稱</th>
             <th>上次填寫時間</th>
-            <th>填寫進度</th> 
+            <th>填寫進度</th>
             <th>操作</th>
             <th>ChatGpt</th>
         </tr>
@@ -62,16 +66,16 @@
             <td>{{ item.questionnaire.id }}</td>
             <td class="tooltip table table-bordered align-middle text-center">
                 {{ item.questionnaire.title }}
-                
+
                 {% if item.questionnaire.description %}
-                    <span class="tooltip-text">{{ item.questionnaire.description }}</span>
+                <span class="tooltip-text">{{ item.questionnaire.description }}</span>
                 {% endif %}
             </td>
             <td>
                 {% if item.last_completed %}
-                    {{ item.last_completed|date:"Y-m-d H:i" }}
+                {{ item.last_completed|date:"Y-m-d H:i" }}
                 {% else %}
-                    尚未填寫
+                尚未填寫
                 {% endif %}
             </td>
             <td>
@@ -85,29 +89,27 @@
                             bg-warning
                         {% else %}
                             bg-transparent
-                        {% endif %}"
-                        role="progressbar"
-                        style="width: {{ item.progress }}%;" 
-                        aria-valuenow="{{ item.progress }}" 
-                        aria-valuemin="0" 
-                        aria-valuemax="100">
+                        {% endif %}" role="progressbar" style="width: {{ item.progress }}%;"
+                        aria-valuenow="{{ item.progress }}" aria-valuemin="0" aria-valuemax="100">
                     </div>
                     <!-- 文字固定顯示在中間 -->
-                    <span style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 0.9rem;">
+                    <span
+                        style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 0.9rem;">
                         {{ item.progress }}%
                     </span>
                 </div>
             </td>
             <td style="white-space: nowrap; width: 1%;">
                 <div class="d-inline-flex gap-2 justify-content-center">
-                    <a class="btn btn-primary btn-sm" href="{% url 'agent:questionnaire_detail' item.questionnaire.id %}">
+                    <a class="btn btn-primary btn-sm"
+                        href="{% url 'agent:questionnaire_detail' item.questionnaire.id %}">
                         開始/繼續填寫
                     </a>
                     <a>|</a>
                     <form action="{% url 'agent:reset_questionnaire_answers' item.questionnaire.id %}" method="post">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-danger btn-sm"
-                                onclick="return confirm('確定要清除所有答案並重新填寫嗎？');">
+                            onclick="return confirm('確定要清除所有答案並重新填寫嗎？');">
                             重新填寫此問卷
                         </button>
                     </form>
@@ -129,38 +131,56 @@
 
 
 
-<div class="modal fade" id="infoModal" tabindex="-1" aria-labelledby="infoModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="infoModalLabel">重要提醒</h5>
-      </div>
-        <div>
-            <p>了解您是哪一類型的投資人，是成功規劃投資的第一步。透過這份問卷，您將能深入認識自己的風險承受能力、投資期限與目標。</p>
-            <p>請花點時間完成這份問卷，幫助您釐清個人投資風格與偏好。
-            <strong class="text-danger">特別提醒，問卷編號中的 2、3、4、9 將用來計算您的風險屬性分數，請務必仔細填寫。</strong></p>
-            <p>雖然這份問卷是與財務顧問溝通的良好起點，但它並不取代專業顧問所進行的全面風險評估。</p>
-            <p><strong>開始填寫，讓我們一起打造符合您需求的投資策略！</strong></p>
+<div class="modal fade" id="infoModal" tabindex="-1" aria-labelledby="infoModalLabel" aria-hidden="true"
+    data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+
+            <!-- 標題 -->
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold text-primary" id="infoModalLabel">重要提醒</h5>
+            </div>
+
+            <!-- 說明文字 -->
+            <div class="modal-body px-3 text-start">
+                <p class="mb-3">
+                <p style="text-indent: 1em;">
+                    了解您是哪一類型的投資人，是成功規劃投資的第一步。透過這份問卷，您將能深入認識自己的<span class="fw-semibold">風險承受能力</span>、<span
+                        class="fw-semibold">投資期限</span>與<span class="fw-semibold">目標</span>。
+                </p>
+                <p style="text-indent: 1em;">
+                    雖然這份問卷是與財務顧問溝通的良好起點，但它並不取代<span class="fw-semibold">專業顧問所進行的全面風險評估</span>。
+                </p>
+                </p>
+
+                <div class="alert alert-warning mb-3 text-start">
+                    <strong>特別提醒：</strong> 問卷第 <strong>2、3、4、9</strong> 題將用來計算您的風險屬性分數，請務必仔細填寫。
+                </div>
+                <p class="fw-bold text-success mb-3 text-center">
+                    開始填寫，讓我們一起打造符合您需求的投資策略！
+                </p>
+
+                <!-- 勾選框 -->
+                <div class="form-check d-flex justify-content-center align-items-center mt-4">
+                    <input class="form-check-input me-2" type="checkbox" id="agreeCheck">
+                    <label class="form-check-label fw-semibold mb-0" for="agreeCheck">
+                        我了解
+                    </label>
+                </div>
+            </div>
+
+            <!-- 底部按鈕 -->
+            <div class="modal-footer">
+                <button type="button" id="btnUnderstand" class="btn btn-primary w-100" disabled>確定</button>
+            </div>
+
         </div>
-        <template id="noticeTextTemplate">
-        <div>
-            <p>了解您是哪一類型的投資人，是成功規劃投資的第一步。透過這份問卷，您將能深入認識自己的風險承受能力、投資期限與目標。</p>
-            <p>請花點時間完成這份問卷，幫助您釐清個人投資風格與偏好。
-            <strong class="text-danger">特別提醒，問卷編號中的 2、3、4、9 將用來計算您的風險屬性分數，請務必仔細填寫。</strong></p>
-            <p>雖然這份問卷是與財務顧問溝通的良好起點，但它並不取代專業顧問所進行的全面風險評估。</p>
-            <p><strong>開始填寫，讓我們一起打造符合您需求的投資策略！</strong></p>
-        </div>
-        </template>
-        
-      <div class="modal-footer">
-        <button type="button" id="btnUnderstand" class="btn btn-primary">我了解</button>
-      </div>
     </div>
-  </div>
 </div>
 
 
-<script src = "{% static 'js/question_list.js' %}"></script>
+
+<script src="{% static 'js/question_list.js' %}"></script>
 
 <script>
     const overallProgress = {{ overall_progress }};
@@ -168,57 +188,70 @@
     const ctx = document.getElementById('completionChart').getContext('2d');
 
     const completionChart = new Chart(ctx, {
-    type: 'doughnut',
-    data: {
-        labels: ['已完成', '未完成'],
-        datasets: [{
-        data: [overallProgress, 100 - overallProgress],
-        backgroundColor: ['#4CAF50', '#E0E0E0'],
-        borderWidth: 0
+        type: 'doughnut',
+        data: {
+            labels: ['已完成', '未完成'],
+            datasets: [{
+                data: [overallProgress, 100 - overallProgress],
+                backgroundColor: ['#4CAF50', '#E0E0E0'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            cutout: '70%',
+            plugins: {
+                legend: {
+                    display: true,
+                    labels: { color: '#333' }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            return context.label + ': ' + context.parsed + '%';
+                        }
+                    }
+                },
+            }
+        },
+        plugins: [{
+            id: 'centerText',
+            beforeDraw(chart, args, options) {
+                const { ctx, width, height } = chart;
+                ctx.save();
+
+                const fontSize = (height / 114).toFixed(2);
+                ctx.font = fontSize + "em sans-serif";
+                ctx.textBaseline = "middle";
+                ctx.textAlign = "center";  // 文字水平置中
+
+                const lines = ["完成度", overallProgress + "%"];
+                const lineHeight = 35;  // 行距，可調整
+
+                const centerX = width / 2;
+                const centerY = height / 1.75;
+
+                // 兩行文字上下排列，中間對齊
+                lines.forEach((line, i) => {
+                    ctx.fillText(line, centerX, centerY - lineHeight / 2 + i * lineHeight);
+                });
+
+                ctx.restore();
+            }
         }]
-    },
-    options: {
-        responsive: true,
-        cutout: '70%',
-        plugins: {
-        legend: {
-            display: true,
-            labels: { color: '#333' }
-        },
-        tooltip: {
-            callbacks: {
-            label: function(context) {
-                return context.label + ': ' + context.parsed + '%';
-            }
-            }
-        },
-        }
-    },
-    plugins: [{
-        id: 'centerText',
-        beforeDraw(chart, args, options) {
-        const {ctx, width, height} = chart;
-        ctx.save();
+    });
 
-        const fontSize = (height / 114).toFixed(2);
-        ctx.font = fontSize + "em sans-serif";
-        ctx.textBaseline = "middle";
-        ctx.textAlign = "center";  // 文字水平置中
+    const agreeCheck = document.getElementById("agreeCheck");
+    const btnUnderstand = document.getElementById("btnUnderstand");
 
-        const lines = ["完成度", overallProgress + "%"];
-        const lineHeight = 35;  // 行距，可調整
+    agreeCheck.addEventListener("change", function () {
+        btnUnderstand.disabled = !this.checked;
+    });
 
-        const centerX = width / 2;
-        const centerY = height / 1.75;
-
-        // 兩行文字上下排列，中間對齊
-        lines.forEach((line, i) => {
-            ctx.fillText(line, centerX, centerY - lineHeight / 2 + i * lineHeight);
-        });
-
-        ctx.restore();
-        }
-    }]
+    // 點確定就關閉 Modal
+    btnUnderstand.addEventListener("click", function () {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('infoModal'));
+        modal.hide();
     });
 </script>
 
