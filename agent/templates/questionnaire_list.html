@@ -22,13 +22,14 @@
     <div style="width: 250px; height: 250px;"></div>
     <div style="width: 250px; height: 250px;">
         <h4>ChatGpt總分析報告</h4>
-        <button class="analysis">
+        <button class="analysis" id="analysisBtn">
             <span>
-                <a href="{% url 'agent:analysis_result_view' %}" style="color: #fff;">
-                    執行總分析
-                </a>
+                <a href="{% url 'agent:analysis_result_view' %}" style="color: #fff;">執行總分析</a>
             </span>
         </button>
+        <div id="tooltip">
+            特別提醒：問卷第 2、3、4、9 題將用來計算您的風險屬性分數，請務必仔細填寫。
+        </div>
     </div>
 </div>
 
@@ -52,21 +53,21 @@
 <table class="table table-bordered align-middle text-center">
     <thead class="table-light">
         <tr>
-            <th>問卷編號</th>
             <th>問卷名稱</th>
             <th>上次填寫時間</th>
             <th>填寫進度</th>
-            <th>操作</th>
             <th>ChatGpt</th>
+            <th>重新填寫</th>  
         </tr>
     </thead>
     <tbody>
         {% for item in data %}
         <tr>
-            <td>{{ item.questionnaire.id }}</td>
             <td class="tooltip table table-bordered align-middle text-center">
-                {{ item.questionnaire.title }}
-
+                <a href="{% url 'agent:questionnaire_detail' item.questionnaire.id %}">
+                    {{ item.questionnaire.id }}. {{ item.questionnaire.title }}
+                </a>
+                
                 {% if item.questionnaire.description %}
                 <span class="tooltip-text">{{ item.questionnaire.description }}</span>
                 {% endif %}
@@ -99,13 +100,14 @@
                     </span>
                 </div>
             </td>
+            <td>
+                <a href="{% url 'agent:analyze_questionnaire' item.questionnaire.id %}">
+                    分析
+                </a>
+            </td>
             <td style="white-space: nowrap; width: 1%;">
                 <div class="d-inline-flex gap-2 justify-content-center">
-                    <a class="btn btn-primary btn-sm"
-                        href="{% url 'agent:questionnaire_detail' item.questionnaire.id %}">
-                        開始/繼續填寫
-                    </a>
-                    <a>|</a>
+                    
                     <form action="{% url 'agent:reset_questionnaire_answers' item.questionnaire.id %}" method="post">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-danger btn-sm"
@@ -114,11 +116,6 @@
                         </button>
                     </form>
                 </div>
-            </td>
-            <td>
-                <a href="{% url 'agent:analyze_questionnaire' item.questionnaire.id %}">
-                    分析
-                </a>
             </td>
         </tr>
         {% empty %}

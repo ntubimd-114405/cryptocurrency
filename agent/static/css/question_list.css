@@ -126,6 +126,7 @@
   position: relative;
   opacity: 1;
   --bs-tooltip-font-size: 16px;
+  --bs-tooltip-zindex: 0;
 }
 
 .tooltip-text {
@@ -151,4 +152,16 @@
 .tooltip:hover .tooltip-text {
   visibility: visible;
   opacity: 1;
+}
+
+#tooltip{
+    position: absolute;
+    background-color: #333;
+    color: #fff;
+    padding: 8px;
+    border-radius: 4px;
+    max-width: 300px;
+    display: none;
+    z-index: 1000;
+    transform: translateX(-50%);
 }
