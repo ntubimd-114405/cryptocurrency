@@ -50,10 +50,31 @@
   }
 </style>
 
-<div id="page-content" class="container mt-5 fade-in">
+<!-- 分析頁面頂部區塊 -->
+<div id="page-content" class="container mt-5 fade-in text-center">
 
+  <!-- 進度圓餅圖區 -->
+  <div class="mb-4">
+    <h4 class="mb-3">進度完成比例</h4>
+    <canvas id="completionChart" style="max-width:250px; max-height:250px;"></canvas>
+  </div>
+
+  <!-- 互動提示區 -->
+  {% if overall_progress2.answered < overall_progress2.total %}
+  <div class="mb-3">
+    <div id="progressHint" class="alert alert-warning">
+      ⚠ 您尚有問卷題目未完成，完成問卷可獲得更精準的總結果分析。
+    </div>
+    <a href="{% url 'agent:questionnaire_list' %}" class="btn btn-warning">
+      前往完成問卷
+    </a>
+  </div>
+  {% endif %}
+
+
+<div id="page-content" class="container mt-5 fade-in">
   <div class="text-center mb-4">
-    <h2 class="fw-bold text-primary">分析結果</h2>
+    <h2 class="fw-bold text-primary">總分析結果</h2>
     <hr class="w-25 mx-auto" style="border-top: 3px solid #0d6efd;">
   </div>
 
@@ -70,18 +91,20 @@
     <div class="card-body" style="white-space: pre-wrap;">{{ analysis_all }}</div>
   </div>
   {% endif %}
-
-  <div class="text-center" style="animation-delay: 0.6s;">
-    <a href="{% url 'agent:questionnaire_list' %}" class="btn btn-secondary px-4" id="back-button">
-      ← 返回列表
-    </a>
-  </div>
 </div>
 
-<h2 class="mb-4">風險屬性分析結果</h2>
+
+{% if average_score %}
+
+  <div class="text-center mb-4">
+    <h2 class="fw-bold text-primary">風險屬性分析結果<br></h2>
+    <hr class="w-25 mx-auto" style="border-top: 3px solid #0d6efd;">
+      <small>注：採用問卷第 2、3、4、9 題進行分析</small>
+  </div>
+
+
 <!-- 長條圖 -->
 <canvas id="barChart" width="800" height="200"></canvas>
-{% if average_score %}
 <!-- 分析結果 -->
  <hr  class="border-4 border-primary">
 <div class="table-responsive mb-4">
@@ -100,20 +123,45 @@
 </div>
 
 
+<!-- 雷達圖 -->
+<div class="row">
+  <!-- 核心風險面向 -->
+  <div class="col-md-6 mb-4 text-center">
+    <h5>核心風險面向雷達圖</h5>
+    <div class="d-flex justify-content-center mb-4">
+      <canvas id="radarCore" width="300" height="300"></canvas>
+    </div>
+    <p class="small text-muted">
+      分數高表示該風險面向偏高，來源為第 2、3、4、9 題問卷。
+    </p>
+  </div>
+
+  <!-- 輔助風險面向 -->
+  <div class="col-md-6 mb-4 text-center">
+    <h5>輔助風險面向雷達圖</h5>
+    <div class="d-flex justify-content-center mb-4">
+    <canvas id="radarOther" width="300" height="300"></canvas>
+    </div>
+    <p class="small text-muted">
+      分數高表示該面向偏高，來源為第 1、5、6、7、8 題問卷。
+    </p>
+  </div>
+</div>
+
+
 <div class="row mb-5">
   <!-- 圓餅圖 左側 -->
   <div class="col-lg-6 col-12 text-center mb-4 mb-lg-0">
-    <!-- 百分比篩選拉桿 -->
     <div class="mb-4">
       <h5 class="mb-2">
         投資幣種與金額
       </h5>
     </div>
-
     <div class="chart-container" style="max-width: 80%; margin: 0 auto;">
       <canvas id="allocationChart"></canvas>
     </div>
-  </div> <!-- 左側 col 結束 -->
+  </div> 
+  <!-- 左側 col 結束 -->
 
   <!-- 推薦幣種表格 右側 -->
   <div class="col-lg-6 col-12">
@@ -173,13 +221,7 @@
 
   </div>
 </div> 
-
-
-
-    {% endif %}
-    
-
-    <!-- Accordion -->
+<!-- Accordion -->
     <div class="accordion mt-5" id="accordionExample">
 
       <!-- 風險屬性分級說明 -->
@@ -281,7 +323,118 @@
       </div>
     </div>
 
+  <br>
+  <div class="text-center" style="animation-delay: 0.6s;">
+    <a href="{% url 'agent:questionnaire_list' %}" class="btn btn-secondary px-4" id="back-button">
+      ← 返回列表
+    </a>
+  </div>
+    {% endif %}
+
     <script>
+    const overallProgress = {{ overall_progress2.percent }};
+    const ctx = document.getElementById('completionChart').getContext('2d');
+    const completionChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['已完成', '未完成'],
+            datasets: [{
+                data: [overallProgress, 100 - overallProgress],
+                backgroundColor: ['#4CAF50', '#E0E0E0'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            cutout: '70%',
+            plugins: {
+                legend: {
+                    display: true,
+                    labels: { color: '#333' }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function (context) {
+                            return context.label + ': ' + context.parsed + '%';
+                        }
+                    }
+                },
+            }
+        },
+        plugins: [{
+            id: 'centerText',
+            beforeDraw(chart, args, options) {
+                const { ctx, width, height } = chart;
+                ctx.save();
+                const fontSize = (height / 114).toFixed(2);
+                ctx.font = fontSize + "em sans-serif";
+                ctx.textBaseline = "middle";
+                ctx.textAlign = "center";  // 文字水平置中
+                const lines = ["完成度", overallProgress + "%"];
+                const lineHeight = 35;  // 行距，可調整
+                const centerX = width / 2;
+                const centerY = height / 1.75;
+                // 兩行文字上下排列，中間對齊
+                lines.forEach((line, i) => {
+                    ctx.fillText(line, centerX, centerY - lineHeight / 2 + i * lineHeight);
+                });
+                ctx.restore();
+            }
+        }]
+    });
+
+   // 核心雷達圖
+  new Chart(document.getElementById('radarCore').getContext('2d'), {
+      type: 'radar',
+      data: {
+          labels: ['投資經驗','風險偏好','投資目標','心理行為傾向'],
+          datasets:[{
+              label:'分數 (0~100)',
+              data:[
+                  {{ core_scores_avg.score_investment_exp }},
+                  {{ core_scores_avg.score_risk_pref }},
+                  {{ core_scores_avg.score_investment_goal }},
+                  {{ core_scores_avg.score_psychology }}
+              ],
+              backgroundColor:'rgba(54, 162, 235, 0.2)',
+              borderColor:'rgba(54, 162, 235, 1)',
+              borderWidth:2
+          }]
+      },
+      options:{
+          responsive: false,          // ❌ 關閉自動縮放
+          maintainAspectRatio: false,
+          scales:{r:{min:0,max:100}}
+      }
+  });
+
+  // 輔助雷達圖
+  new Chart(document.getElementById('radarOther').getContext('2d'), {
+      type: 'radar',
+      data: {
+          labels: ['人口統計','加密貨幣接觸','資訊來源','交易策略','未來看法'],
+          datasets:[{
+              label:'分數 (0~100)',
+              data:[
+                  {{ other_scores_avg.score_q1 }},
+                  {{ other_scores_avg.score_q5 }},
+                  {{ other_scores_avg.score_q6 }},
+                  {{ other_scores_avg.score_q7 }},
+                  {{ other_scores_avg.score_q8 }}
+              ],
+              backgroundColor:'rgba(255, 159, 64, 0.2)',
+              borderColor:'rgba(255, 159, 64, 1)',
+              borderWidth:2
+          }]
+      },
+      options:{
+          responsive: false,          // ❌ 關閉自動縮放
+          maintainAspectRatio: false,
+          scales:{r:{min:0,max:100}}
+      }
+  });
+
+
       // 圓餅圖 + 投資金額計算
       document.addEventListener("DOMContentLoaded", function () {
         const allocationLabels = ['穩定幣', '主流幣', '成長幣', '迷因幣', '其他'];

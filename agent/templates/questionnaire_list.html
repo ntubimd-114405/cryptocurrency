@@ -15,10 +15,7 @@
 <div id="floatingTextTarget" class="container mt-4" style="display: none;"></div>
 
 <div style="display: flex; gap: 10px;">
-    <div style="width: 250px; height: 250px;">
-        <h4>進度完成比例</h4>
-        <canvas id="completionChart"></canvas>
-    </div>
+
     <div style="width: 250px; height: 250px;"></div>
     <div style="width: 250px; height: 250px;">
         <h4>ChatGpt總分析報告</h4>
@@ -47,13 +44,11 @@
     
 </button>
 
-<h2>問卷完成長條圖</h2>
-
 <!-- Canvas -->
 <table class="table table-bordered align-middle text-center">
     <thead class="table-light">
         <tr>
-            <th>問卷名稱</th>
+            <th>問卷名稱(點擊問卷名稱開始填寫)</th>
             <th>上次填寫時間</th>
             <th>填寫進度</th>
             <th>ChatGpt</th>
@@ -180,64 +175,6 @@
 <script src="{% static 'js/question_list.js' %}"></script>
 
 <script>
-    const overallProgress = {{ overall_progress }};
-
-    const ctx = document.getElementById('completionChart').getContext('2d');
-
-    const completionChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: ['已完成', '未完成'],
-            datasets: [{
-                data: [overallProgress, 100 - overallProgress],
-                backgroundColor: ['#4CAF50', '#E0E0E0'],
-                borderWidth: 0
-            }]
-        },
-        options: {
-            responsive: true,
-            cutout: '70%',
-            plugins: {
-                legend: {
-                    display: true,
-                    labels: { color: '#333' }
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function (context) {
-                            return context.label + ': ' + context.parsed + '%';
-                        }
-                    }
-                },
-            }
-        },
-        plugins: [{
-            id: 'centerText',
-            beforeDraw(chart, args, options) {
-                const { ctx, width, height } = chart;
-                ctx.save();
-
-                const fontSize = (height / 114).toFixed(2);
-                ctx.font = fontSize + "em sans-serif";
-                ctx.textBaseline = "middle";
-                ctx.textAlign = "center";  // 文字水平置中
-
-                const lines = ["完成度", overallProgress + "%"];
-                const lineHeight = 35;  // 行距，可調整
-
-                const centerX = width / 2;
-                const centerY = height / 1.75;
-
-                // 兩行文字上下排列，中間對齊
-                lines.forEach((line, i) => {
-                    ctx.fillText(line, centerX, centerY - lineHeight / 2 + i * lineHeight);
-                });
-
-                ctx.restore();
-            }
-        }]
-    });
-
     const agreeCheck = document.getElementById("agreeCheck");
     const btnUnderstand = document.getElementById("btnUnderstand");
 
