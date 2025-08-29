@@ -207,12 +207,13 @@ def questionnaire_list(request):
     # ---------- 計算整體完成比例 ----------
     overall_progress = int(total_all_answered / total_all_questions * 100) if total_all_questions > 0 else 0
     overall_remaining = 100 - overall_progress
-
+    know = None
 
     return render(request, 'questionnaire_list.html', {
         'data': data,
         'overall_progress': overall_progress,
         'overall_remaining': overall_remaining,
+        'know': know,
     })
 
 # 重新填問卷
@@ -363,7 +364,6 @@ def analysis_result_view(request):
     # 取得使用者的問卷風險分析
     user_answers = UserAnswer.objects.filter(
         user=user,
-        question__questionnaire__id__in=RISK_QUESTIONNAIRE_IDS
     ).prefetch_related("selected_options")
 
     total_score = 0
@@ -374,23 +374,19 @@ def analysis_result_view(request):
         "score_investment_exp": 0, 
         "score_risk_pref": 0,
         "score_investment_goal": 0,
-        "score_psychology": 0
+        "score_psychology": 0,
+        "score_q7": 0,
     }
     core_counts = {k: 0 for k in core_scores}
 
-    # 輔助題目分數
-    other_scores = {
-        "score_q1": 0, "score_q5": 0, "score_q6": 0, "score_q7": 0, "score_q8": 0
-    }
-    other_counts = {k: 0 for k in other_scores}
-
+    
     # 累計分數
     for ans in user_answers:
         for option in ans.selected_options.all():
+
             total_score += option.score
             answer_count += 1
-            q_order = ans.question.order
-
+            q_order = ans.question.questionnaire.id
             # 核心題目
             if q_order == 2:
                 core_scores["score_investment_exp"] += option.score
@@ -401,25 +397,12 @@ def analysis_result_view(request):
             elif q_order == 4:
                 core_scores["score_investment_goal"] += option.score
                 core_counts["score_investment_goal"] += 1
+            elif q_order == 7:
+                core_scores["score_q7"] += option.score
+                core_counts["score_q7"] += 1
             elif q_order == 9:
                 core_scores["score_psychology"] += option.score
                 core_counts["score_psychology"] += 1
-            # 輔助題目
-            elif q_order == 1:
-                other_scores["score_q1"] += option.score
-                other_counts["score_q1"] += 1
-            elif q_order == 5:
-                other_scores["score_q5"] += option.score
-                other_counts["score_q5"] += 1
-            elif q_order == 6:
-                other_scores["score_q6"] += option.score
-                other_counts["score_q6"] += 1
-            elif q_order == 7:
-                other_scores["score_q7"] += option.score
-                other_counts["score_q7"] += 1
-            elif q_order == 8:
-                other_scores["score_q8"] += option.score
-                other_counts["score_q8"] += 1
 
     # 分數計算
     if answer_count == 0:
@@ -429,17 +412,12 @@ def analysis_result_view(request):
         allocation = {}
         recommended_coins = {}
         core_scores_avg = {k: None for k in core_scores}
-        other_scores_avg = {k: None for k in other_scores}
     else:
         average = total_score / answer_count
 
         core_scores_avg = {
             k: round(core_scores[k] / core_counts[k] * 20, 2) if core_counts[k] > 0 else 0
             for k in core_scores
-        }
-        other_scores_avg = {
-            k: round(other_scores[k] / other_counts[k] * 20, 2) if other_counts[k] > 0 else 0
-            for k in other_scores
         }
 
         # allocation 與風險屬性判斷
@@ -491,40 +469,13 @@ def analysis_result_view(request):
         int(allocation.get("其他", 0) * 100),
     ]
 
-    # 問卷進度
-    questionnaires = Questionnaire.objects.all()
-    selected_questionnaires = questionnaires.filter(id__in=RISK_QUESTIONNAIRE_IDS)
-    selected_progress_list = []
+   # ---------- 總進度計算 ----------
+    progress_data = []
     total_questions_all = 0
     answered_questions_all = 0
-
-    for q in selected_questionnaires:
-        questions = q.questions.all()
-        total_questions = questions.count()
-        answered_questions = UserAnswer.objects.filter(
-            user=user,
-            question__in=questions
-        ).exclude(selected_options=None).count()
-        progress_dict = {
-            "answered": answered_questions,
-            "total": total_questions,
-            "percent": int(answered_questions / total_questions * 100) if total_questions > 0 else 0,
-        }
-        selected_progress_list.append(progress_dict)
-        total_questions_all += total_questions
-        answered_questions_all += answered_questions
-
-    overall_progress = {
-        "answered": answered_questions_all,
-        "total": total_questions_all,
-        "percent": int(answered_questions_all / total_questions_all * 100) if total_questions_all > 0 else 0,
-    }
 
     # 取得所有問卷
     questionnaires = Questionnaire.objects.all()
-
-    total_questions_all = 0
-    answered_questions_all = 0
 
     for q in questionnaires:
         questions = q.questions.all()
@@ -538,7 +489,14 @@ def analysis_result_view(request):
         total_questions_all += total_questions
         answered_questions_all += answered_questions
 
-    # 計算整體進度
+        # 總進度資料 (方便前端直接使用)
+        progress_data.append({
+            "name": f"問卷{q.id}",           # 問卷名稱
+            "answered": answered_questions,  # 已完成題數
+            "unanswered": total_questions - answered_questions  # 未完成題數
+        })
+
+    # 整體完成度
     overall_progress2 = {
         "answered": answered_questions_all,
         "total": total_questions_all,
@@ -546,21 +504,17 @@ def analysis_result_view(request):
     }
 
 
-    return render(request, "analysis_result.html", {
+    return render(request, "analysis_all_result.html", {
         "overall_progress2": overall_progress2,
         "analysis": total_analysis,
-        "total_score": total_score,
         "average_score": round(average, 2) if average is not None else None,
         "risk_type": risk_type,
-        "answered_questionnaire_count": len(RISK_QUESTIONNAIRE_IDS),
         "suggestion": suggestion,
         "recommended_coins": recommended_coins,
         "allocation_data": allocation_data,
         "allocation": allocation,
-        "overall_progress": overall_progress,
-        "selected_progress_list": selected_progress_list,
-        "core_scores_avg": core_scores_avg,
-        "other_scores_avg": other_scores_avg,
+        "core_scores_avg": core_scores_avg, #核心題目分數
+        "progress_data": progress_data,
     })
 
 

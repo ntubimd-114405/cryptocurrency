@@ -8,16 +8,8 @@
 <link rel="stylesheet" href="{% static 'css/question_list.css' %}">
 
 <h1>問卷首頁</h1>
-
-<div class="modal-body" id="floatingTextContent">
-    <!-- JS 會把內容插進來 -->
-</div>
-<div id="floatingTextTarget" class="container mt-4" style="display: none;"></div>
-
-<div style="display: flex; gap: 10px;">
-
-    <div style="width: 250px; height: 250px;"></div>
-    <div style="width: 250px; height: 250px;">
+<hr>
+    <div>
         <h4>ChatGpt總分析報告</h4>
         <button class="analysis" id="analysisBtn">
             <span>
@@ -28,7 +20,6 @@
             特別提醒：問卷第 2、3、4、9 題將用來計算您的風險屬性分數，請務必仔細填寫。
         </div>
     </div>
-</div>
 
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -122,12 +113,11 @@
 </table>
 
 
-
+{% if know %}
 <div class="modal fade" id="infoModal" tabindex="-1" aria-labelledby="infoModalLabel" aria-hidden="true"
     data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
-
             <!-- 標題 -->
             <div class="modal-header">
                 <h5 class="modal-title fw-bold text-primary" id="infoModalLabel">重要提醒</h5>
@@ -169,6 +159,7 @@
         </div>
     </div>
 </div>
+{% endif %}
 
 
 
