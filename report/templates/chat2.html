@@ -115,6 +115,10 @@
 
     } else if (sender === "bot") {
       if (extraData && extraData.length) {
+        const p = document.createElement('p');
+        p.textContent = text;
+        div.appendChild(p);
+
         // 建立 canvas
         const canvas = document.createElement('canvas');
         canvas.style.width = '300px';
@@ -294,12 +298,34 @@
       // 顯示每個模組回覆
       if (data.final_answers) {
         data.final_answers.forEach(ans => {
-          // ans 目前是 dict
           const text = ans.text || '';
-          const extraData = ans.data || [];
-          appendMessage(messages, text, 'bot', false, extraData);
+          const type = ans.module || '';
+          const extraData = ans.data || null;
+
+          // 分隔線（可以放在每個模組上方或下方）
+          const divider = document.createElement('div');
+          divider.className = 'module-divider';
+          messages.appendChild(divider);
+
+          if (type === "price") {
+            // extraData 是 list，畫 K 線圖
+            appendMessage(messages, text, 'bot', false, extraData);
+
+          } else if (type === "news") {
+            // extraData 是 HTML，直接渲染
+            const div = document.createElement('div');
+            div.className = "message bot";
+            div.innerHTML = text + "<br>" + extraData;
+            messages.appendChild(div);
+            messages.scrollTop = messages.scrollHeight;
+            
+          } else {
+            // fallback（純文字）
+            appendMessage(messages, text, 'bot');
+          }
         });
       }
+
 
       // 顯示整合回覆
       if (data.integrated_summary) appendMessage(messages, '整合回覆：' + data.integrated_summary, 'bot');

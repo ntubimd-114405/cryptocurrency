@@ -27,7 +27,7 @@ from news.models import Article
 from other.models import FinancialData, IndicatorValue, BitcoinMetricData
 from agent.models import Questionnaire, Question, AnswerOption, UserAnswer, UserQuestionnaireRecord
 from data_analysis.text_generation.chatgpt_api import call_chatgpt
-from data_analysis.crypto_ai_agent.news_agent import run_news_agent
+from data_analysis.crypto_ai_agent.news_agent import search_news
 
 def load_price_data_from_db(coin_id, start_date=None, end_date=None):
     queryset = CoinHistory.objects.filter(coin_id=coin_id)
@@ -280,7 +280,7 @@ def generate_weekly_report(request):
     ma20_data = decimal_to_float(df['ma20'].tolist())
     ma60_data = decimal_to_float(df['ma60'].tolist())
     
-    news_summary = run_news_agent("BTC") #目前寫死
+    news_summary = search_news("BTC") #目前寫死
     news_summary_with_links = convert_id_and_newline(news_summary)
 
     news_text = "\n".join([
@@ -481,14 +481,15 @@ def parse_coin_from_input(user_input):
 
 
 def run_news_agent(user_input, start_date=None, end_date=None):
-    queryset = Article.objects.order_by('-time')
-    if start_date:
-        queryset = queryset.filter(time__date__gte=start_date)
-    if end_date:
-        queryset = queryset.filter(time__date__lte=end_date)
-    latest_news = queryset[:10]
-    news_list = [f"{n.title}（{n.time}）" for n in latest_news]
-    return "📰★新聞模塊\n" + "\n".join(news_list)
+    news_summary = search_news(
+            question=user_input,
+            start_date=start_date,
+            end_date=end_date
+    )
+    news_summary_with_links = convert_id_and_newline(news_summary)
+    
+    return {"text": f"📰★新聞模塊", "extra_data": news_summary_with_links}
+
 
 from django.db.models import Min, Max, Sum
 from django.db.models import DateField
@@ -565,12 +566,9 @@ def run_price_agent(user_input, start_date=None, end_date=None):
     if not results:
         return {"text": f"⚠️ 模組 price 執行失敗：{coin_symbol} 在 {start_date} 至 {end_date} 之間沒有資料", "extra_data": []}
 
-    text_output = "\n".join([
-        f"{d['coin']}：開={d['open']} 高={d['high']} 低={d['low']} 收={d['close']} 量={d['volume']}（{d['day']}）"
-        for d in results
-    ])
 
-    return {"text": f"💰★價格模塊（日級，{coin_symbol}）\n{text_output}", "extra_data": results}
+
+    return {"text": f"💰★價格模塊", "extra_data": results}
 
 
 
@@ -672,7 +670,7 @@ def classify_question_api(request):
     # 模組映射
     # ------------------------
     module_map = {
-        #"news": run_news_agent,
+        "news": run_news_agent,
         "price": run_price_agent,
         #"other": run_other_agent,
         #"questionnaire": run_survey_agent
@@ -720,13 +718,31 @@ def classify_question_api(request):
     # ------------------------
     integrated_summary = ""
     try:
+        integration_contents = []
+
+        for f in final_answers:
+            data = f.get('data')
+            module_name = f.get('module', 'unknown')
+
+            if isinstance(data, list):
+                # list 型態，每個元素都轉成字串，再 join
+                data_str = "\n".join([str(d) for d in data])
+            else:
+                data_str = str(data)
+
+            # 加上模塊標籤，方便辨識
+            integration_contents.append(f"[{module_name} 模塊]\n{data_str}")
+
+        # 最後整合成一個大字串
+        integration_prompt_content = "\n".join(integration_contents)
+
         integration_prompt = f"""
         使用者問題：{user_input}
         以下是多個不同來源的模塊輸出，請幫我整合成一段自然語言的回覆，
         保留重要數據與事件，邏輯清晰，適合直接回覆使用者：
-        {chr(10).join([f['text'] for f in final_answers])}
+        {integration_prompt_content}
         """
-        # integrated_summary = call_chatgpt("你是一個專業的資訊整合助理", integration_prompt)
+        integrated_summary = call_chatgpt("你是一個專業的資訊整合助理", integration_prompt)
     except Exception as e:
         integrated_summary = f"⚠️ 整合失敗：{str(e)}"
 
