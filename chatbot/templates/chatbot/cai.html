@@ -1,0 +1,34 @@
+<script>
+    if (!window.location.search.includes('caiwc_view=2')) {
+    const sep = window.location.href.includes('?') ? '&' : '?';
+    window.history.replaceState(null, '', window.location.href + sep + 'caiwc_view=2');
+}
+    const isDemoSite = false;
+    // 為迴避 CDN 快取，採用動態載入的方式
+    function loadScript(url, callback) {
+        var scriptTag = document.createElement('script');
+        scriptTag.src = url + '?_=' + new Date().getTime();
+        scriptTag.onload = function () {
+            if (callback) {
+                callback();
+            }
+        };
+        document.head.appendChild(scriptTag);
+    }
+    loadScript('https://cai-innoserve.gss.com.tw/webchat/caiwebchat-config.js', function () {
+        loadScript('https://cai-innoserve.gss.com.tw/webchat/caiwebchat-loader.js');
+        loadScript('https://cai-innoserve.gss.com.tw/webchat/bots/ntub11146081/custom.js');
+    });
+
+    // 頁面剛載入時 `CaiWebChat.init` 仍會是 `undefined`，
+    // 故此處採用宣告指定 handler 的方式，於載入完畢後自動呼叫
+    window.onCaiWebChatLoaded = function () {
+        CaiWebChat.init({ botId: 'ntub11146081' });
+        loadScript('https://cai-innoserve.gss.com.tw/webchat/bots/ntub11146081/customWebChatLoaded.js');
+    };
+
+    // WebChat 連線完要做的事情
+    window.onConnectFulfill = function () {
+        loadScript('https://cai-innoserve.gss.com.tw/webchat/bots/ntub11146081/customConnectFulfill.js');
+    }
+</script>

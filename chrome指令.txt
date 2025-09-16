@@ -1,0 +1,3 @@
+"C:\Program Files\Google\Chrome\Application\chrome.exe" --user-data-dir="C:/ChromeDev" --disable-web-security
+python manage.py runserver
+http://127.0.0.1:8000/chatbot/webchat
