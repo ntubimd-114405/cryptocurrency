@@ -5,62 +5,60 @@
 {% block content %}
 <h1 class="mb-4">我的最愛幣種</h1>
 
+<div id="favorite-container">
 {% if favorite_cryptos %}
-<div class="table-responsive">
-    <table class="table table-bordered table-hover align-middle text-center">
-        <thead class="table-dark">
-            <tr>
-                <th>圖示</th>
-                <th>名稱</th>
-                <th>USD</th>
-                <th>市值</th>
-                <th>24小時交易量</th>
-                <th>24小時變動</th>
-                <th>操作</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for coin in favorite_cryptos %}
-            <tr id="coin-{{ coin.id }}">
-                <td>
-                    <a href="{% url 'crypto_detail' coin.id %}">
-                        <img src="{{ coin.logo_url }}" alt="{{ coin.coinname }}" width="40" height="40" style="object-fit: contain;">
-                    </a>
-                </td>
-                <td class="fw-semibold">
-                    <a href="{% url 'crypto_detail' coin.id %}" class="text-decoration-none text-dark">
-                        {{ coin.coinname }}
-                    </a>
-                </td>
-                <td>{{ coin.usd_display }}</td>
-                <td>{{ coin.market_cap_display }}</td>
-                <td>{{ coin.volume_24h_display }}</td>
-                <td>
-                    {% if coin.change_24h > 0 %}
-                        <span style="color: red;">{{ coin.change_24h|floatformat:2 }}%</span>
-                    {% elif coin.change_24h < 0 %}
-                        <span style="color: green;">{{ coin.change_24h|floatformat:2 }}%</span>
-                    {% else %}
-                        <span style="color: black;">{{ coin.change_24h|floatformat:2 }}%</span>
-                    {% endif %}
-                </td>
-                <td>
-                    <button class="btn btn-outline-danger btn-sm remove-favorite" data-coin-id="{{ coin.id }}">
-                        ✖ 移除
-                    </button>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
+    <div class="table-responsive">
+        <table id="favorite-table" class="table table-bordered table-hover align-middle text-center">
+            <thead class="table-dark">
+                <tr>
+                    <th>圖示</th>
+                    <th>名稱</th>
+                    <th>USD</th>
+                    <th>市值</th>
+                    <th>24小時交易量</th>
+                    <th>24小時變動</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for coin in favorite_cryptos %}
+                <tr id="coin-{{ coin.id }}">
+                    <td>
+                        <a href="{% url 'crypto_detail' coin.id %}">
+                            <img src="{{ coin.logo_url }}" alt="{{ coin.coinname }}" width="40" height="40" style="object-fit: contain;">
+                        </a>
+                    </td>
+                    <td class="fw-semibold">
+                        <a href="{% url 'crypto_detail' coin.id %}" class="text-decoration-none text-dark">
+                            {{ coin.coinname }}
+                        </a>
+                    </td>
+                    <td>{{ coin.usd_display }}</td>
+                    <td>{{ coin.market_cap_display }}</td>
+                    <td>{{ coin.volume_24h_display }}</td>
+                    <td>
+                        {% if coin.change_24h > 0 %}
+                            <span style="color: red;">{{ coin.change_24h|floatformat:2 }}%</span>
+                        {% elif coin.change_24h < 0 %}
+                            <span style="color: green;">{{ coin.change_24h|floatformat:2 }}%</span>
+                        {% else %}
+                            <span style="color: black;">{{ coin.change_24h|floatformat:2 }}%</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <button class="btn btn-outline-danger btn-sm remove-favorite" data-coin-id="{{ coin.id }}">
+                            ✖ 移除
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 {% else %}
-<div class="text-center my-5">
-    <img src="https://cdn-icons-png.flaticon.com/512/4076/4076549.png" alt="Empty" width="100" class="mb-3" style="opacity: 0.5;">
-    <p class="text-muted">您目前還沒有收藏任何幣種</p>
-    <a href="{% url 'crypto_list' %}" class="btn btn-primary mt-2">去選幣 ➜</a>
-</div>
+    {% include "_empty_favorites.html" %}
 {% endif %}
+</div>
 
 <a href="{% url 'crypto_list' %}" class="btn btn-secondary mt-4">返回幣列表</a>
 
@@ -81,6 +79,13 @@ $(function () {
                 if (response.status === 'success') {
                     row.fadeOut(300, function () {
                         $(this).remove();
+
+                        // 如果表格已經沒有幣種 → 換成空狀態
+                        if ($('#favorite-table tbody tr').length === 0) {
+                            $('#favorite-container').html(`
+                                {% include "_empty_favorites.html" %}
+                            `);
+                        }
                     });
                 } else {
                     alert("移除最愛時出錯！");
