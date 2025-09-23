@@ -25,16 +25,28 @@
 
 <style>
 .chat-container-page1 {
-  max-width: 800px;
+  width: 95%;                 /* 改成百分比，幾乎滿版 */
+  max-width: 1400px;          /* 最大寬度限制，避免太誇張 */
   margin: 20px auto;
   background: white;
   border-radius: 24px;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.08); /* 陰影稍微柔和一點 */
   display: flex;
   flex-direction: column;
-  height: 80vh;
-  min-height: 500px;
+  height: 85vh;               /* 高度再多一點 */
+  min-height: 600px;          /* 最小高度再提升 */
   overflow: hidden;
+  padding: 10px;              /* 內距少許空間 */
+}
+
+/* 手機或小螢幕自適應 */
+@media (max-width: 768px) {
+  .chat-container-page1 {
+    width: 98%;
+    height: 90vh;
+    border-radius: 16px;      /* 手機圓角小一點 */
+    min-height: 500px;
+  }
 }
 .chat-messages {
   flex: 1;
@@ -68,6 +80,57 @@
 }
 .chat-input button:hover { opacity: 0.9; }
 
+.message.loading span.dots {
+  display: inline-block;
+  animation: dotJump 1s infinite steps(3);
+}
+
+@keyframes dotJump {
+  0%, 20% { content: ''; }
+  33% { content: '.'; }
+  66% { content: '..'; }
+  100% { content: '...'; }
+}
+/* 模組選擇容器 */
+.module-select {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+/* 每個模組卡片 */
+.module-select label {
+  display: flex;
+  align-items: center;
+  padding: 8px 14px;
+  border-radius: 16px;
+  background: #F0F5FF;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+}
+
+/* checkbox 样式 */
+.module-select input[type="checkbox"] {
+  margin-right: 8px;
+  accent-color: #3B82F6; /* 選取時顏色 */
+}
+
+/* 懸停效果 */
+.module-select label:hover {
+  background: #E0F2FE;
+  transform: translateY(-1px);
+}
+
+/* 勾選效果 */
+.module-select input[type="checkbox"]:checked + span,
+.module-select input[type="checkbox"]:checked + label {
+  background: #3B82F6;
+  color: #fff;
+}
+
 </style>
 
 <script>
@@ -80,200 +143,215 @@
   const messages = container.querySelector(".chat-messages");
   const csrftoken = document.querySelector('[name=csrf-token]').content;
 
-  // 在 script 最上面宣告一個全域變數
   window.chatCharts = window.chatCharts || [];
 
-  function appendMessage(messagesContainer, text, sender, isTag=false, extraData=null) {
-    const div = document.createElement('div');
-    div.className = `message ${sender}`;
+  // appendMessage 改成支援 loading
+function appendMessage(messagesContainer, text, sender, isTag=false, extraData=null, loading=false) {
+  const div = document.createElement('div');
+  div.className = `message ${sender}`;
+  
+  if (loading) {
+    div.classList.add('loading');
+    const span = document.createElement('span');
+    span.textContent = '生成中';
+    div.appendChild(span);
 
-    if (isTag) {
-      text = text.replace(/^分類：/, '').trim(); // 避免重複
-      const tags = text.split(',').map(t => t.trim()).filter(t => t.length > 0);
-      if (tags.length > 0) {
-        const tagContainer = document.createElement('div');
-        tagContainer.className = 'module-tags';
+    // 點點動畫
+    const dotSpan = document.createElement('span');
+    dotSpan.className = 'dots';
+    dotSpan.textContent = '...';
+    div.appendChild(dotSpan);
 
-        const labelSpan = document.createElement('span');
-        labelSpan.textContent = '分類：';
-        labelSpan.style.fontWeight = 'bold';
-        tagContainer.appendChild(labelSpan);
+    messagesContainer.appendChild(div);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    return div; // 回傳元素以便更新
+  }
 
-        tags.forEach(t => {
-          const span = document.createElement('span');
-          span.textContent = t;
-          tagContainer.appendChild(span);
-        });
+  if (isTag) {
+    text = text.replace(/^分類：/, '').trim();
+    const tags = text.split(',').map(t => t.trim()).filter(t => t.length > 0);
+    if (tags.length > 0) {
+      const tagContainer = document.createElement('div');
+      tagContainer.className = 'module-tags';
 
-        div.appendChild(tagContainer);
-      }
-    } else if (sender === "user") {
-      // 使用者文字訊息
+      const labelSpan = document.createElement('span');
+      labelSpan.textContent = '分類：';
+      labelSpan.style.fontWeight = 'bold';
+      tagContainer.appendChild(labelSpan);
+
+      tags.forEach(t => {
+        const span = document.createElement('span');
+        span.textContent = t;
+        tagContainer.appendChild(span);
+      });
+
+      div.appendChild(tagContainer);
+    }
+  } else if (sender === "user") {
+    const p = document.createElement('p');
+    p.textContent = text;
+    div.appendChild(p);
+
+  } else if (sender === "bot") {
+    if (extraData && extraData.length) {
       const p = document.createElement('p');
       p.textContent = text;
       div.appendChild(p);
 
-    } else if (sender === "bot") {
-      if (extraData && extraData.length) {
-        const p = document.createElement('p');
-        p.textContent = text;
-        div.appendChild(p);
+      // ===== Candlestick K 線圖 =====
+      const canvas = document.createElement('canvas');
+      canvas.style.width = '300px';
+      canvas.style.height = '200px';
+      div.appendChild(canvas);
 
-        // 建立 canvas
-        const canvas = document.createElement('canvas');
-        canvas.style.width = '300px';
-        canvas.style.height = '200px';
-        div.appendChild(canvas);
+      const candleData = extraData.map(item => ({
+        x: new Date(item.day.trim()),
+        o: parseFloat(item.open),
+        h: parseFloat(item.high),
+        l: parseFloat(item.low),
+        c: parseFloat(item.close)
+      }));
 
-        const candleData = extraData.map(item => ({
-          x: new Date(item.day.trim()),
-          o: parseFloat(item.open),
-          h: parseFloat(item.high),
-          l: parseFloat(item.low),
-          c: parseFloat(item.close)
-        }));
+      if (canvas.chartInstance) canvas.chartInstance.destroy();
 
-        // 銷毀舊 chart
-        if (canvas.chartInstance) canvas.chartInstance.destroy();
+      const paddedCandleData = [
+        { x: new Date(candleData[0].x.getTime() - 24*60*60*1000), o: null, h: null, l: null, c: null },
+        ...candleData,
+        { x: new Date(candleData[candleData.length - 1].x.getTime() + 24*60*60*1000), o: null, h: null, l: null, c: null }
+      ];
 
-        // padded 資料
-        const paddedCandleData = [
-          { x: new Date(candleData[0].x.getTime() - 24*60*60*1000), o: null, h: null, l: null, c: null },
-          ...candleData,
-          { x: new Date(candleData[candleData.length - 1].x.getTime() + 24*60*60*1000), o: null, h: null, l: null, c: null }
-        ];
+      const prices = candleData.flatMap(d => [d.h, d.l]);
+      const minPrice = Math.min(...prices);
+      const maxPrice = Math.max(...prices);
+      const coinName = extraData.length ? extraData[0].coin : '幣種';
 
-        const prices = candleData.flatMap(d => [d.h, d.l]);
-        const minPrice = Math.min(...prices);
-        const maxPrice = Math.max(...prices);
-
-        const coinName = extraData.length ? extraData[0].coin : '幣種';
-
-        const chart = new Chart(canvas, {
-          type: 'candlestick',
-          data: {
-            datasets: [{
-              label: `${coinName} 價格`,
-              data: paddedCandleData,
-              barPercentage: 0.2,
-              categoryPercentage: 0.2
-            }]
-          },
-          options: {
-            responsive: true,
-            plugins: {
-              legend: { display: true },
-              tooltip: {
-                callbacks: {
-                  title: function(context) {
-                    const d = context[0].raw;
-                    if (!d || d.o === null) return '';
-                    const date = new Date(d.x);
-                    return `${date.getMonth()+1}月${date.getDate()}日`;
-                  },
-                  label: function(context) {
-                    const d = context.raw;
-                    if (!d || d.o === null) return '';
-                    return `開:${d.o} 高:${d.h} 低:${d.l} 收:${d.c}`;
-                  }
+      const chart = new Chart(canvas, {
+        type: 'candlestick',
+        data: {
+          datasets: [{
+            label: `${coinName} 價格`,
+            data: paddedCandleData,
+            barPercentage: 0.2,
+            categoryPercentage: 0.2
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: true },
+            tooltip: {
+              callbacks: {
+                title: function(context) {
+                  const d = context[0].raw;
+                  if (!d || d.o === null) return '';
+                  const date = new Date(d.x);
+                  return `${date.getMonth()+1}月${date.getDate()}日`;
+                },
+                label: function(context) {
+                  const d = context.raw;
+                  if (!d || d.o === null) return '';
+                  return `開:${d.o} 高:${d.h} 低:${d.l} 收:${d.c}`;
                 }
               }
-            },
-            scales: {
-              x: {
-                type: 'time',
-                time: { unit: 'day' },
-                offset: true,
-                ticks: {
-                  autoSkip: true,
-                  maxRotation: 0,
-                  callback: function(value) {
-                    const date = new Date(value);
-                    return `${date.getMonth()+1}月${date.getDate()}日`;
-                  }
-                }
-              },
-              y: {
-                title: { display: true, text: '價格 (USD)' },
-                beginAtZero: false,
-                min: minPrice * 0.995,
-                max: maxPrice * 1.005
+            }
+          },
+          scales: {
+            x: {
+            type: 'time',
+            time: { unit: 'day', tooltipFormat: 'MM/dd' },
+            offset: true,
+            ticks: {
+              autoSkip: false,
+              maxRotation: 0,
+              callback: function(value, index, ticks) {
+                let dateVal = value;
+                if (value instanceof Date) dateVal = value;
+                else if (typeof value === 'number') dateVal = new Date(value);
+                else if (value && value.raw) dateVal = new Date(value.raw.x);
+                return `${dateVal.getMonth()+1}月${dateVal.getDate()}日`;
               }
             }
           }
-        });
-        canvas.chartInstance = chart;  // 綁定 chart 到 canvas
-        window.chatCharts.push(chart);
-
-        // 成交量圖
-        const volCanvas = document.createElement('canvas');
-        volCanvas.style.width = '300px';
-        volCanvas.style.height = '100px';
-        div.appendChild(volCanvas);
-
-        const volChart = new Chart(volCanvas, {
-          type: 'bar',
-          data: {
-            labels: extraData.map(item => new Date(item.day.trim())),
-            datasets: [{
-              label: '成交量',
-              data: extraData.map(i => parseFloat(i.volume)),
-              backgroundColor: 'rgba(0,123,255,0.5)',
-              barPercentage: 0.5
-            }]
-          },
-          options: {
-            responsive: true,
-            plugins: {
-              tooltip: {
-                callbacks: {
-                  title: function(context) {
-                      const d = context[0].parsed.x; // 這裡直接拿 timestamp / Date
-                      const date = new Date(d);
-                    return `${date.getMonth() + 1}月${date.getDate()}日`;
-                  },
-                  label: function(context) {
-                    return `成交量: ${context.raw}`;
-                  }
-                }
-              }
-            },
-            scales: {
-              x: {
-                type: 'time',
-                time: { unit: 'day' },
-                ticks: {
-                  callback: function(value) {
-                    const date = new Date(value);
-                    return `${date.getMonth() + 1}月${date.getDate()}日`;
-                  },
-                  autoSkip: true,
-                  maxRotation: 0
-                }
-              },
-              y: {
-                title: { display: true, text: '交易量' }
-              }
+          ,
+            y: {
+              title: { display: true, text: '價格 (USD)' },
+              beginAtZero: false,
+              min: minPrice * 0.995,
+              max: maxPrice * 1.005
             }
           }
-        });
+        }
+      });
+      canvas.chartInstance = chart;
+      window.chatCharts.push(chart);
 
+      // ===== 成交量圖 =====
+      const volCanvas = document.createElement('canvas');
+      volCanvas.style.width = '300px';
+      volCanvas.style.height = '100px';
+      div.appendChild(volCanvas);
 
-        window.chatCharts.push(volChart);
+      const volChart = new Chart(volCanvas, {
+        type: 'bar',
+        data: {
+          labels: extraData.map(item => new Date(item.day.trim())),
+          datasets: [{
+            label: '成交量',
+            data: extraData.map(i => parseFloat(i.volume)),
+            backgroundColor: 'rgba(0,123,255,0.5)',
+            barPercentage: 0.5
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            tooltip: {
+              callbacks: {
+                title: function(context) {
+                  const d = context[0].parsed.x;
+                  const date = new Date(d);
+                  return `${date.getMonth() + 1}月${date.getDate()}日`;
+                },
+                label: function(context) {
+                  return `成交量: ${context.raw}`;
+                }
+              }
+            }
+          },
+          scales: {
+            x: {
+              type: 'time',
+              time: { unit: 'day' },
+              ticks: {
+                callback: function(value, index, ticks) {
+                  const date = new Date(ticks[index].value);
+                  return `${date.getMonth() + 1}月${date.getDate()}日`;
+                },
+                autoSkip: true,
+                maxRotation: 0
+              }
+            },
+            y: {
+              title: { display: true, text: '交易量' }
+            }
+          }
+        }
+      });
+      window.chatCharts.push(volChart);
 
-      } else {
-        const p = document.createElement('p');
-        p.textContent = text;
-        div.appendChild(p);
-      }
+    } else {
+      const p = document.createElement('p');
+      p.textContent = text;
+      div.appendChild(p);
     }
-
-    messagesContainer.appendChild(div);
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
   }
 
+  messagesContainer.appendChild(div);
+  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+}
 
-  async function sendMessage() {
+
+  function sendMessage() {
     const selectedModules = Array.from(container.querySelectorAll(".module-select input:checked"))
       .map(cb => cb.value);
     const text = input.value.trim();
@@ -282,64 +360,38 @@
     appendMessage(messages, text, "user");
     input.value = '';
 
-    try {
-      const response = await fetch('/report/api/classify/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrftoken },
-        body: JSON.stringify({ user_input: text, selected_modules: selectedModules })
-      });
-      const data = await response.json();
+    // 顯示「生成中」loading
+    const loadingDiv = appendMessage(messages, '', 'bot', false, null, true);
 
-      // 顯示分類標籤
-      if (data.classifications && data.classifications.length > 0) {
-        appendMessage(messages, data.classifications.join(', '), 'bot', true);
-      }
+    if (window.currentEventSource) window.currentEventSource.close();
 
-      // 顯示每個模組回覆
-      if (data.final_answers) {
-        data.final_answers.forEach(ans => {
-          const text = ans.text || '';
-          const type = ans.module || '';
-          const extraData = ans.data || null;
+    const payload = { user_input: text, selected_modules: selectedModules };
+    const es = new EventSource('/report/api/classify/?payload=' + encodeURIComponent(JSON.stringify(payload)));
+    window.currentEventSource = es;
 
-          // 分隔線（可以放在每個模組上方或下方）
-          const divider = document.createElement('div');
-          divider.className = 'module-divider';
-          messages.appendChild(divider);
+    es.onmessage = function(e) {
+      try {
+        const data = JSON.parse(e.data);
+        if (loadingDiv) loadingDiv.remove();
 
-          if (type === "price") {
-            // extraData 是 list，畫 K 線圖
-            appendMessage(messages, text, 'bot', false, extraData);
+        if (data.classifications) appendMessage(messages, data.classifications.join(', '), 'bot', true);
+        if (data.progress && data.result) {
+          const ans = data.result;
+          if (ans.module === "price") appendMessage(messages, ans.text, 'bot', false, ans.data);
+          else appendMessage(messages, ans.text, 'bot');
+        }
+        if (data.integrated_summary) appendMessage(messages, '整合回覆：' + data.integrated_summary, 'bot');
 
-          } else if (type === "news") {
-            // extraData 是 HTML，直接渲染
-            const div = document.createElement('div');
-            div.className = "message bot";
-            div.innerHTML = text + "<br>" + extraData;
-            messages.appendChild(div);
-            messages.scrollTop = messages.scrollHeight;
-            
-          } else {
-            // fallback（純文字）
-            appendMessage(messages, text, 'bot');
-          }
-        });
-      }
+      } catch(err) { console.error(err); }
+    };
 
-
-      // 顯示整合回覆
-      if (data.integrated_summary) appendMessage(messages, '整合回覆：' + data.integrated_summary, 'bot');
-
-    } catch (err) {
-      console.error(err);
-      appendMessage(messages, '發生錯誤，請稍後再試。', 'bot');
-    }
+    es.addEventListener('end', () => es.close());
+    es.onerror = () => es.close();
   }
 
   sendBtn.addEventListener("click", sendMessage);
-  input.addEventListener("keypress", function(e) {
-    if (e.key === "Enter") sendMessage();
-  });
+  input.addEventListener("keypress", e => { if(e.key==="Enter") sendMessage(); });
+
 })();
 </script>
 

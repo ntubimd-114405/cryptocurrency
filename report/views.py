@@ -4,6 +4,7 @@ import re
 from collections import Counter
 from decimal import Decimal
 from datetime import date,datetime,timedelta
+import time
 
 import numpy as np
 import pandas as pd
@@ -17,6 +18,8 @@ from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 from django.utils.timezone import now
 from django.db import IntegrityError
+from django.db.models import Min, Max, Sum, DateField
+from django.db.models.functions import Cast
 from django.urls import reverse
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -28,6 +31,13 @@ from other.models import FinancialData, IndicatorValue, BitcoinMetricData
 from agent.models import Questionnaire, Question, AnswerOption, UserAnswer, UserQuestionnaireRecord
 from data_analysis.text_generation.chatgpt_api import call_chatgpt
 from data_analysis.crypto_ai_agent.news_agent import search_news
+
+from django.http import StreamingHttpResponse, JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+
+
+
 
 def load_price_data_from_db(coin_id, start_date=None, end_date=None):
     queryset = CoinHistory.objects.filter(coin_id=coin_id)
@@ -481,6 +491,8 @@ def parse_coin_from_input(user_input):
 
 
 def run_news_agent(user_input, start_date=None, end_date=None):
+    time.sleep(1)
+    return {"text": f"📰★新聞模塊,測試使用", "extra_data": "12345"}
     news_summary = search_news(
             question=user_input,
             start_date=start_date,
@@ -491,9 +503,7 @@ def run_news_agent(user_input, start_date=None, end_date=None):
     return {"text": f"📰★新聞模塊", "extra_data": news_summary_with_links}
 
 
-from django.db.models import Min, Max, Sum
-from django.db.models import DateField
-from django.db.models.functions import Cast
+
 
 def parse_safe_date(date_str):
     """將字串轉成 date，失敗回傳 None"""
@@ -576,6 +586,8 @@ def run_price_agent(user_input, start_date=None, end_date=None):
 
 
 def run_other_agent(user_input, start_date=None, end_date=None):
+    time.sleep(1)
+    return {"text": f"📊★其他經濟數據模塊,測試使用", "extra_data": "12345"}
     financial_data = FinancialData.objects.select_related("symbol").order_by("-date")
     indicator_values = IndicatorValue.objects.select_related("indicator").order_by("-date")
     btc_metrics = BitcoinMetricData.objects.select_related("metric").order_by("-date")
@@ -599,6 +611,8 @@ def run_other_agent(user_input, start_date=None, end_date=None):
     return "\n".join(lines)
 
 def run_survey_agent(user_input, start_date=None, end_date=None):
+    time.sleep(1)
+    return {"text": f"🧾📢★問卷模塊,測試使用", "extra_data": "12345"}
     queryset = UserQuestionnaireRecord.objects.select_related("user", "questionnaire").order_by("-completed_at")
     if start_date:
         queryset = queryset.filter(completed_at__date__gte=start_date)
@@ -634,126 +648,117 @@ def parse_date_range_from_input(user_input):
         return None, None
     
 
+
+
+
 @csrf_exempt
+@require_http_methods(["GET"])
 def classify_question_api(request):
-    if request.method != "POST":
-        return JsonResponse({"error": "Only POST allowed"}, status=405)
+    def event_stream():
+        # 讀取傳入資料
+        data = json.loads(request.GET.get("payload", "{}"))
+        user_input = data.get("user_input", "").strip()
+        selected_modules = data.get("selected_modules", [])
 
-    try:
-        data = json.loads(request.body)
-    except json.JSONDecodeError:
-        return JsonResponse({"error": "Invalid JSON"}, status=400)
-
-    user_input = data.get("user_input", "").strip()
-    selected_modules = data.get("selected_modules", [])
-
-    # ------------------------
-    # GPT 分類器
-    # ------------------------
-    classification_prompt = f"""
-    你是一個分類器，幫我判斷下列句子可能屬於哪些類別：
-    新聞（news）、價格（price）、其他經濟數據（other）、問卷（questionnaire）。
-    可以有多個，請以逗號分隔；如果都不屬於，請回傳 ()。
-    輸入句子：{user_input}
-    請只輸出分類結果（如：news, price）
-    """
-    result = call_chatgpt("你是一個精準的分類器", classification_prompt)
-    classifications = [c.strip().lower() for c in result.split(",") if c.strip()]
-    combined = list(set(selected_modules + classifications))
-
-    # ------------------------
-    # 解析使用者時間範圍
-    # ------------------------
-    start_date, end_date = parse_date_range_from_input(user_input)
-
-    # ------------------------
-    # 模組映射
-    # ------------------------
-    module_map = {
-        "news": run_news_agent,
-        "price": run_price_agent,
-        #"other": run_other_agent,
-        #"questionnaire": run_survey_agent
-    }
-
-    # ------------------------
-    # 統一儲存格式：列表 dict
-    # ------------------------
-    final_answers = []
-
-    for module_name in combined:
-        if module_name in module_map:
-            #try:
-            answer = module_map[module_name](user_input, start_date, end_date)
-            # 如果模組回傳 dict，拆成 text + chart_data + extra_data
-            if isinstance(answer, dict):
-                final_answers.append({
-                    "module": module_name,
-                    "text": answer.get("text", ""),
-                    "data": answer.get("extra_data", [])
-                })
-            else:
-                # 單純文字模組
-                final_answers.append({
-                    "module": module_name,
-                    "text": str(answer),
-                    "data": []
-                })
-            '''
-            except Exception as e:
-                final_answers.append({
-                    "module": module_name,
-                    "text": f"⚠️ 模組 {module_name} 執行失敗：{str(e)}",
-                    "data": []
-                })'''
-    if not final_answers:
-        final_answers.append({
-            "module": "none",
-            "text": "抱歉，我無法辨識您的問題類型或您未選擇相關模組。",
-            "data": []
-        })
-
-    # ------------------------
-    # 可選整合文字（GPT）
-    # ------------------------
-    integrated_summary = ""
-    try:
-        integration_contents = []
-
-        for f in final_answers:
-            data = f.get('data')
-            module_name = f.get('module', 'unknown')
-
-            if isinstance(data, list):
-                # list 型態，每個元素都轉成字串，再 join
-                data_str = "\n".join([str(d) for d in data])
-            else:
-                data_str = str(data)
-
-            # 加上模塊標籤，方便辨識
-            integration_contents.append(f"[{module_name} 模塊]\n{data_str}")
-
-        # 最後整合成一個大字串
-        integration_prompt_content = "\n".join(integration_contents)
-
-        integration_prompt = f"""
-        使用者問題：{user_input}
-        以下是多個不同來源的模塊輸出，請幫我整合成一段自然語言的回覆，
-        保留重要數據與事件，邏輯清晰，適合直接回覆使用者：
-        {integration_prompt_content}
+        # 1️⃣ 分類
+        classification_prompt = f"""
+        你是一個分類器，幫我判斷下列句子可能屬於哪些類別：
+        新聞（news）、價格（price）、其他經濟數據（other）、問卷（questionnaire）。
+        可以有多個，請以逗號分隔；如果都不屬於，請回傳 ()。
+        輸入句子：{user_input}
+        請只輸出分類結果（如：news, price）
         """
-        integrated_summary = call_chatgpt("你是一個專業的資訊整合助理", integration_prompt)
-    except Exception as e:
-        integrated_summary = f"⚠️ 整合失敗：{str(e)}"
+        result = call_chatgpt("你是一個精準的分類器", classification_prompt)
+        classifications = [c.strip().lower() for c in result.split(",") if c.strip()]
+        combined = list(set(selected_modules + classifications))
 
-    return JsonResponse({
-        "classifications": combined,
-        "final_answers": final_answers,
-        "integrated_summary": integrated_summary
-    }, json_dumps_params={"ensure_ascii": False})
+        module_map = {
+            "price": run_price_agent,
+            "news": run_news_agent,
+            "other": run_other_agent,
+            "questionnaire": run_survey_agent
+        }
+        
+        ordered_combined = [k for k in module_map.keys() if k in combined]
 
+        print(ordered_combined)
+
+        # 推送分類結果
+        yield f"data: {json.dumps({'classifications': ordered_combined}, ensure_ascii=False)}\n\n"
+
+        # 解析日期
+        start_date, end_date = parse_date_range_from_input(user_input)
+
+
+
+        # 執行各模組
+        final_answers = []
+        for module_name in ordered_combined:
+            if module_name in module_map:
+                answer = module_map[module_name](user_input, start_date, end_date)
+                if isinstance(answer, dict):
+                    final_answers.append({
+                        "module": module_name,
+                        "text": answer.get("text", ""),
+                        "data": answer.get("extra_data", [])
+                    })
+                else:
+                    final_answers.append({
+                        "module": module_name,
+                        "text": str(answer),
+                        "data": []
+                    })
+                # 每跑完一個模組就推送一次
+                yield f"data: {json.dumps({'progress': module_name, 'result': final_answers[-1]}, ensure_ascii=False)}\n\n"
+
+        if not final_answers:
+            final_answers.append({
+                "module": "none",
+                "text": "抱歉，我無法辨識您的問題類型或您未選擇相關模組。",
+                "data": []
+            })
+            yield f"data: {json.dumps({'progress': 'none', 'result': final_answers[-1]}, ensure_ascii=False)}\n\n"
+
+        # 5️⃣ 整合回覆
+        integrated_summary = ""
+        try:
+            integration_contents = []
+            for f in final_answers:
+                data_block = f.get('data')
+                module_name = f.get('module', 'unknown')
+                if isinstance(data_block, list):
+                    data_str = "\n".join([str(d) for d in data_block])
+                else:
+                    data_str = str(data_block)
+                integration_contents.append(f"[{module_name} 模塊]\n{data_str}")
+            integration_prompt_content = "\n".join(integration_contents)
+
+            integration_prompt = f"""
+            使用者問題：{user_input}
+            以下是多個不同來源的模塊輸出，請幫我整合成一段自然語言的回覆，
+            保留重要數據與事件，邏輯清晰，適合直接回覆使用者：
+            {integration_prompt_content}
+            """
+            integrated_summary = call_chatgpt("你是一個專業的資訊整合助理", integration_prompt)
+        except Exception as e:
+            integrated_summary = f"⚠️ 整合失敗：{str(e)}"
+
+        # 最後一次推送（整合回覆）
+        yield f"data: {json.dumps({'integrated_summary': integrated_summary}, ensure_ascii=False)}\n\n"
+
+        # 可以再補一個完成訊號
+        yield "event: end\ndata: done\n\n"
+
+    # SSE 回應
+    response = StreamingHttpResponse(event_stream(), content_type='text/event-stream')
+    response['Cache-Control'] = 'no-cache'
+    return response
 
 
 
 def chat_view(request):
     return render(request, "chat2.html")
+
+
+
+
