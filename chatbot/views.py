@@ -195,3 +195,8 @@ def chat_api(request):
 
     else:
         return JsonResponse({'error': '只支援 POST 請求'}, status=405)
+
+
+# ---- 顯示 WebChat 頁面 ----
+def webchat_page(request):
+    return render(request, 'chatbot/cai.html')

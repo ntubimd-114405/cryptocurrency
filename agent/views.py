@@ -207,12 +207,13 @@ def questionnaire_list(request):
     # ---------- 計算整體完成比例 ----------
     overall_progress = int(total_all_answered / total_all_questions * 100) if total_all_questions > 0 else 0
     overall_remaining = 100 - overall_progress
-
+    know = None
 
     return render(request, 'questionnaire_list.html', {
         'data': data,
         'overall_progress': overall_progress,
         'overall_remaining': overall_remaining,
+        'know': know,
     })
 
 # 重新填問卷
@@ -306,6 +307,7 @@ def analyze_user_responses(user, questionnaire, api):
         return f"分析失敗：{e}"
     
 def get_total_analysis():
+    return "這是總分析結果"
     records = UserQuestionnaireRecord.objects.filter(
         gpt_analysis_result__isnull=False
     ).select_related('questionnaire', 'user')
@@ -334,7 +336,6 @@ def get_total_analysis():
             {"role": "user", "content": prompt}
         ]
     }
-
     try:
         response = requests.post(url, headers=headers, json=data)
         response.raise_for_status()
@@ -347,7 +348,7 @@ def get_total_analysis():
 
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
-from .models import UserAnswer
+from .models import UserAnswer, Questionnaire
 from main.models import Coin, CoinCategory, CoinCategoryRelation
 import random
 
@@ -357,48 +358,80 @@ RISK_QUESTIONNAIRE_IDS = [2, 3, 4, 9]
 def analysis_result_view(request):
     user = request.user
 
-    # ✅ 取得全部分析結果（原 analyze_all_questionnaires）
+    # 取得全部分析結果（原 analyze_all_questionnaires）
     total_analysis = get_total_analysis()
 
-    # ✅ 取得使用者的問卷風險分析
+    # 取得使用者的問卷風險分析
     user_answers = UserAnswer.objects.filter(
         user=user,
-        question__questionnaire__id__in=RISK_QUESTIONNAIRE_IDS
     ).prefetch_related("selected_options")
 
     total_score = 0
     answer_count = 0
 
+    # 核心題目分數
+    core_scores = {
+        "score_investment_exp": 0, 
+        "score_risk_pref": 0,
+        "score_investment_goal": 0,
+        "score_psychology": 0,
+        "score_q7": 0,
+    }
+    core_counts = {k: 0 for k in core_scores}
+
+    
+    # 累計分數
     for ans in user_answers:
         for option in ans.selected_options.all():
+
             total_score += option.score
             answer_count += 1
+            q_order = ans.question.questionnaire.id
+            # 核心題目
+            if q_order == 2:
+                core_scores["score_investment_exp"] += option.score
+                core_counts["score_investment_exp"] += 1
+            elif q_order == 3:
+                core_scores["score_risk_pref"] += option.score
+                core_counts["score_risk_pref"] += 1
+            elif q_order == 4:
+                core_scores["score_investment_goal"] += option.score
+                core_counts["score_investment_goal"] += 1
+            elif q_order == 7:
+                core_scores["score_q7"] += option.score
+                core_counts["score_q7"] += 1
+            elif q_order == 9:
+                core_scores["score_psychology"] += option.score
+                core_counts["score_psychology"] += 1
 
+    # 分數計算
     if answer_count == 0:
         risk_type = "無法評估"
-        suggestion = "請至少填寫第 2、3、4、9 題任一題，才能分析風險屬性。"
+        suggestion = "請至少填寫第 1~9 題任一題，才能分析風險屬性。"
         average = None
         allocation = {}
         recommended_coins = {}
+        core_scores_avg = {k: None for k in core_scores}
     else:
         average = total_score / answer_count
 
-        # 🎯 浮動比例插值演算法
-        # 分數區間 0 ~ 5
-        ratio = min(max(average / 5, 0), 1)
-        allocation = {
-            "穩定幣": 0.6 * (1 - ratio),             # 越保守越高
-            "主流幣": 0.3,                            # 主流幣固定中間值
-            "成長幣": 0.1 + 0.3 * ratio,              # 從 0.1 漸漸到 0.4
-            "迷因幣": 0.0 + 0.2 * ratio,              # 從 0 漸漸到 0.2
-            "其他": 0.0 + 0.1 * ratio,                # 從 0 漸漸到 0.1
+        core_scores_avg = {
+            k: round(core_scores[k] / core_counts[k] * 20, 2) if core_counts[k] > 0 else 0
+            for k in core_scores
         }
 
-        # normalize 確保總和 = 1
+        # allocation 與風險屬性判斷
+        ratio = min(max(average / 5, 0), 1)
+        allocation = {
+            "穩定幣": 0.6 * (1 - ratio),
+            "主流幣": 0.3,
+            "成長幣": 0.1 + 0.3 * ratio,
+            "迷因幣": 0.0 + 0.2 * ratio,
+            "其他": 0.0 + 0.1 * ratio,
+        }
         total = sum(allocation.values())
         allocation = {k: round(v/total, 2) for k, v in allocation.items()}
 
-        # 根據平均分數判斷風險屬性（保留原本分類）
         if average <= 2.5:
             risk_type = "保守型"
         elif average <= 4:
@@ -406,7 +439,6 @@ def analysis_result_view(request):
         else:
             risk_type = "積極型"
 
-        # 🪙 取得幣種推薦（分類 -> 幣種名稱清單）
         recommended_coins = {}
         for category_name, ratio_value in allocation.items():
             try:
@@ -426,12 +458,9 @@ def analysis_result_view(request):
             except CoinCategory.DoesNotExist:
                 recommended_coins[category_name] = []
 
-        # 組建文字建議（百分比）
-        suggestion ="、".join(
-            [f"{int(v*100)}% {k}" for k, v in allocation.items() if v > 0]
-        )
+        suggestion = "、".join([f"{int(v*100)}% {k}" for k, v in allocation.items() if v > 0])
 
-    # 📊 allocation_data 給前端圖表
+    # allocation_data 保留
     allocation_data = [
         int(allocation.get("穩定幣", 0) * 100),
         int(allocation.get("主流幣", 0) * 100),
@@ -439,15 +468,16 @@ def analysis_result_view(request):
         int(allocation.get("迷因幣", 0) * 100),
         int(allocation.get("其他", 0) * 100),
     ]
-    
-    questionnaires = Questionnaire.objects.all()
-    selected_questionnaires = questionnaires.filter(id__in=RISK_QUESTIONNAIRE_IDS)
 
-    selected_progress_list = []  # 存每份問卷的題數和百分比
+   # ---------- 總進度計算 ----------
+    progress_data = []
     total_questions_all = 0
     answered_questions_all = 0
 
-    for q in selected_questionnaires:
+    # 取得所有問卷
+    questionnaires = Questionnaire.objects.all()
+
+    for q in questionnaires:
         questions = q.questions.all()
         total_questions = questions.count()
         answered_questions = UserAnswer.objects.filter(
@@ -455,40 +485,37 @@ def analysis_result_view(request):
             question__in=questions
         ).exclude(selected_options=None).count()
 
-        # 個別進度：題數 & 百分比
-        progress_dict = {
-            "answered": answered_questions,
-            "total": total_questions,
-            "percent": int(answered_questions / total_questions * 100) if total_questions > 0 else 0,
-        }
-        selected_progress_list.append(progress_dict)
-
-        # 累加到總進度計算
+        # 累加全部問卷的總題數與已答題數
         total_questions_all += total_questions
         answered_questions_all += answered_questions
 
-    # ---------- 總進度 ----------
-    overall_progress = {
+        # 總進度資料 (方便前端直接使用)
+        progress_data.append({
+            "name": f"問卷{q.id}",           # 問卷名稱
+            "answered": answered_questions,  # 已完成題數
+            "unanswered": total_questions - answered_questions  # 未完成題數
+        })
+
+    # 整體完成度
+    overall_progress2 = {
         "answered": answered_questions_all,
         "total": total_questions_all,
-        "percent": int(answered_questions_all / total_questions_all * 100) if total_questions_all > 0 else 0,
+        "percent": int(answered_questions_all / total_questions_all * 100) if total_questions_all > 0 else 0
     }
 
-    # ✅ 渲染結果
-    return render(request, "analysis_result.html", {
+
+    return render(request, "analysis_all_result.html", {
+        "overall_progress2": overall_progress2,
         "analysis": total_analysis,
-        "total_score": total_score,
         "average_score": round(average, 2) if average is not None else None,
         "risk_type": risk_type,
-        "answered_questionnaire_count": len(RISK_QUESTIONNAIRE_IDS),
         "suggestion": suggestion,
         "recommended_coins": recommended_coins,
         "allocation_data": allocation_data,
         "allocation": allocation,
-        "overall_progress": overall_progress,
-        "selected_progress_list": selected_progress_list,
+        "core_scores_avg": core_scores_avg, #核心題目分數
+        "progress_data": progress_data,
     })
-
 
 
     
