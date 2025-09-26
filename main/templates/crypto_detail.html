@@ -194,6 +194,11 @@
       技術指標
     </button>
   </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="backtest-tab" data-bs-toggle="tab" data-bs-target="#backtest" type="button" role="tab">
+      回測
+    </button>
+  </li>
 </ul>
 
 <!-- 分頁內容 -->
@@ -215,6 +220,10 @@
 
   <div class="tab-pane fade" id="pointers" role="tabpanel" aria-labelledby="pointers-tab">
     {% include 'cypto_detail/pointers.html' %}
+  </div>
+
+  <div class="tab-pane fade" id="backtest" role="tabpanel" aria-labelledby="backtest-tab">
+    {% include 'cypto_detail/backtest.html' %}
   </div>
 </div>
 {% endblock %}

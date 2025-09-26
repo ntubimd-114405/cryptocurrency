@@ -1,138 +1,108 @@
 <canvas id="priceChart" width="800" height="400"></canvas>
 <canvas id="rsiChart" width="800" height="200"></canvas>
+<canvas id="stochChart" width="800" height="200"></canvas>
+<canvas id="cciChart" width="800" height="200"></canvas>
+<canvas id="williamsChart" width="800" height="200"></canvas>
+<canvas id="obvChart" width="800" height="200"></canvas>
+<canvas id="mfiChart" width="800" height="200"></canvas>
+<canvas id="atrChart" width="800" height="200"></canvas>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
 <script>
-let priceChart, rsiChart;
+let priceChart, rsiChart, stochChart, cciChart, williamsChart, obvChart, mfiChart, atrChart;
 
-// 從路徑取得 coin_id，沒取得則預設 '1'
-function getCoinIdFromPath() {
-  const path = window.location.pathname; // 例: "/crypto/2/"
-  const parts = path.split('/').filter(Boolean); // ["crypto", "2"]
-  const lastPart = parts[parts.length - 1];
-  // 檢查是不是數字，是就回傳，不是就回傳 '1'
-  if (/^\d+$/.test(lastPart)) {
-    return lastPart;
-  }
-  return '1';
+const coinId = {{ coin_id }};
+console.log(coinId);
+
+async function fetchChartData() {
+    const res = await fetch(`/api/chart-data/?coin_id=${coinId}`);
+    if (!res.ok) throw new Error("無法取得資料");
+    return res.json();
 }
 
-async function fetchChartData(coin_id) {
-  const res = await fetch(`/api/chart-data/?coin_id=${coin_id}`);
-  if (!res.ok) throw new Error("無法取得圖表資料");
-  return res.json();
-}
+// 呼叫 API
+  fetchChartData(coinId).then(data => {
+    console.log("圖表資料:", data);
+  }).catch(err => console.error(err));
 
 function renderCharts(data) {
+  // 先銷毀舊的圖表
+  [priceChart, rsiChart, stochChart, cciChart, williamsChart, obvChart, mfiChart, atrChart]
+    .forEach(c => { if(c) c.destroy(); });
+
+  // 價格圖
   const ctxPrice = document.getElementById('priceChart').getContext('2d');
-  const ctxRsi = document.getElementById('rsiChart').getContext('2d');
-
-  if (priceChart) priceChart.destroy();
-  if (rsiChart) rsiChart.destroy();
-
   priceChart = new Chart(ctxPrice, {
-      type: 'line',
-      data: {
-          labels: data.dates,
-          datasets: [
-              {
-                  label: '收盤價',
-                  data: data.close,
-                  borderColor: 'blue',
-                  fill: false,
-                  tension: 0.1
-              },
-              {
-                  label: 'EMA 20',
-                  data: data.ema20,
-                  borderColor: 'orange',
-                  fill: false,
-                  tension: 0.1
-              }
-          ]
-      },
-      options: {
-          responsive: true,
-          interaction: {
-              mode: 'index',
-              intersect: false,
-          },
-          stacked: false,
-          plugins: {
-              title: {
-                  display: true,
-                  text: `${data.selected_coin_name} - 收盤價與EMA 20`
-              }
-          },
-          scales: {
-              x: {
-                  display: true,
-                  title: {
-                      display: true,
-                      text: '日期'
-                  }
-              },
-              y: {
-                  display: true,
-                  title: {
-                      display: true,
-                      text: '價格'
-                  }
-              }
-          }
-      }
+    type: 'line',
+    data: {
+      labels: data.dates,
+      datasets: [
+        { label: '收盤價', data: data.close, borderColor: 'blue', fill: false },
+        { label: 'EMA20', data: data.ema20, borderColor: 'orange', fill: false },
+        { label: 'BB High', data: data.bb_high, borderColor: 'red', borderDash: [5,5], fill: false },
+        { label: 'BB Low', data: data.bb_low, borderColor: 'green', borderDash: [5,5], fill: false }
+      ]
+    },
+    options: { responsive: true, plugins: { title: { display: true, text: `${data.selected_coin_name} - 價格相關` } } }
   });
 
-  rsiChart = new Chart(ctxRsi, {
-      type: 'line',
-      data: {
-          labels: data.dates,
-          datasets: [{
-              label: 'RSI',
-              data: data.rsi,
-              borderColor: 'green',
-              fill: false,
-              tension: 0.1
-          }]
-      },
-      options: {
-          responsive: true,
-          plugins: {
-              title: {
-                  display: true,
-                  text: `${data.selected_coin_name} - RSI 指標`
-              }
-          },
-          scales: {
-              y: {
-                  min: 0,
-                  max: 100,
-                  title: {
-                      display: true,
-                      text: 'RSI 值'
-                  }
-              },
-              x: {
-                  display: true,
-                  title: {
-                      display: true,
-                      text: '日期'
-                  }
-              }
-          }
-      }
+  // RSI
+  rsiChart = new Chart(document.getElementById('rsiChart').getContext('2d'), {
+    type: 'line',
+    data: { labels: data.dates, datasets: [{ label: 'RSI', data: data.rsi, borderColor: 'green', fill: false }] },
+    options: { responsive: true, plugins: { title: { display: true, text: `${data.selected_coin_name} - RSI` } } }
   });
+
+  // Stochastic
+  stochChart = new Chart(document.getElementById('stochChart').getContext('2d'), {
+    type: 'line',
+    data: { labels: data.dates, datasets: [{ label: 'Stochastic', data: data.stoch, borderColor: 'orange', fill: false }] },
+    options: { responsive: true, plugins: { title: { display: true, text: `${data.selected_coin_name} - Stochastic` } } }
+  });
+
+  // CCI
+  cciChart = new Chart(document.getElementById('cciChart').getContext('2d'), {
+    type: 'line',
+    data: { labels: data.dates, datasets: [{ label: 'CCI', data: data.cci, borderColor: 'blue', fill: false }] },
+    options: { responsive: true, plugins: { title: { display: true, text: `${data.selected_coin_name} - CCI` } } }
+  });
+
+  // Williams %R
+  williamsChart = new Chart(document.getElementById('williamsChart').getContext('2d'), {
+    type: 'line',
+    data: { labels: data.dates, datasets: [{ label: 'Williams %R', data: data.williams_r, borderColor: 'purple', fill: false }] },
+    options: { responsive: true, plugins: { title: { display: true, text: `${data.selected_coin_name} - Williams %R` } } }
+  });
+
+  // OBV
+  obvChart = new Chart(document.getElementById('obvChart').getContext('2d'), {
+    type: 'line',
+    data: { labels: data.dates, datasets: [{ label: 'OBV', data: data.obv, borderColor: 'blue', fill: false }] },
+    options: { responsive: true, plugins: { title: { display: true, text: `${data.selected_coin_name} - OBV` } } }
+  });
+
+  // MFI
+  mfiChart = new Chart(document.getElementById('mfiChart').getContext('2d'), {
+    type: 'line',
+    data: { labels: data.dates, datasets: [{ label: 'MFI', data: data.mfi, borderColor: 'green', fill: false }] },
+    options: { responsive: true, plugins: { title: { display: true, text: `${data.selected_coin_name} - MFI` } } }
+  });
+
+  // ATR
+  atrChart = new Chart(document.getElementById('atrChart').getContext('2d'), {
+    type: 'line',
+    data: { labels: data.dates, datasets: [{ label: 'ATR', data: data.atr, borderColor: 'orange', fill: false }] },
+    options: { responsive: true, plugins: { title: { display: true, text: `${data.selected_coin_name} - ATR` } } }
+  });
+
 }
 
 async function init() {
   try {
-    let coinId = getCoinIdFromPath();
-    console.log("抓到的 coin_id:", coinId);
-    const data = await fetchChartData(coinId);
+    const data = await fetchChartData();
     renderCharts(data);
-  } catch (err) {
-    alert('初始化失敗：' + err.message);
+  } catch(err) {
+    alert("初始化失敗：" + err.message);
   }
 }
 
