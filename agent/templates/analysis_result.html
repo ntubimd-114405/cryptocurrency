@@ -48,6 +48,13 @@
   .fade-out {
     animation: fadeOut 0.5s ease-in-out forwards;
   }
+
+  .card-body {
+    text-align: justify;   /* 讓文字左右平均分布 */
+    text-indent: 2em;      /* 每段開頭縮排 */
+    padding: 1rem 1.5rem; /* 上下 1rem，左右 1.5rem */
+    margin: auto; /* 置中內容區塊 */
+  }
 </style>
 
 <div id="page-content" class="container mt-5 fade-in">
@@ -58,17 +65,23 @@
   </div>
 
   {% if analysis %}
-  <div class="card shadow-sm mb-4 border-0 fade-in" style="animation-delay: 0.2s;">
-    <div class="card-header bg-primary text-white fw-bold">分析摘要</div>
-    <div class="card-body" style="white-space: pre-wrap;">{{ analysis }}</div>
-  </div>
+    <div class="card shadow-sm mb-4 border-0 fade-in" style="animation-delay: 0.2s;">
+      <div class="card-header bg-primary text-white fw-bold text-center">
+        分析摘要
+      </div>
+      <div class="card-body text-start" style="white-space: pre-wrap; text-align: justify; padding: 1rem 1.5rem;">
+        {{ analysis }}
+      </div>
+    </div>
   {% endif %}
 
   {% if analysis_all %}
-  <div class="card shadow-sm mb-4 border-0 fade-in" style="animation-delay: 0.4s;">
-    <div class="card-header bg-info text-white fw-bold">詳細分析</div>
-    <div class="card-body" style="white-space: pre-wrap;">{{ analysis_all }}</div>
-  </div>
+    <div class="card shadow-sm mb-4 border-0 fade-in" style="animation-delay: 0.4s;">
+      <div class="card-header bg-info text-white fw-bold">詳細分析</div>
+      <div class="card-body text-start" style="white-space: pre-wrap; text-align: justify; text-indent: 2em; line-height: 1.8;">
+        {{ analysis_all }}
+      </div>
+    </div>
   {% endif %}
 
   <div class="text-center" style="animation-delay: 0.6s;">

@@ -275,7 +275,7 @@ def analyze_user_responses(user, questionnaire, api):
     # 產生 prompt
     prompt_lines = [f"Q: {q}\nA: {a}" for q, a in qa_pairs]
     print(prompt_lines)
-    prompt = "不需要以每個題目做出分析，只須要做出總結就可以了：\n\n" + "\n\n".join(prompt_lines)
+    prompt = "不需要以每個題目做出分析，只須要做出總結就可以了，然後不要出現總結兩字：\n\n" + "\n\n".join(prompt_lines)
 
     # 呼叫 v36 API
     try:
@@ -315,11 +315,11 @@ def get_total_analysis():
         title = record.questionnaire.title
         username = record.user.username
         analysis = record.gpt_analysis_result
-        block = f"【問卷】{title}（使用者：{username}）\n{analysis}"
+        block = analysis
         analysis_blocks.append(block)
 
     prompt = (
-        "以下是多份問卷的 GPT 分析結果，請根據這些內容進行第二層的彙總分析，每個項目不要太多字：\n\n"
+        "以下是多份問卷的 GPT 分析結果，請僅根據使用者填寫問卷的投資相關內容進行簡短分析，請使用繁體中文來回答：\n\n"
         + "\n\n".join(analysis_blocks)
     )
 
