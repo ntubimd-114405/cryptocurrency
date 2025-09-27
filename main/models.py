@@ -53,6 +53,9 @@ class UserProfile(models.Model):
         ('premium', 'Premium'),
     ]
     membership = models.CharField(max_length=10, choices=MEMBERSHIP_CHOICES, default='free')
+    
+    #(已了解)問卷彈跳視窗
+    has_seen_know_modal = models.BooleanField(default=False)
 
     def __str__(self):
         return self.user.username

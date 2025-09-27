@@ -207,7 +207,15 @@ def questionnaire_list(request):
     # ---------- 計算整體完成比例 ----------
     overall_progress = int(total_all_answered / total_all_questions * 100) if total_all_questions > 0 else 0
     overall_remaining = 100 - overall_progress
-    know = None
+
+    user_profile = request.user.profile  # 取得使用者的 Profile
+    know = not user_profile.has_seen_know_modal  # 只在未看過時顯示
+
+    # 當使用者按下「我已了解」
+    if request.method == 'POST' and request.POST.get('know_confirm') == '1':
+        user_profile.has_seen_know_modal = True
+        user_profile.save()
+        return JsonResponse({'status': 'ok'})
 
     return render(request, 'questionnaire_list.html', {
         'data': data,
