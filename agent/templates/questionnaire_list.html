@@ -152,10 +152,16 @@
             </div>
 
             <!-- 底部按鈕 -->
-            <div class="modal-footer">
-                <button type="button" id="btnUnderstand" class="btn btn-primary w-100" disabled>確定</button>
-            </div>
-
+            <form method="post" class="modal-footer w-100 d-flex justify-content-center">
+                {% csrf_token %}
+                <button type="submit" name="know_confirm" 
+                id="btnUnderstand" 
+                class="btn btn-primary w-100" 
+                disabled 
+                data-bs-dismiss="modal">
+                確定
+            </button>
+            </form>
         </div>
     </div>
 </div>
@@ -178,6 +184,38 @@
         const modal = bootstrap.Modal.getInstance(document.getElementById('infoModal'));
         modal.hide();
     });
+
+document.addEventListener("DOMContentLoaded", function () {
+  const checkbox = document.getElementById("agreeCheck");
+  const btn = document.getElementById("btnUnderstand");
+
+  checkbox.addEventListener("change", function () {
+    btn.disabled = !checkbox.checked;
+  });
+
+  btn.addEventListener("click", function () {
+    fetch("", {
+      method: "POST",
+      headers: {
+        "X-CSRFToken": "{{ csrf_token }}",
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      body: "know_confirm=1"
+    }).then(res => res.json())
+      .then(data => {
+        if (data.status === "ok") {
+          // 關閉 Modal
+          const modal = bootstrap.Modal.getInstance(document.getElementById("infoModal"));
+          modal.hide();
+          // 🔹 主動刷新頁面，現在是 GET 狀態，不會跳提示
+          window.location.reload();
+        }
+      });
+  });
+
+  const infoModal = new bootstrap.Modal(document.getElementById("infoModal"));
+  infoModal.show();
+  });
 </script>
 
 

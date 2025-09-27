@@ -1,35 +1,45 @@
-import os
-import requests
-from pathlib import Path
-from dotenv import load_dotenv
+from langchain_ollama import OllamaLLM
 
-def predict_sentiment_api(texts):
-    # 取得 .env 路徑
-    env_path = Path(__file__).resolve().parents[2] / '.env'
-    load_dotenv(dotenv_path=env_path)
+# 全局初始化 LLM，避免每次呼叫都初始化
+_llm_instance = OllamaLLM(model="mistral")
+
+def predict_sentiment_api(text: str) -> tuple[str, float]:
+    """
+    使用 OllamaLLM 做金融新聞情緒分析。
     
-    API_URL = os.getenv('API_URL') + '/sentiment'
+    Returns:
+        (sentiment, confidence)
+        sentiment: '1' = 正面, '0' = 中立, '-1' = 負面, '-9' = 無法判斷
+        confidence: 0.0 ~ 1.0
+    """
+    if not text or not text.strip():
+        return '-9', 0.0  # 空文本直接回傳容錯結果
 
-    data = {
-        "texts": [
-            texts
-        ]
-    }
-    response = requests.post(API_URL, json=data)
-    if response.status_code == 200:
-        results = response.json()
-        for item in results:
-            print(f"情感: {item['sentiment']}")
-        return results[0]['sentiment']
+    prompt = f"""
+You are a financial news sentiment analysis assistant.
+Please respond ONLY with one of the following: "Positive", "Neutral", or "Negative".
+Do not include any extra text.
 
-if __name__ == "__main__":
-    test_texts = [
-    "The Bitcoin market is too volatile to trust." * 10,
-    "Ethereum just surged after BlackRock announced their support.",
-    "The crypto industry is facing increasing regulations and uncertainty."
-    ]
+News content:
+{text}
+"""
 
-    for i, text in enumerate(test_texts, 1):
-        print(f"\n[Sample {i}]")
-        result = predict_sentiment_api(text)
-        print("Predicted sentiment:", result)
+    try:
+        # 使用全局 LLM 實例
+        output = _llm_instance.invoke(prompt).strip()
+        normalized = output.lower().replace(" ", "")
+
+        mapping = {
+            'positive': '1',
+            'neutral': '0',
+            'negative': '-1'
+        }
+
+        sentiment = mapping.get(normalized, '-9')
+        confidence = 0.9 if sentiment in ['1', '0', '-1'] else 0.0
+
+        return sentiment, confidence
+
+    except Exception as e:
+        print(f"OllamaLLM analysis error: {e}")
+        return '-9', 0.0  # 容錯回傳

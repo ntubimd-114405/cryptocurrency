@@ -113,20 +113,36 @@ def news_list(request):
     })
 
 # 新聞列表翻頁-----------------
-
+from django.shortcuts import render, get_object_or_404
 from data_analysis.sentiment.api import predict_sentiment_api
+from .models import Article
 
+CONFIDENCE_THRESHOLD = 0.6  # 信心分數最低閾值
 
 def analyze_sentiment_by_id(request, article_id):
     article = get_object_or_404(Article, pk=article_id)
 
     if article.content:
-        sentiment_result = predict_sentiment_api(article.content)
+        sentiment_result, confidence = predict_sentiment_api(article.content)
+
+        # 確保 confidence 是 float
+        try:
+            confidence = float(confidence)
+        except:
+            confidence = 0.0
+
+        # 信心不足時自動標為 -9
+        if confidence < CONFIDENCE_THRESHOLD:
+            sentiment_result = '-9'
+
+        # 只存 sentiment
         article.sentiment = sentiment_result
         article.save(update_fields=['sentiment'])
+
         message = f"文章 (ID: {article_id}) 的情緒分析已完成，結果: {sentiment_result}"
     else:
         message = f"文章 (ID: {article_id}) 沒有內容，無法分析情緒"
+        confidence = 0.0
 
     sentiment_label_map = {
         '-1': '負面',
@@ -137,8 +153,11 @@ def analyze_sentiment_by_id(request, article_id):
     }
     sentiment_label = sentiment_label_map.get(article.sentiment, '未知')
 
+    print(f"文章 (ID: {article_id}) 的情緒分析結果: {sentiment_label} (信心 {confidence:.2f})", article)
+
     return render(request, 'analyze_single_result.html', {
         'article': article,
         'message': message,
         'sentiment_label': sentiment_label,
+        'confidence': confidence,  # 前端顯示用，不存 DB
     })
