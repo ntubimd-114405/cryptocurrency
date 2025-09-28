@@ -27,7 +27,7 @@ from django.views.decorators.csrf import csrf_exempt
 from .models import WeeklyReport
 from main.models import CoinHistory,Coin,UserProfile, BitcoinPrice
 from news.models import Article
-from other.models import FinancialData, IndicatorValue, BitcoinMetricData
+from other.models import FinancialData, IndicatorValue, BitcoinMetricData, FinancialSymbol
 from agent.models import Questionnaire, Question, AnswerOption, UserAnswer, UserQuestionnaireRecord
 from data_analysis.text_generation.chatgpt_api import call_chatgpt
 from data_analysis.crypto_ai_agent.news_agent import search_news
@@ -491,16 +491,44 @@ def parse_coin_from_input(user_input):
 
 
 def run_news_agent(user_input, start_date=None, end_date=None):
-    time.sleep(1)
-    return {"text": f"📰★新聞模塊,測試使用", "extra_data": "12345"}
+    time.sleep(10)
+    return {
+        "text": "📰★新聞模塊",
+        "extra_data": "測試資料"
+    }
+    """
+    搜尋新聞並直接將標題轉換為可點擊連結 (news_detail)，
+    並換行處理輸出 HTML
+    """
+
+    # 取得新聞資料 (list)
     news_summary = search_news(
-            question=user_input,
-            start_date=start_date,
-            end_date=end_date
+        question=user_input,
+        start_date=start_date,
+        end_date=end_date
     )
-    news_summary_with_links = convert_id_and_newline(news_summary)
-    
-    return {"text": f"📰★新聞模塊", "extra_data": news_summary_with_links}
+
+    # 把 list 資料轉為 HTML
+    def convert_and_link(news_list):
+        text_parts = []
+        for item in news_list:
+            article_id = item.get("id")
+            title = item.get("title", "")
+            summary = item.get("summary", "")
+            try:
+                url = reverse('news_detail', kwargs={'article_id': article_id})
+                title_html = f'<a href="{url}" target="_blank">{title}</a>'
+            except:
+                title_html = title
+            text_parts.append(f"<b>{title_html}</b><br>{summary}")
+        return "<br><br>".join(text_parts)
+
+    news_summary_with_links = convert_and_link(news_summary)
+
+    return {
+        "text": "📰★新聞模塊",
+        "extra_data": news_summary_with_links
+    }
 
 
 
@@ -584,9 +612,9 @@ def run_price_agent(user_input, start_date=None, end_date=None):
 
 
 
-
+'''
 def run_other_agent(user_input, start_date=None, end_date=None):
-    time.sleep(1)
+    time.sleep(3)
     return {"text": f"📊★其他經濟數據模塊,測試使用", "extra_data": "12345"}
     financial_data = FinancialData.objects.select_related("symbol").order_by("-date")
     indicator_values = IndicatorValue.objects.select_related("indicator").order_by("-date")
@@ -610,17 +638,148 @@ def run_other_agent(user_input, start_date=None, end_date=None):
     lines.extend([f"{x.metric.name}: {x.value}（{x.date}）" for x in btc_metrics[:10]])
     return "\n".join(lines)
 
-def run_survey_agent(user_input, start_date=None, end_date=None):
-    time.sleep(1)
-    return {"text": f"🧾📢★問卷模塊,測試使用", "extra_data": "12345"}
+
+def run_survey_agent(user_input, start_date=None, end_date=None, record_ids=None):
     queryset = UserQuestionnaireRecord.objects.select_related("user", "questionnaire").order_by("-completed_at")
-    if start_date:
-        queryset = queryset.filter(completed_at__date__gte=start_date)
-    if end_date:
-        queryset = queryset.filter(completed_at__date__lte=end_date)
-    latest_records = queryset[:10]
-    records_list = [f"{r.user.username} - 問卷: {r.questionnaire.title}（完成於 {r.completed_at}）" for r in latest_records]
-    return "🧾📢★問卷模塊\n" + "\n".join(records_list)
+    #record_ids=[1,2,5]
+    # 如果指定多個 ID，直接過濾
+    if record_ids:
+        queryset = queryset.filter(id__in=record_ids)
+    else:
+        if start_date:
+            queryset = queryset.filter(completed_at__date__gte=start_date)
+        if end_date:
+            queryset = queryset.filter(completed_at__date__lte=end_date)
+        queryset = queryset[:5]  # 只取最新 5 筆
+
+    latest_records = list(queryset)
+
+    if not latest_records:
+        return {
+            "text": "🧾📢★問卷模塊\n目前沒有符合條件的問卷紀錄",
+            "extra_data": []
+        }
+
+    # 整理輸出文字
+    records_text = "\n".join(
+        f"{r.user.username} - 問卷: {r.questionnaire.title}（完成於 {r.completed_at.strftime('%Y-%m-%d %H:%M')}）"
+        for r in latest_records
+    )
+
+    # 整理額外資料
+    extra_data = [
+        {
+            "id": r.id,
+            "user": r.user.username,
+            "questionnaire": r.questionnaire.title,
+            "completed_at": r.completed_at.isoformat()
+        }
+        for r in latest_records
+    ]
+    return {
+        "text": f"🧾📢★問卷模塊\n{records_text}",
+        "extra_data": extra_data
+    }
+    '''
+def run_other_agent(user_input, start_date=None, end_date=None):
+
+    symbol_name="GC=F"
+    try:
+        # 只抓指定 symbol
+        symbol = FinancialSymbol.objects.get(symbol=symbol_name)
+        financial_data = FinancialData.objects.filter(symbol=symbol).order_by('-date')[:10]
+    except FinancialSymbol.DoesNotExist:
+        return {
+            "text": f"📊★金融數據模塊\n找不到 symbol: {symbol_name}",
+            "extra_data": []
+        }
+
+    # 組文字輸出
+    lines = [f"📊★金融數據模塊（{symbol.symbol} - {symbol.name}）"]
+    for x in financial_data:
+        lines.append(
+            f"{x.symbol.symbol} ({x.symbol.name}): "
+            f"開={x.open_price}, 高={x.high_price}, 低={x.low_price}, 收={x.close_price}, "
+            f"量={x.volume}（{x.date}）"
+        )
+
+    # 回傳字典
+    return {
+        "text": f"📊★金融數據模塊",
+        "extra_data": [
+            {
+                "id": x.id,
+                "symbol": x.symbol.symbol,
+                "name": x.symbol.name,
+                "date": x.date.isoformat(),
+                "open": x.open_price,
+                "high": x.high_price,
+                "low": x.low_price,
+                "close": x.close_price,
+                "volume": x.volume
+            } for x in financial_data
+        ]
+    }
+
+
+def run_survey_agent(user_input, start_date=None, end_date=None): #Fake
+    # 模擬問卷資料，全部為 user123
+    latest_records = [
+        {
+            "id": 101,
+            "user": "user123",
+            "questionnaire": "投資經驗",
+            "completed_at": "2025-09-03T06:53:00",
+            "analysis": "使用者在過去有多年的投資經驗，對加密貨幣市場波動有基本認知，偏好中低風險策略。"
+        },
+        {
+            "id": 102,
+            "user": "user123",
+            "questionnaire": "基本資料",
+            "completed_at": "2025-09-03T06:39:00",
+            "analysis": "填寫的基本資料完整，顯示使用者對平台操作熟悉且具備財務相關背景，後續可做個人化推薦。"
+        },
+        {
+            "id": 103,
+            "user": "user123",
+            "questionnaire": "合規與安全",
+            "completed_at": "2025-07-07T09:51:00",
+            "analysis": "使用者對合規與安全規範有一定理解，顯示其在交易時會重視風險管理與資金安全。"
+        },
+        {
+            "id": 104,
+            "user": "user123",
+            "questionnaire": "交易策略與心理行為",
+            "completed_at": "2025-07-07T09:51:00",
+            "analysis": "填答顯示使用者偏向理性分析型，面對市場波動時較不受情緒影響，適合長期策略配置。"
+        },
+        {
+            "id": 105,
+            "user": "user123",
+            "questionnaire": "未來看法與預期",
+            "completed_at": "2025-07-07T09:51:00",
+            "analysis": "使用者對未來市場抱持穩健樂觀態度，願意接受新型加密資產的投資，建議提供多樣化投資組合參考。"
+        }
+    ]
+
+    # 模擬 Agent 輸出文字
+    text_lines = []
+
+    for r in latest_records:
+        text_lines.append(
+            f"👤 使用者: {r['user']}<br>"
+            f"📄 問卷名稱: {r['questionnaire']}<br>"
+            f"⏰ 完成時間: {r['completed_at']}<br>"
+            f"💡 智能分析: {r['analysis']}<br>"
+            "────────────────────────────"
+        )
+    records_text = "<br>".join(text_lines)
+    print(records_text,latest_records)
+    return {
+        "text": f"🧾📢★問卷模塊",
+        "extra_data": records_text
+    }
+
 
 def parse_date_range_from_input(user_input):
     """用 GPT 解析使用者輸入的時間範圍，回傳 start_date, end_date"""
@@ -659,7 +818,7 @@ def classify_question_api(request):
         data = json.loads(request.GET.get("payload", "{}"))
         user_input = data.get("user_input", "").strip()
         selected_modules = data.get("selected_modules", [])
-
+        yield f'data: {json.dumps({"progress": "loding", "result": {"module": "loding","text": "分析問題中", "data": []}}, ensure_ascii=False)}\n\n'
         # 1️⃣ 分類
         classification_prompt = f"""
         你是一個分類器，幫我判斷下列句子可能屬於哪些類別：
@@ -693,9 +852,17 @@ def classify_question_api(request):
 
         # 執行各模組
         final_answers = []
+
         for module_name in ordered_combined:
             if module_name in module_map:
+                # 先推送「生成中」訊息
+                yield f'data: {json.dumps({"progress": "loding", "result": {"module": "loding","text": f"{module_name}生成中", "data": []}}, ensure_ascii=False)}\n\n'
+
+
+                # 執行 module
                 answer = module_map[module_name](user_input, start_date, end_date)
+
+                # 整理結果
                 if isinstance(answer, dict):
                     final_answers.append({
                         "module": module_name,
@@ -708,8 +875,11 @@ def classify_question_api(request):
                         "text": str(answer),
                         "data": []
                     })
-                # 每跑完一個模組就推送一次
+
+                # 每跑完一個模組就推送真正結果
+                print({'progress': module_name, 'result': final_answers[-1]})
                 yield f"data: {json.dumps({'progress': module_name, 'result': final_answers[-1]}, ensure_ascii=False)}\n\n"
+
 
         if not final_answers:
             final_answers.append({
@@ -719,6 +889,7 @@ def classify_question_api(request):
             })
             yield f"data: {json.dumps({'progress': 'none', 'result': final_answers[-1]}, ensure_ascii=False)}\n\n"
 
+        yield f'data: {json.dumps({"progress": "loding", "result": {"module": "loding","text": "整合回覆中", "data": []}}, ensure_ascii=False)}\n\n'
         # 5️⃣ 整合回覆
         integrated_summary = ""
         try:

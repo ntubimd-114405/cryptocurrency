@@ -7,6 +7,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+<!-- <img src="{% static 'images/bot.png' %}"> -->
 <div class="chat-container-page1">
   <div class="chat-messages"></div>
   <div class="module-select">
@@ -25,45 +26,146 @@
 
 <style>
 .chat-container-page1 {
-  width: 95%;                 /* 改成百分比，幾乎滿版 */
-  max-width: 1400px;          /* 最大寬度限制，避免太誇張 */
+  width: 95%;
+  max-width: 1400px;
   margin: 20px auto;
-  background: white;
-  border-radius: 24px;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.08); /* 陰影稍微柔和一點 */
+  background: linear-gradient(145deg, #ffffff, #f9fbff);
+  border-radius: 28px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.06);
   display: flex;
   flex-direction: column;
-  height: 85vh;               /* 高度再多一點 */
-  min-height: 600px;          /* 最小高度再提升 */
+  height: 100vh;
+  min-height: 600px;
   overflow: hidden;
-  padding: 10px;              /* 內距少許空間 */
+  padding: 16px;
+  font-family: 'Inter', sans-serif;
+  backdrop-filter: blur(6px);
 }
 
-/* 手機或小螢幕自適應 */
+/* 手機自適應 */
 @media (max-width: 768px) {
   .chat-container-page1 {
     width: 98%;
     height: 90vh;
-    border-radius: 16px;      /* 手機圓角小一點 */
+    border-radius: 20px;
     min-height: 500px;
+    padding: 12px;
   }
 }
+
 .chat-messages {
   flex: 1;
   padding: 20px;
   overflow-y: auto;
   min-height: 200px;
+  background: #f8fafc;
+  border-radius: 20px;
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.03);
 }
+
+/* 訊息樣式 */
 .message {
   margin-bottom: 16px;
-  padding: 12px 16px;
-  border-radius: 16px;
+  padding: 14px 18px;
+  border-radius: 18px;
   max-width: 75%;
   word-wrap: break-word;
+  font-size: 15px;
+  line-height: 1.5;
+  animation: fadeIn 0.3s ease;
 }
-.user { background: #d0ebff; align-self: flex-end; }
-.bot { background: #f1f3f5; align-self: flex-start; }
-.module-tags { margin-top: 6px; font-size: 0.85rem; color: #555; }
+.message.user {
+  background: linear-gradient(135deg, #d0ebff, #b5e3ff);
+  align-self: flex-end;
+  width: fit-content;
+  height: auto;
+}
+.bot {
+  background: linear-gradient(135deg, #f1f3f5, #e8ebee);
+  align-self: flex-start;
+}
+
+.other {
+
+  background: #ffffff;
+  color: #333;
+  align-self: flex-start;
+  margin-right: auto;
+  border-bottom-left-radius: 5px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.message.loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 20px;            /* 放大字體 */
+  color: #0c4a6e;
+  background: linear-gradient(135deg, #d0f0ff, #a0e0ff);
+  border-radius: 16px;
+  padding: 10px 16px;          /* 放大 padding 配合大字 */
+  max-width: 90%;
+  width: fit-content;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  animation: float 1.2s ease-in-out infinite, pulse 1.5s infinite alternate;
+  white-space: nowrap;
+  overflow: hidden;
+  line-height: 1.2;            /* 適應大字 */
+}
+
+/* 文字特效 */
+.message.loading span {
+  display: inline-block;
+  background: linear-gradient(90deg, #0c4a6e, #3b82f6, #0c4a6e);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: textWave 2s linear infinite;
+}
+
+
+/* 文字漸變流動動畫 */
+@keyframes textWave {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* 點點容器 */
+.message.loading .dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+/* 點點 */
+.message.loading .dots span {
+  display: block;
+  width: 8px;      /* 配合大字放大點 */
+  height: 8px;
+  background: #0c4a6e;
+  border-radius: 50%;
+  animation: bounce 1.2s infinite ease-in-out;
+}
+
+
+.message.loading .dots span:nth-child(1) { animation-delay: 0s; }
+.message.loading .dots span:nth-child(2) { animation-delay: 0.2s; }
+.message.loading .dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes bounce {
+  0%, 80%, 100% { transform: scale(0); opacity: 0.3; }
+  40% { transform: scale(1); opacity: 1; }
+}
+
+
+/* 模組標籤 */
+.module-tags {
+  margin-top: 6px;
+  font-size: 0.85rem;
+  color: #555;
+}
 .module-tags span {
   background: #e0e0e0;
   border-radius: 12px;
@@ -71,26 +173,40 @@
   margin-right: 4px;
   display: inline-block;
 }
-.chat-input { display: flex; border-top: 1px solid #ccc; }
-.chat-input input { flex: 1; padding: 12px; border: none; outline: none; font-size: 16px; }
+
+/* 輸入區 */
+.chat-input {
+  display: flex;
+  border-top: 1px solid #dbeafe;
+  background: #f9fbff;
+  border-radius: 14px;
+  overflow: hidden;
+  margin-top: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+}
+.chat-input input {
+  flex: 1;
+  padding: 14px;
+  border: none;
+  outline: none;
+  font-size: 16px;
+  background: transparent;
+}
 .chat-input button {
   background: linear-gradient(135deg, #4facfe, #00f2fe);
-  color: white; border: none; padding: 12px 20px;
-  font-size: 16px; cursor: pointer; transition: 0.2s;
+  color: white;
+  border: none;
+  padding: 14px 22px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: transform 0.15s, opacity 0.2s;
 }
-.chat-input button:hover { opacity: 0.9; }
+.chat-input button:hover {
+  opacity: 0.9;
+  transform: scale(1.05);
+}
 
-.message.loading span.dots {
-  display: inline-block;
-  animation: dotJump 1s infinite steps(3);
-}
 
-@keyframes dotJump {
-  0%, 20% { content: ''; }
-  33% { content: '.'; }
-  66% { content: '..'; }
-  100% { content: '...'; }
-}
 /* 模組選擇容器 */
 .module-select {
   display: flex;
@@ -103,34 +219,38 @@
 .module-select label {
   display: flex;
   align-items: center;
-  padding: 8px 14px;
-  border-radius: 16px;
+  padding: 10px 16px;
+  border-radius: 18px;
   background: #F0F5FF;
   cursor: pointer;
-  transition: background 0.2s, transform 0.1s;
+  transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
   font-family: 'Inter', sans-serif;
   font-size: 14px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+}
+.module-select label:hover {
+  background: #E0F2FE;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
 }
 
 /* checkbox 样式 */
 .module-select input[type="checkbox"] {
   margin-right: 8px;
-  accent-color: #3B82F6; /* 選取時顏色 */
+  accent-color: #3B82F6;
 }
 
-/* 懸停效果 */
-.module-select label:hover {
-  background: #E0F2FE;
-  transform: translateY(-1px);
-}
-
-/* 勾選效果 */
+/* 勾選效果 (讓整個label變色) */
 .module-select input[type="checkbox"]:checked + span,
 .module-select input[type="checkbox"]:checked + label {
-  background: #3B82F6;
+  background: linear-gradient(135deg, #3B82F6, #2563EB);
   color: #fff;
 }
 
+@keyframes fadeIn {
+  from {opacity: 0; transform: translateY(4px);}
+  to {opacity: 1; transform: translateY(0);}
+}
 </style>
 
 <script>
@@ -143,29 +263,17 @@
   const messages = container.querySelector(".chat-messages");
   const csrftoken = document.querySelector('[name=csrf-token]').content;
 
+
   window.chatCharts = window.chatCharts || [];
 
   // appendMessage 改成支援 loading
-function appendMessage(messagesContainer, text, sender, isTag=false, extraData=null, loading=false) {
+function appendMessage(messagesContainer, text, sender, isTag=false, extraData=null) {
   const div = document.createElement('div');
   div.className = `message ${sender}`;
-  
-  if (loading) {
-    div.classList.add('loading');
-    const span = document.createElement('span');
-    span.textContent = '生成中';
-    div.appendChild(span);
+  div.classList.add('message');
+  const allLoadingDivs = messagesContainer.querySelectorAll('.loading');
+  allLoadingDivs.forEach(d => d.remove());
 
-    // 點點動畫
-    const dotSpan = document.createElement('span');
-    dotSpan.className = 'dots';
-    dotSpan.textContent = '...';
-    div.appendChild(dotSpan);
-
-    messagesContainer.appendChild(div);
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    return div; // 回傳元素以便更新
-  }
 
   if (isTag) {
     text = text.replace(/^分類：/, '').trim();
@@ -191,6 +299,44 @@ function appendMessage(messagesContainer, text, sender, isTag=false, extraData=n
     const p = document.createElement('p');
     p.textContent = text;
     div.appendChild(p);
+  } else if (sender === 'other') {
+    const p = document.createElement('p');
+    p.textContent = text;
+    div.appendChild(p);
+
+    if (extraData && extraData.length ) {
+      const canvas = document.createElement('canvas');
+    }
+
+  } else if (sender === "user") {
+    const p = document.createElement('p');
+    p.textContent = text;
+    div.appendChild(p);
+
+  } else if (sender === "loding") {
+    div.classList.add('message', 'loading');
+
+    // 文字部分
+    const spanText = document.createElement('span');
+    spanText.textContent = text;   // 例如 "生成中"
+    div.appendChild(spanText);
+
+    // 動態點點部分
+    const dotSpan = document.createElement('span');
+    dotSpan.className = 'dots';
+
+    // 建立三個 span，配合 CSS 跳動動畫
+    for (let i = 0; i < 3; i++) {
+      const dot = document.createElement('span');
+      dotSpan.appendChild(dot);
+    }
+
+    div.appendChild(dotSpan);
+
+    messagesContainer.appendChild(div);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+    return div;  // 保存 div 方便後續刪除
 
   } else if (sender === "bot") {
     if (extraData && extraData.length) {
@@ -337,19 +483,23 @@ function appendMessage(messagesContainer, text, sender, isTag=false, extraData=n
           }
         }
       });
+      
       window.chatCharts.push(volChart);
-
+    
+    
     } else {
       const p = document.createElement('p');
-      p.textContent = text;
+      p.innerHTML = text;
       div.appendChild(p);
     }
+
   }
 
   messagesContainer.appendChild(div);
   messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
+  window.agentLoadingDivs = window.agentLoadingDivs || {};
 
   function sendMessage() {
     const selectedModules = Array.from(container.querySelectorAll(".module-select input:checked"))
@@ -357,37 +507,75 @@ function appendMessage(messagesContainer, text, sender, isTag=false, extraData=n
     const text = input.value.trim();
     if (!text) return;
 
+
     appendMessage(messages, text, "user");
     input.value = '';
 
-    // 顯示「生成中」loading
-    const loadingDiv = appendMessage(messages, '', 'bot', false, null, true);
+    // 初始化每個 agent 的生成中 div
+    
 
-    if (window.currentEventSource) window.currentEventSource.close();
+    if (window.currentEventSource) {
+
+      window.currentEventSource.close();
+    }
 
     const payload = { user_input: text, selected_modules: selectedModules };
+
+
     const es = new EventSource('/report/api/classify/?payload=' + encodeURIComponent(JSON.stringify(payload)));
     window.currentEventSource = es;
 
     es.onmessage = function(e) {
+
       try {
         const data = JSON.parse(e.data);
-        if (loadingDiv) loadingDiv.remove();
 
-        if (data.classifications) appendMessage(messages, data.classifications.join(', '), 'bot', true);
+        // 顯示分類結果
+        if (data.classifications) {
+
+          appendMessage(messages, data.classifications.join(', '), 'bot', true);
+        }
+
         if (data.progress && data.result) {
           const ans = data.result;
-          if (ans.module === "price") appendMessage(messages, ans.text, 'bot', false, ans.data);
-          else appendMessage(messages, ans.text, 'bot');
-        }
-        if (data.integrated_summary) appendMessage(messages, '整合回覆：' + data.integrated_summary, 'bot');
+          const agent = ans.module;
+          console.log(ans,agent);
 
-      } catch(err) { console.error(err); }
+
+            
+          // 顯示最終訊息
+          if (agent === "price") {
+            appendMessage(messages, ans.text, 'bot', false, ans.data);
+          } else if (agent === "other") {
+            appendMessage(messages, ans.text, 'other', false, ans.data);
+          } else if (agent === "loding") { 
+            appendMessage(messages, ans.text, 'loding', false, ans.data);
+            
+          } else {
+            appendMessage(messages, ans.text + '<br>' + (ans.data || ''), 'bot');
+          }
+        }
+
+        // 顯示整合回覆
+        if (data.integrated_summary) {
+
+          appendMessage(messages, '整合回覆：' + data.integrated_summary, 'bot');
+        }
+
+      } catch(err) { console.error('解析 SSE 訊息錯誤', err); }
     };
 
-    es.addEventListener('end', () => es.close());
-    es.onerror = () => es.close();
+    es.addEventListener('end', () => {
+
+      es.close();
+    });
+    es.onerror = () => {
+
+      es.close();
+    }
   }
+
+
 
   sendBtn.addEventListener("click", sendMessage);
   input.addEventListener("keypress", e => { if(e.key==="Enter") sendMessage(); });
