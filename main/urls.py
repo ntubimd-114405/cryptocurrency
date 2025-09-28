@@ -20,6 +20,7 @@ urlpatterns = [
     path('feedback/', views.feedback_form_view, name='feedback_form'),
     path('submit/', views.submit_questionnaire, name='submit_questionnaire'),
     path('api/track_impression/', track_impression),
+    
 
     # 忘記密碼
     # path('password_reset/', views.CustomPasswordResetView.as_view(), name='password_reset'),
@@ -37,6 +38,7 @@ urlpatterns = [
     path('coin-history/<int:coin_id>/', views.coin_history, name='coin_history'),
     path('crypto/<int:coin_id>/', views.crypto_detail, name='crypto_detail'),
     path('api/chart-data/', views.coin_history_api, name='coin_history_api'),
+    path('api/backtest/', views.backtest_view, name='backtest_view'),
 
     path('membership/', views.membership_plans, name='membership_plans'), # 會員頁面
     path('upgrade_to_premium/', views.upgrade_to_premium, name='upgrade_to_premium'), #升級會員

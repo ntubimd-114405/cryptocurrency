@@ -98,6 +98,7 @@
                                 <div class="d-flex align-items-center gap-2">
                                     <a href="{% url 'news_detail' article_id=article.id %}" class="button-bu btn-sm">評論</a>
                                     <a href="{{ article.url }}" target="_blank" class="button-bu btn-sm">閱讀更多</a>
+                                    <a href="{% url 'analyze_sentiment' article_id=article.id %}" class="button-bu btn-sm">分析情緒</a>
                                 </div>
                             </div>
                         </div>
