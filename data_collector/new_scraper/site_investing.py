@@ -64,8 +64,9 @@ class InvestingWebsite(BaseWebsite):
                     "image_url": None
                 })
             return data
-        except Exception as e:
+        except Exception as e:       
             print(f"錯誤: {e}")
+            return []
 
 
 
