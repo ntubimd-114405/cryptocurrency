@@ -38,9 +38,6 @@
                             <li class="nav-item">
                                 <a href="{% url 'news_list' %}" class="nav-link1 dropdown-item">📰 新聞</a>
                             </li>
-                            <li class="nav-item">
-                                <a href="{% url 'X_list' %}" class="nav-link1 dropdown-item">🗣️ X</a>
-                            </li>
                         </ul>
                     </div>
                     <div class="btn-group">
@@ -66,16 +63,11 @@
                         
                       </div>
                         <li class="nav-item">
-                            <a href="{% url 'weekly_report_list' %}" class="nav-link text-white">AI Agent</a>
+                            <a href="{% url 'chat' %}" class="nav-link text-white">AI Agent</a>
                         </li>
                         <li class="nav-item">
                             <a href="{% url 'agent:questionnaire_list' %}" class="nav-link text-white">問卷</a>
                         </li>
-                    {% if user.is_authenticated %}
-                       <li class="nav-item">
-                            <a href="{% url 'ml_home' %}" class="nav-link text-white">訓練模型</a>
-                        </li>
-                    {% endif %}
                     {% if user.is_superuser %}
                         <li class="nav-item">
                             <a href="{% url 'administrator:administrator_dashboard' %}" class="nav-link text-white">進入後台</a>

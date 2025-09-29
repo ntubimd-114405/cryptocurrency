@@ -46,7 +46,7 @@ def news_detail(request, article_id):
 def news_home(request):
     all_articles = Article.objects.all().order_by('-time')[:3]  # 查詢新聞文章
     xposts = XPost.objects.all().order_by('-ids')[:3]  # 使用共用的函數來獲取 Twitter 貼文
-    print(xposts)
+
 
     return render(request, 'news_home.html', {
         'all_articles': all_articles,  # 傳遞新聞文章

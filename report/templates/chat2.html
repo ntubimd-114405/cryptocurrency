@@ -7,38 +7,47 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
-<!-- <img src="{% static 'images/bot.png' %}"> -->
+
 <div class="chat-container-page1">
-  <div class="chat-messages"></div>
-  <div class="module-select">
-    <label><input type="checkbox" value="news" checked> 新聞</label>
-    <label><input type="checkbox" value="price" checked> 價格</label>
-    <label><input type="checkbox" value="other" checked> 其他經濟數據</label>
-    <label><input type="checkbox" value="questionnaire" checked> 問卷</label>
+  <div class="chat-messages">
+    <div class="message bot">
+      👋 您好! 歡迎使用 <strong>AI Agent</strong>，請在下方輸入您的問題並選擇模組進行分析。
+    </div>
   </div>
+
+  <div class="module-select">
+    <label><input type="checkbox" value="news" checked> 📰 新聞</label>
+    <label><input type="checkbox" value="price" checked> 💰 價格</label>
+    <label><input type="checkbox" value="other" checked> 📊 其他經濟數據</label>
+    <label><input type="checkbox" value="questionnaire" checked> 🧠 問卷</label>
+  </div>
+
   <div class="chat-input">
     <input type="text" class="userInput-page1" placeholder="輸入訊息..." />
-    <button class="sendBtn-page1" type="button">送出</button>
+    <button class="sendBtn-page1" type="button">送出 🚀</button>
   </div>
 </div>
 
 <meta name="csrf-token" content="{{ csrf_token }}">
 
 <style>
+/* ==== 外層容器 ==== */
 .chat-container-page1 {
   width: 95%;
   max-width: 1400px;
-  margin: 20px auto;
-  background: #f9fbff; /* 簡化漸層 */
-  border-radius: 24px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.04); /* 輕陰影 */
+  margin: 40px auto;
+  background: linear-gradient(145deg, #ffffff, #f0f8ff);
+  border: 1px solid #e0e7ff;
+  border-radius: 28px;
+  box-shadow: 0 10px 30px rgba(0, 102, 255, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.4);
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  height: 90vh;
   min-height: 600px;
   overflow: hidden;
-  padding: 16px;
-  font-family: 'Inter', sans-serif;
+  padding: 20px 24px;
+  font-family: 'Inter', 'Noto Sans TC', sans-serif;
+  backdrop-filter: blur(6px);
 }
 
 /* 手機自適應 */
@@ -48,149 +57,170 @@
     height: 90vh;
     border-radius: 16px;
     min-height: 500px;
-    padding: 12px;
+    padding: 16px;
   }
 }
 
+/* ==== 訊息區塊 ==== */
 .chat-messages {
   flex: 1;
-  padding: 16px;
+  padding: 20px;
   overflow-y: auto;
   min-height: 200px;
-  background: #f8fafc;
-  border-radius: 16px;
-  box-shadow: inset 0 1px 4px rgba(0,0,0,0.02);
+  background: #f9fafc;
+  border-radius: 20px;
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.03);
+  margin-bottom: 16px;
 }
 
-/* 訊息樣式 */
+/* 滾動條優化 */
+.chat-messages::-webkit-scrollbar {
+  width: 6px;
+}
+.chat-messages::-webkit-scrollbar-thumb {
+  background: #a5b4fc;
+  border-radius: 3px;
+}
+.chat-messages::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ==== 訊息樣式 ==== */
 .message {
-  margin-bottom: 12px;
-  padding: 12px 16px;
-  border-radius: 16px;
+  margin-bottom: 14px;
+  padding: 14px 18px;
+  border-radius: 18px;
   max-width: 75%;
   word-wrap: break-word;
   font-size: 15px;
-  line-height: 1.4;
-  animation: fadeIn 0.2s ease forwards; /* 只播放一次 */
+  line-height: 1.6;
+  animation: fadeIn 0.25s ease forwards;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.04);
 }
 .message.user {
-  background: #cfe8ff; /* 簡化漸層 */
+  background: linear-gradient(135deg, #dce9ff, #cfe8ff);
   align-self: flex-end;
-  width: fit-content;
-  height: auto;
-}
-
-.message.user p {
-    margin: 0;
+  border: 1px solid #bcd4ff;
 }
 .message.bot {
-  background: linear-gradient(135deg, #d9f1ff, #b3e5fc); /* 藍漸層 */
+  background: linear-gradient(135deg, #e4f4ff, #cdeeff);
   color: #0b3954;
   align-self: flex-start;
-  margin-right: auto;
-  border-radius: 16px;
-  box-shadow: 0 4px 10px rgba(0, 153, 255, 0.2);
-  animation: fadeIn 0.3s ease-in-out;
+  border: 1px solid #b3e5fc;
 }
-
 .message.news {
-  background: linear-gradient(135deg, #fff6d9, #ffe8a3); /* 黃漸層 */
+  background: linear-gradient(135deg, #fff8dc, #fff3b0);
   color: #7a5200;
-  align-self: flex-start;
-  margin-right: auto;
-  border-radius: 16px;
-  box-shadow: 0 4px 10px rgba(255, 200, 0, 0.2);
-  animation: fadeIn 0.3s ease-in-out;
+  border: 1px solid #ffe599;
 }
-
 .message.questionnaire {
-  background: linear-gradient(135deg, #e9ffe5, #c8f7c5); /* 綠漸層 */
+  background: linear-gradient(135deg, #e9ffe5, #d1f7c5);
   color: #1b5e20;
-  align-self: flex-start;
-  margin-right: auto;
-  border-radius: 16px;
-  box-shadow: 0 4px 10px rgba(0, 200, 83, 0.2);
-  animation: fadeIn 0.3s ease-in-out;
+  border: 1px solid #a5d6a7;
 }
-
 .message.other {
-  background: linear-gradient(135deg, #f6e6ff, #e3ccff); /* 紫漸層 */
+  background: linear-gradient(135deg, #f6e6ff, #e3ccff);
   color: #4a148c;
-  align-self: flex-start;
-  margin-right: auto;
-  border-radius: 16px;
-  box-shadow: 0 4px 10px rgba(156, 39, 176, 0.2);
-  animation: fadeIn 0.3s ease-in-out;
+  border: 1px solid #ce93d8;
 }
 
+/* 出場動畫 */
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(5px); }
+  from { opacity: 0; transform: translateY(6px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* ==== 模組選擇 ==== */
+.module-select {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+  background: #f1f5f9;
+  border-radius: 14px;
+  padding: 10px 16px;
+  border: 1px solid #e0e7ff;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.03);
+}
+.module-select label {
+  font-size: 15px;
+  color: #334155;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.module-select label:hover {
+  transform: scale(1.05);
+}
+.module-select input[type="checkbox"] {
+  accent-color: #3b82f6;
+  margin-right: 6px;
+  transform: scale(1.2);
+}
 
-/* Loading 訊息簡化動畫 */
+/* ==== 輸入區 ==== */
+.chat-input {
+  display: flex;
+  align-items: center;
+  border-top: 1px solid #dbeafe;
+  background: #f9fbff;
+  border-radius: 16px;
+  padding: 10px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.02);
+}
+.chat-input input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 1px solid #dbeafe;
+  border-radius: 20px;
+  outline: none;
+  font-size: 16px;
+  background: #f1f5f9;
+  transition: all 0.3s ease;
+}
+.chat-input input:focus {
+  border-color: #3b82f6;
+  background: #ffffff;
+  box-shadow: 0 0 6px rgba(59,130,246,0.3);
+}
+.chat-input button {
+  background: linear-gradient(135deg, #4facfe, #00c6ff);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  padding: 10px 20px;
+  font-size: 16px;
+  margin-left: 10px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 3px 10px rgba(0,198,255,0.3);
+}
+.chat-input button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(0,198,255,0.4);
+}
+
+/* ==== Loading 動畫 ==== */
 .message.loading {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   font-weight: 600;
-  font-size: 18px;
+  font-size: 16px;
   background: #d0f0ff;
   border-radius: 12px;
-  padding: 8px 12px;
-  max-width: 90%;
-  width: fit-content;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  padding: 8px 14px;
+  color: #0c4a6e;
 }
 .message.loading span {
-  display: inline-block;
-  color: #0c4a6e;
   animation: opacityPulse 1.5s infinite alternate;
 }
 @keyframes opacityPulse {
-  0%, 100% { opacity: 0.6; }
+  0%, 100% { opacity: 0.5; }
   50% { opacity: 1; }
 }
-
-/* 模組標籤 */
-.module-tags span {
-  background: #e0e0e0;
-  border-radius: 8px; /* 輕圓角 */
-  padding: 2px 6px;
-  margin-right: 3px;
-  display: inline-block;
-}
-
-/* 輸入區 */
-.chat-input {
-  display: flex;
-  border-top: 1px solid #dbeafe;
-  background: #f9fbff;
-  border-radius: 12px;
-  margin-top: 12px;
-}
-.chat-input input {
-  flex: 1;
-  padding: 12px;
-  border: none;
-  outline: none;
-  font-size: 16px;
-  background: transparent;
-}
-.chat-input button {
-  background: #4facfe; /* 單色 */
-  color: white;
-  border: none;
-  padding: 12px 18px;
-  font-size: 16px;
-  cursor: pointer;
-}
-.chat-input button:hover {
-  opacity: 0.9;
-}
-
 </style>
+
 
 <script>
 (function(){
