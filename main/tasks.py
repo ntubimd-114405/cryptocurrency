@@ -199,19 +199,20 @@ def fetch_and_store_coin_data():
                         defaults={'coinname': coin_name, 'abbreviation': coin_abbreviation, 'logo_url': logo_url}
                     )
 
-                    # 插入 BitcoinPrice
-                    BitcoinPrice.objects.create(
+                    # 插入或更新 BitcoinPrice，條件只用 coin
+                    BitcoinPrice.objects.update_or_create(
                         coin=coin_record,
-                        usd=usd_price,
-                        twd=twd_price,
-                        jpy=jpy_price,
-                        eur=eur_price,
-                        market_cap=market_cap,
-                        volume_24h=volume_24h,
-                        change_24h=change_24h,
-                        timestamp=timestamp
+                        defaults={
+                            'usd': usd_price,
+                            'twd': twd_price,
+                            'jpy': jpy_price,
+                            'eur': eur_price,
+                            'market_cap': market_cap,
+                            'volume_24h': volume_24h,
+                            'change_24h': change_24h,
+                            'timestamp': timestamp  # 覆蓋 timestamp 為最新
+                        }
                     )
-
                     print(f"數據已插入：{coin_name} ({coin_abbreviation}) - USD = {usd_price}, TWD = {twd_price}, JPY = {jpy_price}, EUR = {eur_price}, 時間 = {timestamp}")
         else:
             print("獲取 logo 資料失敗，狀態碼：", info_response.status_code)
