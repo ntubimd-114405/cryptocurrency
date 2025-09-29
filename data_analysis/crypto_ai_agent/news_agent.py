@@ -101,6 +101,7 @@ def search_news(
             "id": doc.id,  # 使用 Django DB 的 id
             "title": title,
             "summary": summary,
+            "date": doc.metadata.get("date"), # 這裡取 date
         })
 
     return results
