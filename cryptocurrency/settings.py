@@ -31,7 +31,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-f2_rtd0=h2-)c1oz1%n5olz5f*k8jc-9(3vy_*!xqpo(#qhj()'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = ["*"]
 
@@ -183,11 +183,16 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 
-# 配置靜態文件的目錄
+# 開發來源資料夾（放 CSS/JS/圖片）
 STATICFILES_DIRS = [
-    BASE_DIR / "static", ] # 根目錄下的 static 資料夾
+    BASE_DIR / "static",  
+]
+
+# collectstatic 收集到這個資料夾
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
