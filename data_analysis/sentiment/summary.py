@@ -14,7 +14,6 @@ def summarize_long_text(text):
     partial_summaries = []
 
     print(f"✂️ 文章分為 {len(chunks)} 段進行摘要")
-    print(text)
     
     for i, chunk in enumerate(chunks):
         try:

@@ -178,7 +178,9 @@
   margin: 0;
   padding: 0;
 }
-
+.fff{
+  background-color: #fff;
+}
 /* 響應式設計 */
 @media (max-width: 767px) {
   .form {
@@ -235,7 +237,7 @@
         <div><img src="{% static 'images/crypto.png' %}" alt="Logo" style="width: auto; height: 300px;"></div>
       </div>
     </div>
-    <div class="col-md-6 order-md-2 padding-0">
+    <div class="col-md-6 order-md-2 padding-0 fff">
       <form method="post" class="form">
         {% csrf_token %}
         <p class="title">登入</p>
@@ -258,7 +260,7 @@
 
         <button type="submit" class="submit">登入</button>
         <p class="signin"><a href="{% url 'account_reset_password' %}">忘記密碼？</a></p>
-        <p class="signin line">試試其他登入：</p>
+        <!-- <p class="signin line">試試其他登入：</p>
       </form>
         <form action="{% provider_login_url 'google' method='POST' %}" method="post" class="form">
           {% csrf_token %}
@@ -271,7 +273,7 @@
             </svg>
             Google
           </button>
-        </form>
+        </form> -->
     </div>
   </div>
 </div>

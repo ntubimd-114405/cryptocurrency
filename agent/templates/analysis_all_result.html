@@ -82,9 +82,9 @@
       前往完成問卷
     </a>
   </div>
-  {% endif %}
 
 
+{% else %}
 <div id="page-content" class="container mt-5 fade-in">
   <div class="text-center mb-4">
     <h2 class="fw-bold text-primary">總分析結果</h2>
@@ -194,7 +194,6 @@
       <label class="form-check-label me-2"><input type="checkbox" class="coinCheckbox" value="主流幣" checked> 主流幣</label>
       <label class="form-check-label me-2"><input type="checkbox" class="coinCheckbox" value="成長幣" checked> 成長幣</label>
       <label class="form-check-label me-2"><input type="checkbox" class="coinCheckbox" value="迷因幣" checked> 迷因幣</label>
-      <label class="form-check-label"><input type="checkbox" class="coinCheckbox" value="其他" checked> 其他</label>
     </div>
 
     <div class="text-center mb-4">
@@ -240,7 +239,7 @@
                 </tr>
                 <tr>
                   <td>積極型</td>
-                  <td>40% 成長幣、30% 主流幣、20% 迷因幣、10% 其他</td>
+                  <td>50% 成長幣、30% 主流幣、20% 迷因幣</td>
                 </tr>
               </tbody>
             </table>
@@ -293,12 +292,6 @@
                   <td>缺乏明確應用，價格受社群影響大</td>
                   <td>高風險短線投機</td>
                 </tr>
-                <tr>
-                  <td>其他</td>
-                  <td>未明確歸類於前四類的幣種</td>
-                  <td>市值小、特殊用途或小眾幣</td>
-                  <td>補充投資、增加多元化，高風險</td>
-                </tr>
               </tbody>
             </table>
           </div>
@@ -312,8 +305,8 @@
       ← 返回列表
     </a>
   </div>
-
-    <script>
+  {% endif %}
+    <script> 
   // ========== 整體完成度圓餅圖 ==========
   const overallProgress = {{ overall_progress2.percent|default:0 }};
   const ctxDoughnut = document.getElementById('completionChart').getContext('2d');
@@ -369,7 +362,6 @@
 
   // ========== 各問卷堆疊長條圖 ==========
   const progressData = {{ progress_data|safe }};  
-  console.log(progressData);
   // Django 輸出格式應該是：
   // [
   //   {"name": "問卷2", "answered": 5, "unanswered": 3},
@@ -418,7 +410,9 @@
       }
     }
   });
-
+  </script>
+  {% if overall_progress2.answered >= overall_progress2.total %}
+  <script>
 
   // 核心雷達圖
   new Chart(document.getElementById('radarCore').getContext('2d'), {
@@ -450,7 +444,7 @@
 
       // 圓餅圖 + 投資金額計算
       document.addEventListener("DOMContentLoaded", function () {
-        const allocationLabels = ['穩定幣', '主流幣', '成長幣', '迷因幣', '其他'];
+        const allocationLabels = ['穩定幣', '主流幣', '成長幣', '迷因幣'];
         const allocationData = JSON.parse(document.getElementById('allocation-data').textContent);
         const allocationPercent = JSON.parse(document.getElementById('allocation-percent').textContent);
 
@@ -596,5 +590,5 @@
       });
 
     </script>
-
+    {% endif %}
     {% endblock %}

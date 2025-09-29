@@ -4,61 +4,154 @@
 
 {% block content %}
 <style>
+    /* 主標題樣式 */
     h1 {
         font-size: 32px;
-        color: #2E6695; /* 標題使用深藍色 */
+        color: #2E6695;
         margin-bottom: 40px;
         text-align: center;
+        font-weight: 700;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    /* 搜尋表單區塊 */
+    .search-form {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 20px 30px;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+    }
+
+    .search-form .form-group {
+        min-width: 200px;
+    }
+
+    .search-form label {
+        font-weight: 600;
+        color: #2E6695;
+    }
+
+    /* 新聞卡片 */
+    .article-card {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+        padding: 20px;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .article-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+    }
+
+    /* 標題與摘要 */
+    .article-card h4 a {
+        font-weight: 600;
+        line-height: 1.5;
+    }
+
+    .article-card p {
+        font-size: 15px;
+        color: #444;
+        line-height: 1.6;
+    }
+
+    /* 資訊列 */
+    .article-meta {
+        font-size: 14px;
+        color: #6c757d;
+    }
+
+    .article-meta img {
+        vertical-align: middle;
+    }
+
+    /* 分頁樣式 */
+    .pagination .page-link {
+        border-radius: 8px;
+        color: #2E6695;
+        font-weight: 600;
+    }
+
+    .pagination .active .page-link {
+        background-color: #ffc107 !important;
+        border-color: #ffc107 !important;
+        color: #212529 !important;
+    }
+
+    .pagination .page-link:hover {
+        background-color: #e9ecef;
+    }
+
+    /* 了解更多按鈕區塊 */
+    .more-btn {
+        text-align: right;
+        margin-top: 10px;
+    }
+
+    /* RWD 優化 */
+    @media (max-width: 768px) {
+        .article-card {
+            padding: 15px;
         }
+        .article-card .col-md-3 {
+            margin-bottom: 15px;
+        }
+    }
 </style>
-    <div class="container mt-4">
-        <h1 class="mb-4">所有新聞</h1>
 
-        <form method="GET" action="." class="d-flex justify-content-center align-items-end gap-3 flex-wrap mb-3">
-            <div class="form-group">
-                <label for="q" class="form-label">搜尋新聞</label>
-                <input type="text" name="q" id="q" class="form-control" placeholder="Search news..." value="{{ query }}">
-            </div>
-            <div class="form-group">
-                <label for="start_date" class="form-label">開始日期</label>
-                <input type="date" name="start_date" id="start_date" class="form-control" value="{{ request.GET.start_date }}">
-            </div>
-            <div class="form-group">
-                <label for="end_date" class="form-label">結束日期</label>
-                <input type="date" name="end_date" id="end_date" class="form-control" value="{{ request.GET.end_date }}">
-            </div>
-            <button type="submit" class="button-bu">Search</button>
-        </form>
+<div class="container mt-4">
+    <h1>所有新聞</h1>
 
-        {% if error %}
-            <div class="alert alert-danger" role="alert">{{ error }}</div>
-        {% else %}
-            <div class="container mt-4">
-                {% for article in all_articles %}
-                    <div class="row align-items-center mb-4 border-bottom pb-3">
+    <!-- 搜尋表單 -->
+    <form method="GET" action="." class="search-form d-flex justify-content-center align-items-end gap-3 flex-wrap mb-4">
+        <div class="form-group">
+            <label for="q" class="form-label">搜尋新聞</label>
+            <input type="text" name="q" id="q" class="form-control" placeholder="Search news..." value="{{ query }}">
+        </div>
+        <div class="form-group">
+            <label for="start_date" class="form-label">開始日期</label>
+            <input type="date" name="start_date" id="start_date" class="form-control" value="{{ request.GET.start_date }}">
+        </div>
+        <div class="form-group">
+            <label for="end_date" class="form-label">結束日期</label>
+            <input type="date" name="end_date" id="end_date" class="form-control" value="{{ request.GET.end_date }}">
+        </div>
+        <button type="submit" class="button-bu">Search</button>
+    </form>
+
+    {% if error %}
+        <div class="alert alert-danger text-center" role="alert">{{ error }}</div>
+    {% else %}
+        <div class="mt-4">
+            {% for article in all_articles %}
+                <div class="article-card mb-4">
+                    <div class="row align-items-start">
+                        <!-- 左側圖片 -->
                         <div class="col-md-3 text-center">
                             {% if article.image_url %}
-                                <a href="{{ article.url }}" target="_blank">
+                                <a href="{% url 'news_detail' article_id=article.id %}" target="_blank">
                                     <img src="{{ article.image_url }}" alt="新聞圖片" class="img-fluid rounded" style="max-height: 150px; width: 100%; object-fit: cover;">
                                 </a>
                             {% elif article.website.icon_url %}
-                                <a href="{{ article.url }}" target="_blank">
+                                <a href="{% url 'news_detail' article_id=article.id %}" target="_blank">
                                     <img src="{{ article.website.icon_url }}" alt="網站 Logo" class="img-fluid rounded" style="max-height: 80px; object-fit: contain;">
                                 </a>
                             {% else %}
-                                無圖片
+                                <p class="text-muted">無圖片</p>
                             {% endif %}
                         </div>
+
+                        <!-- 右側內容 -->
                         <div class="col-md-9">
-                            <!-- 固定高度的標題（不截斷） -->
-                            <h4 class="text-start mb-2" style="min-height: 3em;">
-                                <a href="{{ article.url }}" target="_blank" class="text-dark text-decoration-none">
+                            <h4 class="mb-2">
+                                <a href="{% url 'news_detail' article_id=article.id %}" target="_blank" class="text-dark text-decoration-none">
                                     {{ article.title }}
                                 </a>
                             </h4>
 
-                            <!-- 固定高度的摘要（多行截斷） -->
-                            <p class="card-text flex-grow-1 text-start" style="
+                            <p style="
                                 max-height: 4.5em;
                                 overflow: hidden;
                                 text-overflow: ellipsis;
@@ -67,79 +160,88 @@
                                 -webkit-box-orient: vertical;
                             ">
                                 {% if article.summary and article.summary != "" %}
-                                {{ article.summary }}
+                                    {{ article.summary }}
                                 {% else %}
-                                {{ article.content }}
+                                    {{ article.content }}
                                 {% endif %}
                             </p>
-                            <div class="d-flex justify-content-between align-items-end">
-                                <div class="d-flex align-items-center gap-2">
-                                    <span class="me-2">情緒：</span>
-                                    {% if article.sentiment_score is not None %}
-                                        {% if article.sentiment_score > 0.3 %}
-                                            😄 正面 ({{ article.sentiment_score|floatformat:2 }})
-                                        {% elif article.sentiment_score < -0.3 %}
-                                            😔 負面 ({{ article.sentiment_score|floatformat:2 }})
+
+                            <!-- 資訊列 -->
+                            <div class="d-flex justify-content-between align-items-end flex-wrap mt-3">
+                                <div class="article-meta d-flex align-items-center gap-3">
+                                    <span>情緒：
+                                        {% if article.sentiment_score is not None %}
+                                            {% if article.sentiment_score > 0.3 %}
+                                                😄 正面 ({{ article.sentiment_score|floatformat:2 }})
+                                            {% elif article.sentiment_score < -0.3 %}
+                                                😔 負面 ({{ article.sentiment_score|floatformat:2 }})
+                                            {% else %}
+                                                😐 中立 ({{ article.sentiment_score|floatformat:2 }})
+                                            {% endif %}
                                         {% else %}
-                                            😐 中立 ({{ article.sentiment_score|floatformat:2 }})
+                                            ❓ 尚未進行分析
                                         {% endif %}
-                                    {% else %}
-                                        ❓ 尚未進行分析
-                                    {% endif %}
-                                <div class="d-flex align-items-center gap-2 text-muted small">
-                                    <p class="mb-0">{{ article.time|date:"Y-m-d H:i" }}</p>
-                                    <span class="mx-1">•</span>
-                                    <a href="{{ article.website.url }}" target="_blank" class="text-muted small d-flex align-items-center text-decoration-none">
+                                    </span>
+
+                                    <span>{{ article.time|date:"Y-m-d H:i" }}</span>
+                                    <span>•</span>
+                                    <a href="{{ article.website.url }}" target="_blank" class="text-muted d-flex align-items-center text-decoration-none">
                                         <img src="{{ article.website.icon_url }}" alt="網站圖片" style="width: 20px; height: 20px; object-fit: contain; margin-right: 5px;">
                                         {{ article.website.name }}
                                     </a>
                                 </div>
-                                <div class="d-flex align-items-center gap-2">
-                                    <a href="{% url 'news_detail' article_id=article.id %}" class="button-bu btn-sm">評論</a>
-                                    <a href="{{ article.url }}" target="_blank" class="button-bu btn-sm">閱讀更多</a>
+
+                                <div class="more-btn">
+                                    <a href="{% url 'news_detail' article_id=article.id %}" class="button-bu btn-sm">了解更多...</a>
                                 </div>
                             </div>
                         </div>
                     </div>
-                {% empty %}
-                    <div class="alert alert-warning text-center">沒有找到新聞</div>
-                {% endfor %}
-            </div>
-            {% if all_articles.has_other_pages %}
-                <nav aria-label="Page navigation">
-                    <ul class="pagination justify-content-center mt-4">
-                        {% if all_articles.has_previous %}
-                            <li class="page-item">
-                                <a class="page-link" href="?q={{ query }}&start_date={{ request.GET.start_date }}&end_date={{ request.GET.end_date }}&page={{ all_articles.previous_page_number }}">❮</a>
-                            </li>
-                        {% else %}
-                            <li class="page-item disabled"><span class="page-link">❮</span></li>
-                        {% endif %}
-                        {% if all_articles.number > 3 %}
-                            <li class="page-item"><a class="page-link" href="?page=1">1</a></li>
-                            <li class="page-item disabled"><span class="page-link">...</span></li>
-                        {% endif %}
-                        {% for num in all_articles.paginator.page_range %}
-                            {% if num >= all_articles.number|add:-2 and num <= all_articles.number|add:2 %}
-                                {% if all_articles.number == num %}
-                                    <li class="page-item active"><span class="page-link bg-warning text-dark border-0">{{ num }}</span></li>
-                                {% else %}
-                                    <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
-                                {% endif %}
+                </div>
+            {% empty %}
+                <div class="alert alert-warning text-center">沒有找到新聞</div>
+            {% endfor %}
+        </div>
+
+        {% if all_articles.has_other_pages %}
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center mt-4">
+                    {% if all_articles.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?q={{ query }}&start_date={{ request.GET.start_date }}&end_date={{ request.GET.end_date }}&page={{ all_articles.previous_page_number }}">❮</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">❮</span></li>
+                    {% endif %}
+
+                    {% if all_articles.number > 3 %}
+                        <li class="page-item"><a class="page-link" href="?page=1">1</a></li>
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+
+                    {% for num in all_articles.paginator.page_range %}
+                        {% if num >= all_articles.number|add:-2 and num <= all_articles.number|add:2 %}
+                            {% if all_articles.number == num %}
+                                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                            {% else %}
+                                <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
                             {% endif %}
-                        {% endfor %}
-                        {% if all_articles.number < all_articles.paginator.num_pages|add:-2 %}
-                            <li class="page-item disabled"><span class="page-link">...</span></li>
-                            <li class="page-item"><a class="page-link" href="?page={{ all_articles.paginator.num_pages }}">{{ all_articles.paginator.num_pages }}</a></li>
                         {% endif %}
-                        {% if all_articles.has_next %}
-                            <li class="page-item"><a class="page-link" href="?page={{ all_articles.next_page_number }}">❯</a></li>
-                        {% else %}
-                            <li class="page-item disabled"><span class="page-link">❯</span></li>
-                        {% endif %}
-                    </ul>
-                </nav>
-            {% endif %}
+                    {% endfor %}
+
+                    {% if all_articles.number < all_articles.paginator.num_pages|add:-2 %}
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                        <li class="page-item"><a class="page-link" href="?page={{ all_articles.paginator.num_pages }}">{{ all_articles.paginator.num_pages }}</a></li>
+                    {% endif %}
+
+                    {% if all_articles.has_next %}
+                        <li class="page-item"><a class="page-link" href="?page={{ all_articles.next_page_number }}">❯</a></li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">❯</span></li>
+                    {% endif %}
+                </ul>
+            </nav>
         {% endif %}
-    </div>
+    {% endif %}
+</div>
 {% endblock %}

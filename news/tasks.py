@@ -71,23 +71,15 @@ def news_sentiment():
     批次分析情緒，每次抓 10 篇未分析文章，有 summary，依時間最新排序
     """
     print(f"分析情緒")
-    # 篩選條件：summary 不為空 & sentiment 為空或 null
+    # 篩選條件：summary 不為空 & sentiment_score 為空或 null
     articles = Article.objects.filter(
         summary__isnull=False
     ).exclude(
         summary=""
     ).filter(
-        sentiment__isnull=True
-    ) | Article.objects.filter(
-        summary__isnull=False
-    ).exclude(
-        summary=""
-    ).filter(
-        sentiment=""
-    )
+        sentiment_score__isnull=True
+    ).order_by('-time')[:10]  # 切片放在最後，沒再呼叫 order_by
 
-    # 依時間最新排序（假設有欄位 time 或 created_at）
-    articles = articles.order_by('-time')[:10]
 
     for article in articles:
         print(f"Processing Article ID: {article.id}, Title: {article.title}")
@@ -95,7 +87,6 @@ def news_sentiment():
         sentiment, score = predict_sentiment(article.summary)
 
         # 存回模型
-        article.sentiment = sentiment
         article.sentiment_score = score
         article.save()
     
