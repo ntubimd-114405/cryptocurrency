@@ -357,7 +357,8 @@ def get_total_analysis():
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from .models import UserAnswer, Questionnaire
-from main.models import Coin, CoinCategory, CoinCategoryRelation
+from main.models import Coin, CoinCategory, CoinCategoryRelation,BitcoinPrice
+from django.db.models import Max
 import random
 
 RISK_QUESTIONNAIRE_IDS = [2, 3, 4, 9]
@@ -392,10 +393,11 @@ def analysis_result_view(request):
     for ans in user_answers:
         for option in ans.selected_options.all():
 
-            total_score += option.score
-            answer_count += 1
             q_order = ans.question.questionnaire.id
-            # 核心題目
+            if q_order in RISK_QUESTIONNAIRE_IDS:
+                total_score += option.score
+                
+                answer_count += 1            # 核心題目
             if q_order == 2:
                 core_scores["score_investment_exp"] += option.score
                 core_counts["score_investment_exp"] += 1
@@ -435,7 +437,6 @@ def analysis_result_view(request):
             "主流幣": 0.3,
             "成長幣": 0.1 + 0.3 * ratio,
             "迷因幣": 0.0 + 0.2 * ratio,
-            "其他": 0.0 + 0.1 * ratio,
         }
         total = sum(allocation.values())
         allocation = {k: round(v/total, 2) for k, v in allocation.items()}
@@ -448,21 +449,32 @@ def analysis_result_view(request):
             risk_type = "積極型"
 
         recommended_coins = {}
+
         for category_name, ratio_value in allocation.items():
             try:
                 category = CoinCategory.objects.get(name=category_name)
-                coins_in_category = Coin.objects.filter(
-                    coincategoryrelation__category=category
-                )
+                # 取得屬於該類別的所有幣種
+                coins_in_category = Coin.objects.filter(coincategoryrelation__category=category)
+
                 if coins_in_category.exists():
-                    num_to_pick = max(1, round(10 * ratio_value))
-                    selected = random.sample(
-                        list(coins_in_category),
-                        min(num_to_pick, coins_in_category.count())
-                    )
-                    recommended_coins[category_name] = [coin.coinname for coin in selected]
+                    # 取得所有幣種的市值資料，並根據市值排序
+                    # 使用 GROUP BY 和 MAX() 來確保每個 Coin 只取一個最大市值資料
+                    coins_with_market_cap = BitcoinPrice.objects.filter(coin__in=coins_in_category) \
+                        .values('coin') \
+                        .annotate(max_market_cap=Max('market_cap')) \
+                        .order_by('-max_market_cap')
+
+                    # 取出市值最高的前三個幣種
+                    top_coins = []
+                    for entry in coins_with_market_cap[:3]:
+                        coin = Coin.objects.get(id=entry['coin'])
+                        top_coins.append(coin)
+
+                    # 組織推薦幣種的名稱
+                    recommended_coins[category_name] = [coin.coinname for coin in top_coins]
                 else:
                     recommended_coins[category_name] = []
+
             except CoinCategory.DoesNotExist:
                 recommended_coins[category_name] = []
 
@@ -474,7 +486,6 @@ def analysis_result_view(request):
         int(allocation.get("主流幣", 0) * 100),
         int(allocation.get("成長幣", 0) * 100),
         int(allocation.get("迷因幣", 0) * 100),
-        int(allocation.get("其他", 0) * 100),
     ]
 
    # ---------- 總進度計算 ----------

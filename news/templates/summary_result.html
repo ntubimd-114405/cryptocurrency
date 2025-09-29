@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>文章摘要：{{ article.title }}</h2>
+
+{% if error %}
+<p style="color:red;">{{ error }}</p>
+{% else %}
+<p>{{ summary }}</p>
+{% endif %}
+
+<a href="{% url 'news_detail' article.id %}">回到文章頁面</a>
+{% endblock %}

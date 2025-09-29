@@ -112,52 +112,102 @@ def news_list(request):
         'end_date': end_date,
     })
 
-# 新聞列表翻頁-----------------
 from django.shortcuts import render, get_object_or_404
-from data_analysis.sentiment.api import predict_sentiment_api
-from .models import Article
+from news.models import Article
+from data_analysis.sentiment.summary import summarize_long_text  # 你的摘要程式
 
-CONFIDENCE_THRESHOLD = 0.6  # 信心分數最低閾值
+# ----------------------
+# 摘要功能 View
+# ----------------------
+def generate_summary_view(request, article_id):
+    article = get_object_or_404(Article, id=article_id)
 
-def analyze_sentiment_by_id(request, article_id):
-    article = get_object_or_404(Article, pk=article_id)
+    if not article.content:
+        return render(request, 'summary_result.html', {
+            'article': article,
+            'summary': None,
+            'error': '文章內容為空'
+        })
 
-    if article.content:
-        sentiment_result, confidence = predict_sentiment_api(article.content)
+    # 呼叫 summary.py 的摘要功能
+    summary = summarize_long_text(article.content)
+    if summary:
+        article.summary = summary
+        article.save()
 
-        # 確保 confidence 是 float
-        try:
-            confidence = float(confidence)
-        except:
-            confidence = 0.0
-
-        # 信心不足時自動標為 -9
-        if confidence < CONFIDENCE_THRESHOLD:
-            sentiment_result = '-9'
-
-        # 只存 sentiment
-        article.sentiment = sentiment_result
-        article.save(update_fields=['sentiment'])
-
-        message = f"文章 (ID: {article_id}) 的情緒分析已完成，結果: {sentiment_result}"
-    else:
-        message = f"文章 (ID: {article_id}) 沒有內容，無法分析情緒"
-        confidence = 0.0
-
-    sentiment_label_map = {
-        '-1': '負面',
-        '0': '中立',
-        '1': '正面',
-        '-9': '信心不足',
-        None: '尚未進行分析'
-    }
-    sentiment_label = sentiment_label_map.get(article.sentiment, '未知')
-
-    print(f"文章 (ID: {article_id}) 的情緒分析結果: {sentiment_label} (信心 {confidence:.2f})", article)
-
-    return render(request, 'analyze_single_result.html', {
+    return render(request, 'summary_result.html', {
         'article': article,
-        'message': message,
-        'sentiment_label': sentiment_label,
-        'confidence': confidence,  # 前端顯示用，不存 DB
+        'summary': summary,
+        'error': None
     })
+
+
+from django.shortcuts import render, get_object_or_404
+from news.models import Article
+from data_analysis.sentiment.multi_model_voting import predict_sentiment  # 引入情緒分析函式
+
+# ----------------------
+# 情緒分析功能 View
+# ----------------------
+def analyze_sentiment_by_id(request, article_id):
+    article = get_object_or_404(Article, id=article_id)
+
+    if not article.content:
+        return render(request, 'sentiment_result.html', {
+            'article': article,
+            'sentiment': None,
+            'score': None,
+            'error': '文章內容為空'
+        })
+
+    # 呼叫 multi_model_voting.py 的情緒分析功能
+    sentiment, score = predict_sentiment(article.content)
+
+    # 可以選擇存回 Article 模型
+    article.sentiment = sentiment
+    article.sentiment_score = score
+    article.save()
+
+    return render(request, 'sentiment_result.html', {
+        'article': article,
+        'sentiment': sentiment,
+        'score': score,
+        'error': None
+    })
+
+
+# 計算情緒百分比並顯示在文章詳細頁面
+from django.shortcuts import render, get_object_or_404
+from .models import Article, Comment  # 假設你的模型名稱為 Article 和 Comment
+
+def article_detail(request, article_id):
+    # 獲取文章和相關評論
+    article = get_object_or_404(Article, id=article_id)
+    comments = article.comments.all()
+
+    # 正規化 sentiment_score (-1, 0, 1) 到 0-100 範圍
+    sentiment_score = article.sentiment_score
+    if sentiment_score == 1:
+        normalized_score = 100  # 正面
+        color = '#28a745'  # 綠色
+    elif sentiment_score == 0:
+        normalized_score = 50  # 中性
+        color = '#ffc107'  # 黃色
+    else:  # sentiment_score == -1
+        normalized_score = 0  # 負面
+        color = '#dc3545'  # 紅色
+
+    # 圖表數據
+    chart_data = {
+        'normalized_score': normalized_score,
+        'background_color': color,
+        'sentiment_score': sentiment_score  # 保留原始分數以顯示
+    }
+
+    # 上下文數據
+    context = {
+        'article': article,
+        'comments': comments,
+        'chart_data': chart_data
+    }
+    return render(request, 'article_detail.html', context)
