@@ -767,10 +767,7 @@ def favorite_coins(request):
     }
     return render(request, 'favorite_coins.html', context)
 
-@login_required
-def feedback_form_view(request):
-    questions = FeedbackQuestion.objects.prefetch_related('options').all()
-    return render(request, 'feedback_form.html', {'questions': questions})
+
 
 @login_required
 def submit_questionnaire(request):

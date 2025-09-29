@@ -307,7 +307,7 @@ def analyze_user_responses(user, questionnaire, api):
         return f"分析失敗：{e}"
     
 def get_total_analysis():
-    return "這是總分析結果"
+    
     records = UserQuestionnaireRecord.objects.filter(
         gpt_analysis_result__isnull=False
     ).select_related('questionnaire', 'user')
@@ -535,48 +535,7 @@ class DecimalEncoder(json.JSONEncoder):
         if isinstance(obj, Decimal):
             return float(obj)
         return super().default(obj)
-
-def coin_history_view(request):
-    coins = Coin.objects.all()
-    coin_id = request.GET.get('coin_id', coins.first().id)
-    selected_coin = Coin.objects.get(id=coin_id)  # ← 取得選擇的幣
-
-    thirty_days_ago = timezone.now().date() - timedelta(days=60)
-
-    # 取得歷史資料
-    queryset = (
-        CoinHistory.objects
-        .filter(coin_id=coin_id, date__gte=thirty_days_ago)
-        .select_related('coin')
-        .order_by('date')
-    )
-
-    # 轉成 DataFrame
-    df = pd.DataFrame.from_records(queryset.values('date', 'close_price'))
-    df['date'] = pd.to_datetime(df['date'])
-    df = df.sort_values('date')
-
-    # 計算指標
-    df['ema20'] = ta.trend.EMAIndicator(close=df['close_price'], window=20).ema_indicator()
-    df['rsi'] = ta.momentum.RSIIndicator(close=df['close_price'], window=14).rsi()
-
-    # ➤ 把含 NaN 的列整個移除
-    df = df.dropna(subset=['ema20', 'rsi'])
-
-    # 準備要傳給 Chart.js 的資料
-    chart_data = {
-        'dates': df['date'].dt.strftime('%Y-%m-%d').tolist(),
-        'close': df['close_price'].tolist(),
-        'ema20': df['ema20'].round(2).tolist(),
-        'rsi': df['rsi'].round(2).tolist(),
-    }
-
-    return render(request, 'coin_history.html', {
-        'coins': coins,
-        'coin_id': int(coin_id),
-        'selected_coin_name': selected_coin.coinname,  # 傳給前端用
-        'chart_data': json.dumps(chart_data, cls=DecimalEncoder)
-    })
+    
 # agent/views.py
 from django.shortcuts import render
 from django.http import JsonResponse

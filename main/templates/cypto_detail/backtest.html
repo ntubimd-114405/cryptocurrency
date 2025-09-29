@@ -10,6 +10,74 @@
   .analysis-card {
     text-align: left;
   }
+
+  h1 {
+      text-align: center;
+      font-size: 2.5em;
+      color: #4CAF50;
+      margin-bottom: 20px;
+  }
+
+  #gptAnalysis .title {
+    margin: 10px 0 5px;
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #ff6600;         /* 橘色 */
+  }
+
+  #gptAnalysis .main-title {
+    font-size: 1.6em;
+    font-weight: bold;
+    margin: 12px 0 6px;
+    color: #ff6600; /* 橘色 */
+    border-bottom: 2px solid #ddd;
+  }
+
+  #gptAnalysis .section-title {
+    font-size: 1.4em;
+    font-weight: bold;
+    margin: 10px 0 4px;
+    color: #007bff; /* 藍色 */
+  }
+
+  #gptAnalysis .subtitle {
+    font-size: 1.5em;
+    font-weight: bold;
+    margin: 8px 0 2px;
+    color: #28a745; /* 綠色 */
+  }
+
+  #gptAnalysis .percent {
+    color: #ff5722;
+    font-weight: bold;
+  }
+
+  #gptAnalysis {
+    margin: 40px auto;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+  #gptAnalysis:hover {
+      transform: translateY(-10px);
+      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+  }
+  /* 响应式设计 */
+  @media (max-width: 768px) {
+      #gptAnalysis {
+          padding: 20px;
+      }
+
+      h1 {
+          font-size: 2em;
+      }
+
+      h2 {
+          font-size: 1.5em;
+      }
+  }
 </style>
 
 <body>
@@ -119,7 +187,19 @@ async function init() {
 
     // ✅ 顯示 GPT 分析
     if (typeof gptAnalysis !== 'undefined' && gptAnalysis) {
-      document.getElementById('gptAnalysis').innerHTML = `<pre>${gptAnalysis}</pre>`;
+      let formatted = gptAnalysis
+        .replace(/\*\*(.*?)\*\*/g, '<span class="title">$1</span>')
+        // 處理 ### 開頭的標題 (三級標題)
+        .replace(/^###\s*(\d+\.\s*.*)$/gm, '<div class="subtitle">$1</div>')
+        // 處理 ## 開頭的標題 (二級標題)
+        .replace(/^##\s*(.*)$/gm, '<div class="section-title">$1</div>')
+        // 處理 # 開頭的標題 (一級標題)
+        .replace(/^#\s*(.*)$/gm, '<div class="main-title">$1</div>')
+        // 整數或小數
+        .replace(/(\d+(\.\d+)?%)/g, '<span class="percent">$1</span>')
+
+
+      document.getElementById('gptAnalysis').innerHTML = `<pre>${formatted}</pre>`;
     }
 
   } catch (err) {
