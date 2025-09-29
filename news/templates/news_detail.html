@@ -3,135 +3,125 @@
 {% block title %}虛擬貨幣評論區{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <!-- 顯示新聞內容 -->
-    <div class="row">
-        <div class="col-md-8 offset-md-2">
-            <h1 class="text-center">{{ article.title }}</h1>
-
-            <p class="text-center mt-3">
-                <a href="{{ article.url }}" target="_blank" class="btn btn-outline-primary">
-                    🔗 前往新聞來源
-                </a>
-            </p>
-
-            {% if article.image_url %}
-                <img class="card-img-top" src="{{ article.image_url }}" alt="新聞圖片" class="img-fluid rounded">
-            {% elif article.website.icon_url %}
-                <a href="{{ article.url }}" target="_blank">
-                    <img src="{{ article.website.icon_url }}" alt="網站 Logo" class="img-fluid rounded">
-                </a>
-            {% else %}
-                <p class="text-center text-muted">無圖片</p>
-            {% endif %}
-
-            <div class="content">
-                <div class="accordion" id="accordionExample">
-                    <h2 class="text-center">內文</h2>
-                    {{ article.content }}
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <hr>
-
-    <!-- 顯示評論區域 -->
-    <div class="row">
-        <div class="col-md-8 offset-md-2">
-            <h2 class="text-center">Comments</h2>
-            {% if comments %}
-            <ul class="list-group">
-                {% for comment in comments %}
-                <li class="list-group-item mb-4 shadow-sm rounded">
-                    <strong>{{ comment.user.username }}</strong>
-                    <span class="text-muted">{{ comment.created_at|date:"Y-m-d H:i" }}</span>
-                    <p>{{ comment.content }}</p>
-
-                    <!-- 回覆按鈕 -->
-                    <button class="btn btn-sm btn-outline-primary reply-btn"
-                        data-parent-id="{{ comment.id }}">回覆</button>
-
-                    <!-- 顯示此評論的回覆 -->
-                    {% for reply in comment.replies.all %}
-                    <div class="reply ms-4 mt-2">
-                        <p><strong>{{ reply.user.username }}</strong>: {{ reply.content }}</p>
-                        <small class="text-muted">{{ reply.created_at|date:"Y-m-d H:i" }}</small>
-                    </div>
-                    {% endfor %}
-                </li>
-
-                <!-- 回覆表單 -->
-                <div id="reply-form-container-{{ comment.id }}" class="row" style="display:none;">
-                    <div class="col-md-8 offset-md-2 bg-light p-3 rounded shadow-sm">
-                        <h3>Reply to {{ comment.user.username }}</h3>
-                        <form method="POST" class="reply-form" data-comment-id="{{ comment.id }}">
-                            {% csrf_token %}
-                            <textarea name="content" class="form-control mb-2" rows="4" placeholder="Add a reply..."
-                                required></textarea>
-                            <input type="hidden" name="parent_id" value="{{ comment.id }}">
-                            <div class="d-flex justify-content-between">
-                                <button type="button" class="btn btn-secondary cancel-btn">取消</button>
-                                <button type="submit" class="btn btn-primary">回覆訊息</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-
-                {% endfor %}
-            </ul>
-            {% else %}
-            <p class="text-center">No comments yet.</p>
-            {% endif %}
-        </div>
-    </div>
-
-    <hr>
-
-    <!-- 新增評論表單 -->
-    {% if user.is_authenticated %}
-    <div class="row">
-        <div class="col-md-8 offset-md-2">
-            <h3>Add a comment</h3>
-            <form method="POST" id="comment-form" class="bg-light p-4 rounded shadow-sm">
-                {% csrf_token %}
-                <textarea name="content" class="form-control mb-2" rows="4" placeholder="Add a comment..."
-                    required></textarea>
-                <div class="d-flex justify-content-between">
-                    <a href="{% url 'news_list' %}" class="btn btn-secondary">返回</a>
-                    <button type="submit" class="btn btn-primary">評論</button>
-                </div>
-            </form>
-        </div>
-    </div>
-    {% else %}
-    <div class="row">
-        <div class="col-md-8 offset-md-2">
-            <p>You must be logged in to comment.</p>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- 回覆表單 -->
-    <div id="reply-form-container" class="row" style="display:none;">
-        <div class="col-md-8 offset-md-2">
-            <h3>Reply to Comment</h3>
-            <form method="POST" id="reply-form" class="bg-light p-4 rounded shadow-sm">
-                {% csrf_token %}
-                <textarea name="content" class="form-control mb-2" rows="4" placeholder="Add a reply..."
-                    required></textarea>
-                <input type="hidden" name="parent_id" id="parent-id">
-                <div class="d-flex justify-content-between">
-                    <button type="button" class="btn btn-secondary cancel-btn">取消</button>
-                    <button type="submit" class="btn btn-primary">Submit Reply</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<!-- 自訂CSS來達到所需效果 -->
 <style>
+    body {
+        font-family: 'Roboto', Arial, sans-serif;
+        background-color: #f3f4f6;
+        color: #333;
+        line-height: 1.6;
+    }
+
+    .report-container {
+        max-width: 900px;
+        margin: 40px auto;
+        background-color: #ffffff;
+        padding: 40px;
+        border-radius: 12px;
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .report-container:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    h1, h2, h3, h5 {
+        text-align: center;
+    }
+
+    h1 {
+        font-size: 2em;
+        margin-bottom: 20px;
+    }
+
+    h2 {
+        font-size: 1.6em;
+        border-bottom: 3px solid #4CAF50;
+        padding-bottom: 5px;
+        margin-top: 40px;
+        margin-bottom: 20px;
+        color: #444;
+    }
+
+    .btn-outline-primary, .btn-primary {
+        border-color: #4CAF50;
+        color: #4CAF50;
+    }
+
+    .btn-outline-primary:hover, .btn-primary:hover {
+        background-color: #4CAF50;
+        color: #fff;
+    }
+
+    .card-img-top {
+        border-radius: 8px;
+    }
+
+    .list-group-item {
+        background-color: #fff;
+        border: none;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        padding: 20px;
+    }
+
+    .reply {
+        margin-top: 1rem;
+        padding-left: 20px;
+        border-left: 3px solid #4CAF50;
+    }
+
+    .reply-form-container {
+        background-color: #f9fafb;
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+
+    textarea.form-control {
+        border-radius: 8px;
+        border: 1px solid #ccc;
+    }
+
+    .btn-secondary {
+        background-color: #ccc;
+        border: none;
+    }
+
+    hr {
+        border: none;
+        border-top: 2px solid #e0e0e0;
+        margin: 40px 0;
+    }
+
+    .sentiment-section {
+        background-color: #f9fafb;
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        margin-bottom: 40px;
+    }
+
+    .text-justify {
+        text-align: justify;
+        text-justify: inter-word;
+    }
+
+    .svg {
+        width: 100%;
+        max-width: 350px;
+        height: 200px;
+        display: block;
+        margin: 0 auto;
+    }
+
+    text {
+        font-size: 12px;
+        fill: #333;
+    }
+
     .justified-paragraph {
         text-align: justify;
         margin-top: 20px;
@@ -140,21 +130,11 @@
         padding-right: 20px;
     }
 
-    .reply {
-        margin-top: 1rem;
-        padding-left: 20px;
-        border-left: 2px solid #ddd;
-    }
-
     .reply-btn {
         margin-top: 10px;
         color: #007bff;
         text-decoration: none;
         cursor: pointer;
-    }
-
-    .list-group-item {
-        background-color: #fff;
     }
 
     .reply-form button {
@@ -180,38 +160,274 @@
     .justify-content-between {
         justify-content: space-between;
     }
+
+    @media (max-width: 768px) {
+        .report-container {
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 1.6em;
+        }
+
+        h2 {
+            font-size: 1.3em;
+        }
+    }
 </style>
 
-<!-- 新增 JavaScript 來實現回覆功能 -->
+<div class="report-container">
+    
+
+    <h1>{{ article.title }}</h1>
+    
+
+    <p class="text-center mt-3">
+        <a>新聞發布時間：{{ article.time }}</a>
+        <a href="{{ article.url }}" target="_blank" class="btn btn-outline-primary">
+            🔗 前往新聞來源
+        </a>
+    </p>
+
+    <div class="text-justify">
+        <h2>文章摘要</h2>
+        {{ article.summary }}
+    </div>
+    <br><br>
+    <div class="d-flex flex-row" style="width: 100%;">
+    <!-- Image Section (Left, 70%) -->
+    <div style="flex: 0 0 60%; max-width: 60%; padding-right: 10px;">
+        {% if article.image_url %}
+            <img class="card-img-top" src="{{ article.image_url }}" alt="新聞圖片" style="width: 100%; height: auto;" class="img-fluid rounded">
+        {% elif article.website.icon_url %}
+            <a href="{{ article.url }}" target="_blank">
+                <img src="{{ article.website.icon_url }}" alt="網站 Logo" style="width: 100%; height: auto;" class="img-fluid rounded">
+            </a>
+        {% else %}
+            <p class="text-center text-muted">無圖片</p>
+        {% endif %}
+    </div>
+    
+    <!-- Sentiment Analysis Dashboard (Right, 30%) -->
+    <div class="sentiment-section" style="flex: 0 0 40%; max-width: 40%; padding-left: 10px;">
+        <h5>情緒分析儀表板</h5>
+        <p>分數：<span id="score-label">{{ article.sentiment_score }}</span></p>
+        <svg viewBox="0 0 200 120" class="svg" style="width: 100%; height: auto;">
+            <defs>
+                <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="red"/>
+                    <stop offset="50%" stop-color="yellow"/>
+                    <stop offset="100%" stop-color="green"/>
+                </linearGradient>
+                <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="8" refY="3.5" orient="auto">
+                    <polygon points="0 0, 9 3.5, 0 7" fill="#222" />
+                </marker>
+            </defs>
+            <path d="M 10 100 A 90 90 0 0 1 190 100" fill="none" stroke="url(#gaugeGradient)" stroke-width="20" />
+            <g id="ticks"></g>
+            <line id="needle" x1="100" y1="100" x2="100" y2="45" stroke="#222" stroke-width="3" marker-end="url(#arrowhead)" />
+            <circle cx="100" cy="100" r="4" fill="#222" />
+        </svg>
+    </div>
+</div>
+    
+
+    <div class="content">
+        <h2>內文</h2>
+        <div id="article-content" class="justified-paragraph text-justify">
+            {{ article.content }}
+        </div>
+    </div>
+
+    <hr>
+
+    <h2>評論區</h2>
+    {% if comments %}
+    <ul class="list-group">
+        {% for comment in comments %}
+        <li class="list-group-item mb-4 shadow-sm rounded">
+            <strong>{{ comment.user.username }}</strong>
+            <span class="text-muted">{{ comment.created_at|date:"Y-m-d H:i" }}</span>
+            <p>{{ comment.content }}</p>
+
+            <button class="btn btn-sm btn-outline-primary reply-btn" data-parent-id="{{ comment.id }}">回覆</button>
+
+            {% for reply in comment.replies.all %}
+            <div class="reply ms-4 mt-2">
+                <p><strong>{{ reply.user.username }}</strong>: {{ reply.content }}</p>
+                <small class="text-muted">{{ reply.created_at|date:"Y-m-d H:i" }}</small>
+            </div>
+            {% endfor %}
+
+            <div id="reply-form-container-{{ comment.id }}" class="reply-form-container mt-3" style="display:none;">
+                <h3>回覆 {{ comment.user.username }}</h3>
+                <form method="POST" class="reply-form" data-comment-id="{{ comment.id }}">
+                    {% csrf_token %}
+                    <textarea name="content" class="form-control mb-2" rows="4" placeholder="輸入回覆..." required></textarea>
+                    <input type="hidden" name="parent_id" value="{{ comment.id }}">
+                    <div class="d-flex justify-content-between">
+                        <button type="button" class="btn btn-secondary cancel-btn">取消</button>
+                        <button type="submit" class="btn btn-primary">回覆訊息</button>
+                    </div>
+                </form>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-center">目前沒有評論。</p>
+    {% endif %}
+
+    <hr>
+
+    {% if user.is_authenticated %}
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <h3>新增評論</h3>
+            <form method="POST" id="comment-form" class="reply-form-container">
+                {% csrf_token %}
+                <textarea name="content" class="form-control mb-2" rows="4" placeholder="輸入評論..." required></textarea>
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'news_list' %}" class="btn btn-secondary">返回</a>
+                    <button type="submit" class="btn btn-primary">評論</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    {% else %}
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <p class="text-center">您必須登入才能留言。</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    // 情緒分析儀表板
+    const score = parseFloat('{{ article.sentiment_score }}');
+    const scoreLabel = document.getElementById("score-label");
+    const needle = document.getElementById("needle");
+    const ticksGroup = document.getElementById("ticks");
+    const majorTicks = [1, 0.5, 0, -0.5, -1]; // Swapped 1 with -1 and 0.5 with -0.5
+    const minorStep = 0.1;
+
+    scoreLabel.textContent = score.toFixed(2);
+    const angle = score * 90;
+    needle.setAttribute("transform", `rotate(${angle}, 100, 100)`);
+
+    function drawTick(value, length, width, color) {
+        // Map displayed value to original position
+        const originalValue = (
+            value === 1 ? -1 :
+            value === -1 ? 1 :
+            value === 0.5 ? -0.5 :
+            value === -0.5 ? 0.5 :
+            value
+        );
+        const angleDeg = originalValue * 90 + 90;
+        const angleRad = angleDeg * Math.PI / 180;
+        const x1 = 100 + (90 - length) * Math.cos(angleRad);
+        const y1 = 100 - (90 - length) * Math.sin(angleRad);
+        const x2 = 100 + 90 * Math.cos(angleRad);
+        const y2 = 100 - 90 * Math.sin(angleRad);
+
+        const tick = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        tick.setAttribute("x1", x1);
+        tick.setAttribute("y1", y1);
+        tick.setAttribute("x2", x2);
+        tick.setAttribute("y2", y2);
+        tick.setAttribute("stroke", color);
+        tick.setAttribute("stroke-width", width);
+        ticksGroup.appendChild(tick);
+    }
+
+    majorTicks.forEach(v => {
+        drawTick(v, 10, 2, "#000");
+        // Map displayed value to original position for text
+        const originalValue = (
+            v === 1 ? -1 :
+            v === -1 ? 1 :
+            v === 0.5 ? -0.5 :
+            v === -0.5 ? 0.5 :
+            v
+        );
+        const angleDeg = originalValue * 90 + 90;
+        const angleRad = angleDeg * Math.PI / 180;
+        const xText = 100 + 65 * Math.cos(angleRad);
+        const yText = 100 - 65 * Math.sin(angleRad);
+
+        const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        text.setAttribute("x", xText);
+        text.setAttribute("y", yText + 4);
+        text.setAttribute("text-anchor", "middle");
+        text.textContent = v.toFixed(1);
+        ticksGroup.appendChild(text);
+    });
+
+    for (let v = -0.9; v < 1; v += minorStep) {
+        if (majorTicks.includes(parseFloat(v.toFixed(1)))) continue;
+        drawTick(v, 5, 1, "#666");
+    }
+
+    // 回覆表單切換
     document.querySelectorAll('.reply-btn').forEach(button => {
         button.addEventListener('click', function () {
             const parentId = this.getAttribute('data-parent-id');
-
-            // 隱藏所有回覆表單
-            document.querySelectorAll('.reply-form').forEach(form => {
-                form.closest('.row').style.display = 'none';
+            document.querySelectorAll('.reply-form-container').forEach(form => {
+                form.style.display = 'none';
             });
-
-            // 顯示回覆表單
             const replyFormContainer = document.getElementById(`reply-form-container-${parentId}`);
             replyFormContainer.style.display = 'block';
-
-            // 滾動到回覆表單
             replyFormContainer.scrollIntoView({ behavior: 'smooth' });
-
-            // 設置焦點
             replyFormContainer.querySelector('textarea').focus();
         });
     });
 
-    // 取消回覆功能
     document.querySelectorAll('.cancel-btn').forEach(button => {
         button.addEventListener('click', function () {
-            // 隱藏回覆表單
-            this.closest('.row').style.display = 'none';
+            this.closest('.reply-form-container').style.display = 'none';
         });
     });
-</script>
+});
 
+
+const contentDiv = document.getElementById('article-content');
+let content = contentDiv.textContent.replace(/\s+/g, ' ').trim(); // 清空多餘空白
+
+// 分句邏輯：人工走訪字元，遇到真正句尾再切割
+let sentences = [];
+let buffer = '';
+
+for (let i = 0; i < content.length; i++) {
+    const char = content[i];
+    buffer += char;
+
+    // 判斷是否為句尾標點
+    if (char === '.' || char === '!' || char === '?' || char === '。' || char === '！' || char === '？') {
+        const nextChar = content[i + 1] || '';
+        const prevChar = content[i - 1] || '';
+
+        // 以下情況不切段：
+        // 1. 小數 (3.14)
+        if (prevChar.match(/[0-9]/) && nextChar.match(/[0-9]/)) continue;
+        // 2. 英文縮寫 (U.S. / J.K.)
+        if (prevChar.match(/[A-Za-z]/) && nextChar.match(/[A-Za-z]/)) continue;
+        // 3. 省略號 (...)
+        if (nextChar === '.') continue;
+
+        // 否則認為是一個句尾，存入 sentences
+        sentences.push(buffer.trim());
+        buffer = '';
+    }
+}
+
+// 若最後還有殘留文字，補上
+if (buffer.trim()) sentences.push(buffer.trim());
+
+// 組合 HTML
+contentDiv.innerHTML = sentences.map(s => `<p>${s}</p>`).join('');
+
+</script>
 {% endblock %}

@@ -19,8 +19,7 @@ class Article(models.Model):
     summary = models.TextField(null=True)  # 簡短摘要
     time = models.DateTimeField(null=True)
     website = models.ForeignKey(Website, on_delete=models.CASCADE)  # 外鍵關聯到新聞網站
-
-    sentiment = models.CharField(max_length=10, null=True, blank=True)  # 新增情緒欄位
+    sentiment_score = models.FloatField(null=True, blank=True)  # 存放情緒分數（例如 0.85）
 
     def __str__(self):
         return self.title if self.title else "No Title"

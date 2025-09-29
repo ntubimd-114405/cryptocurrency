@@ -167,6 +167,7 @@
             <td>
               {% if coins %}
               {{ coins|join:"、" }}
+              <small><a href="{% url 'crypto_list' %}" class="text-blue-500 text-sm ml-2">查看更多...</a></small>
               {% else %}
               暫無推薦
               {% endif %}

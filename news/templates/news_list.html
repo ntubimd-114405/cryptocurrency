@@ -99,6 +99,8 @@
                                     <a href="{% url 'news_detail' article_id=article.id %}" class="button-bu btn-sm">評論</a>
                                     <a href="{{ article.url }}" target="_blank" class="button-bu btn-sm">閱讀更多</a>
                                     <a href="{% url 'analyze_sentiment' article_id=article.id %}" class="button-bu btn-sm">分析情緒</a>
+                                    <a href="{% url 'generate_summary' article_id=article.id %}" class="button-bu btn-sm">生成摘要</a>
+                                    <a href="{% url 'analyze_sentiment' article.id %}">情緒分析</a>
                                 </div>
                             </div>
                         </div>

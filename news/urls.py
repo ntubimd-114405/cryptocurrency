@@ -9,5 +9,7 @@ urlpatterns = [
     path('post/', views.X_list, name='X_list'),
     path('analyze/<int:article_id>/', views.analyze_sentiment_by_id, name='analyze_sentiment'),
     path('analyze_sentiment/<int:article_id>/', views.analyze_sentiment_by_id, name='analyze_sentiment_by_id'),
+    path('generate_summary/<int:article_id>/', views.generate_summary_view, name='generate_summary'),
+    path('analyze/<int:article_id>/', views.analyze_sentiment_by_id, name='analyze_sentiment'),
 ]
 
