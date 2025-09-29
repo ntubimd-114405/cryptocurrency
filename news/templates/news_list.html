@@ -75,18 +75,17 @@
                             <div class="d-flex justify-content-between align-items-end">
                                 <div class="d-flex align-items-center gap-2">
                                     <span class="me-2">情緒：</span>
-                                    {% if article.sentiment == '1' %}
-                                        😄 正面
-                                    {% elif article.sentiment == '0' %}
-                                        😐 中立
-                                    {% elif article.sentiment == '-1' %}
-                                        😔 負面
-                                    {% elif article.sentiment == '-9' %}
-                                        ⚠️ 信心不足
+                                    {% if article.sentiment_score is not None %}
+                                        {% if article.sentiment_score > 0.3 %}
+                                            😄 正面 ({{ article.sentiment_score|floatformat:2 }})
+                                        {% elif article.sentiment_score < -0.3 %}
+                                            😔 負面 ({{ article.sentiment_score|floatformat:2 }})
+                                        {% else %}
+                                            😐 中立 ({{ article.sentiment_score|floatformat:2 }})
+                                        {% endif %}
                                     {% else %}
                                         ❓ 尚未進行分析
                                     {% endif %}
-                                </div>
                                 <div class="d-flex align-items-center gap-2 text-muted small">
                                     <p class="mb-0">{{ article.time|date:"Y-m-d H:i" }}</p>
                                     <span class="mx-1">•</span>
@@ -98,9 +97,6 @@
                                 <div class="d-flex align-items-center gap-2">
                                     <a href="{% url 'news_detail' article_id=article.id %}" class="button-bu btn-sm">評論</a>
                                     <a href="{{ article.url }}" target="_blank" class="button-bu btn-sm">閱讀更多</a>
-                                    <a href="{% url 'analyze_sentiment' article_id=article.id %}" class="button-bu btn-sm">分析情緒</a>
-                                    <a href="{% url 'generate_summary' article_id=article.id %}" class="button-bu btn-sm">生成摘要</a>
-                                    <a href="{% url 'analyze_sentiment' article.id %}">情緒分析</a>
                                 </div>
                             </div>
                         </div>
