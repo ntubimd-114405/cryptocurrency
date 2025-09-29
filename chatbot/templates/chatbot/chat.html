@@ -307,8 +307,6 @@
     <!-- ✅ 預設問題按鈕區 -->
     <div class="chat-suggestions">
       <button onclick="sendPresetMessage('這個網站是做什麼的？')">網站介紹</button>
-      <button onclick="sendPresetMessage('我該怎麼使用這個聊天機器人？')">使用教學</button>
-      <button onclick="sendPresetMessage('有哪些加密貨幣可以查詢？')">幣種查詢</button>
     </div>
 
     <div class="chat-footer">
@@ -348,8 +346,11 @@ function handleKeyPress(event) {
 }
 const presetAnswers = {
     "這個網站是做什麼的？": "此網站是一個加密貨幣投資推薦平台，提供大量相關數據供使用者參考與分析。",
-    "我該怎麼使用這個聊天機器人？": "請直接輸入你的問題，例如「BTC 和 ETH 最近怎樣？」或點選上方快捷問題。",
-    "有哪些加密貨幣可以查詢？": "目前本網站支援查詢如：比特幣（BTC）、以太幣（ETH）、幣安幣（BNB）等主流加密貨幣，詳情可以往貨幣列表查詢。"
+    "貨幣列表": "「貨幣列表」提供超過 500 種以上加密貨幣的即時資訊。點選某個幣種後，會進入該幣種的獨立頁面，裡面包含 K 線圖、即時訂單簿以及多種技術指標，幫助你進行專業分析。",
+    "外部資訊": "「外部資訊」整合了多個平台的最新新聞，以及 X（前 Twitter）上加密貨幣領域具影響力人物的即時推文，讓你隨時掌握市場脈動。",
+    "經濟指標": "「經濟指標」彙整了多種數據，包括宏觀經濟指標、加密貨幣專屬指標、金融市場指標與趨勢分析指標，協助你全面觀察市場走向。",
+    "AI Agnet": "「AI Agent」是一個智慧化的投資助理，能即時分析市場數據、新聞和技術指標，並根據你的需求提供個人化的投資建議與決策輔助。無論是幣種研究、趨勢判斷，還是風險控管，AI Agent 都能成為你最強大的助手。",
+    "問卷": "「問卷」是一份針對加密貨幣投資設計的調查。完成後，系統會透過 AI 來分析你的投資習慣並給出個人化的建議。",
 };
 
 function sendPresetMessage(msg) {
@@ -366,6 +367,29 @@ function sendPresetMessage(msg) {
     botDiv.className = 'message bot';
     botDiv.innerText = 'GPT：' + (presetAnswers[msg] || '很抱歉，沒有對應的預設回答');
     chatBox.appendChild(botDiv);
+
+    // ✅ 如果是「網站介紹」，額外加功能按鈕
+    if (msg === "這個網站是做什麼的？") {
+        const buttonsContainer = document.createElement('div');
+        buttonsContainer.className = 'chat-suggestions';
+
+        const buttons = [
+            "貨幣列表",
+            "外部資訊",
+            "經濟指標",
+            "AI Agnet",
+            "問卷",
+        ];
+
+        buttons.forEach(text => {
+            const btn = document.createElement('button');
+            btn.innerText = text;
+            btn.onclick = () => sendPresetMessage(text);
+            buttonsContainer.appendChild(btn);
+        });
+
+        chatBox.appendChild(buttonsContainer);
+    }
 
     chatBox.scrollTop = chatBox.scrollHeight;
 }
