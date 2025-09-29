@@ -107,9 +107,6 @@
     <div class="mb-4">
       <canvas id="radarCore" width="300" height="300"></canvas>
     </div>
-    <p class="small text-muted">
-      分數高表示該風險面向偏高，來源為第 2、3、4、9 題問卷。
-    </p>
   </div>
 </div>
 
@@ -170,6 +167,7 @@
             <td>
               {% if coins %}
               {{ coins|join:"、" }}
+              <small><a href="{% url 'crypto_list' %}" class="text-blue-500 text-sm ml-2">查看更多...</a></small>
               {% else %}
               暫無推薦
               {% endif %}
@@ -227,24 +225,20 @@
             <table class="table table-bordered">
               <thead class="table-light">
                 <tr>
-                  <th>平均分數區間</th>
                   <th>風險屬性</th>
                   <th>資產配置建議</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td>0 ~ 2.5</td>
                   <td>保守型</td>
                   <td>60% 穩定幣、30% 主流幣、10% 成長幣</td>
                 </tr>
                 <tr>
-                  <td>2.51 ~ 4</td>
                   <td>穩健型</td>
                   <td>40% 主流幣、30% 成長幣、20% 穩定幣、10% 迷因幣</td>
                 </tr>
                 <tr>
-                  <td>4.01 以上</td>
                   <td>積極型</td>
                   <td>40% 成長幣、30% 主流幣、20% 迷因幣、10% 其他</td>
                 </tr>
@@ -476,7 +470,10 @@
           options: {
             responsive: true,
             plugins: {
-              legend: { display: true },
+              legend: { 
+                display: true, 
+                onClick: (e) => {},// 不做任何事，這樣點圖例就不會隱藏資料
+              },
               datalabels: {
                 color: '#fff',
                 align: 'center',
@@ -512,7 +509,10 @@
                   }
 
                   const coinAmt = allocatedAmounts.find(item => item.coin === label).amt;
-                  return `${label}\n${Math.round(value)}%\n${coinAmt.toLocaleString()} 元`;
+                  return coinAmt > 0
+                    ? `${label}\n${coinAmt.toLocaleString()} 元`
+                    : `${label}\n${Math.round(value)}%`;
+
                 }
               }
             }

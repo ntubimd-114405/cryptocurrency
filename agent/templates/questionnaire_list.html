@@ -10,7 +10,6 @@
 <h1>問卷首頁</h1>
 <hr>
     <div>
-        <h4>ChatGpt總分析報告</h4>
         <button class="analysis" id="analysisBtn">
             <span>
                 <a href="{% url 'agent:analysis_result_view' %}" style="color: #fff;">執行總分析</a>
@@ -24,32 +23,22 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<!-- 🔹 總分析按鈕區塊 -->
-
-<button class="analysis">
-    <span>
-        <a href="{% url 'agent:history' %}" style="color: #fff;">
-            報表
-        </a>
-    </span>
-    
-</button>
 
 <!-- Canvas -->
 <table class="table table-bordered align-middle text-center">
     <thead class="table-light">
         <tr>
-            <th>問卷名稱(點擊問卷名稱開始填寫)</th>
-            <th>上次填寫時間</th>
-            <th>填寫進度</th>
-            <th>ChatGpt</th>
-            <th>重新填寫</th>  
+            <th class="text-center" style="width: 20%;">問卷名稱&nbsp;(點擊問卷名稱開始填寫)</th>
+            <th class="text-center" style="width: 15%;">最後填寫時間</th>
+            <th class="text-center" style="width: 10%;">進度</th>
+            <th class="text-center" style="width: 10%;">分析</th>
+            <th class="text-center" style="width: 15%;">操作</th>
         </tr>
     </thead>
     <tbody>
         {% for item in data %}
         <tr>
-            <td class="tooltip table table-bordered align-middle text-center">
+            <td class="tooltip table table-bordered align-middle text-start" style = "text-indent: 3em;">
                 <a href="{% url 'agent:questionnaire_detail' item.questionnaire.id %}">
                     {{ item.questionnaire.id }}. {{ item.questionnaire.title }}
                 </a>
@@ -58,14 +47,16 @@
                 <span class="tooltip-text">{{ item.questionnaire.description }}</span>
                 {% endif %}
             </td>
-            <td>
+            
+            <td style="width: 15%;">
                 {% if item.last_completed %}
                 {{ item.last_completed|date:"Y-m-d H:i" }}
                 {% else %}
                 尚未填寫
                 {% endif %}
             </td>
-            <td>
+            
+            <td style="width: 10%;">
                 <div class="progress" style="height: 20px; position: relative;">
                     <div class="progress-bar 
                         {% if item.progress == 100 %}
@@ -76,24 +67,26 @@
                             bg-warning
                         {% else %}
                             bg-transparent
-                        {% endif %}" role="progressbar" style="width: {{ item.progress }}%;"
+                        {% endif %}" 
+                        role="progressbar" 
+                        style="width: {{ item.progress }}%;" 
                         aria-valuenow="{{ item.progress }}" aria-valuemin="0" aria-valuemax="100">
                     </div>
-                    <!-- 文字固定顯示在中間 -->
                     <span
                         style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-size: 0.9rem;">
                         {{ item.progress }}%
                     </span>
                 </div>
             </td>
-            <td>
+            
+            <td style="width: 10%;">
                 <a href="{% url 'agent:analyze_questionnaire' item.questionnaire.id %}">
                     分析
                 </a>
             </td>
-            <td style="white-space: nowrap; width: 1%;">
+            
+            <td style="white-space: nowrap; width: 15%;">
                 <div class="d-inline-flex gap-2 justify-content-center">
-                    
                     <form action="{% url 'agent:reset_questionnaire_answers' item.questionnaire.id %}" method="post">
                         {% csrf_token %}
                         <button type="submit" class="btn btn-danger btn-sm"
@@ -110,6 +103,7 @@
         </tr>
         {% endfor %}
     </tbody>
+
 </table>
 
 
@@ -152,10 +146,16 @@
             </div>
 
             <!-- 底部按鈕 -->
-            <div class="modal-footer">
-                <button type="button" id="btnUnderstand" class="btn btn-primary w-100" disabled>確定</button>
-            </div>
-
+            <form method="post" class="modal-footer w-100 d-flex justify-content-center">
+                {% csrf_token %}
+                <button type="submit" name="know_confirm" 
+                id="btnUnderstand" 
+                class="btn btn-primary w-100" 
+                disabled 
+                data-bs-dismiss="modal">
+                確定
+            </button>
+            </form>
         </div>
     </div>
 </div>
@@ -178,6 +178,38 @@
         const modal = bootstrap.Modal.getInstance(document.getElementById('infoModal'));
         modal.hide();
     });
+
+document.addEventListener("DOMContentLoaded", function () {
+  const checkbox = document.getElementById("agreeCheck");
+  const btn = document.getElementById("btnUnderstand");
+
+  checkbox.addEventListener("change", function () {
+    btn.disabled = !checkbox.checked;
+  });
+
+  btn.addEventListener("click", function () {
+    fetch("", {
+      method: "POST",
+      headers: {
+        "X-CSRFToken": "{{ csrf_token }}",
+        "Content-Type": "application/x-www-form-urlencoded"
+      },
+      body: "know_confirm=1"
+    }).then(res => res.json())
+      .then(data => {
+        if (data.status === "ok") {
+          // 關閉 Modal
+          const modal = bootstrap.Modal.getInstance(document.getElementById("infoModal"));
+          modal.hide();
+          // 🔹 主動刷新頁面，現在是 GET 狀態，不會跳提示
+          window.location.reload();
+        }
+      });
+  });
+
+  const infoModal = new bootstrap.Modal(document.getElementById("infoModal"));
+  infoModal.show();
+  });
 </script>
 
 

@@ -66,7 +66,17 @@ def parse_relative_time2(text):
         return dt
     else:
         return None
-
+    
+def parse_date_from_url(url):
+    # 用正規表達式從 URL 抓出類似 yyyy/mm/dd 的日期
+    match = re.search(r'/(\d{4})/(\d{2})/(\d{2})/', url)
+    if match:
+        y, m, d = match.groups()
+        try:
+            return datetime(int(y), int(m), int(d))
+        except ValueError:
+            return None
+    return None
 
 class CoindeskWebsite(BaseWebsite):
     def __init__(self):
@@ -81,27 +91,24 @@ class CoindeskWebsite(BaseWebsite):
         soup = BeautifulSoup(response.text, 'html.parser')
 
         # 找到文章列表
-        articles = soup.find_all(class_='flex flex-col')
+        articles = soup.select("div.flex.flex-col")
         for article in articles:
-            title = article.find('h2')  # 假設每篇文章的標題都在 <h2> 標籤中
-            if title:
-                title = convert_emoji_to_text(title.text)
-            else:
-                title = None
-            link = article.find('a', class_="text-color-charcoal-900 mb-4 hover:underline")
-            if link is None:
-                continue  
-            link=link["href"]
-            link = link.split("https://www.coindesk.com")[-1]
+            title_tag = article.find('h2')
+            title = convert_emoji_to_text(title_tag.text) if title_tag else None
 
-            time = article.find('span', class_="font-metadata")
-            if time is None:continue
-            time=time.text
-            time=parse_relative_time(time)
-            if time is None:continue
-            time=str(time)+"+08:00"
+            link_tag = article.find('a', class_="content-card-title")
+            if not link_tag: continue
+            link = link_tag["href"]
+            if not link.startswith("http"):
+                link = f"https://www.coindesk.com{link}"
 
-            data.append({"title":title, "url":f"https://www.coindesk.com{link}", "time":time})
+            time_tag = article.find('span', class_="font-metadata")
+            if not time_tag: continue
+            time_str = parse_relative_time(time_tag.text)
+            if not time_str: continue
+            time_str = f"{time_str}+08:00"
+
+            data.append({"title": title, "url": link, "time": time_str})
         return data
 
 class CoindeskArticle(BaseArticle):
@@ -119,7 +126,21 @@ class CoindeskArticle(BaseArticle):
     
 
     def get_news_details(self):
-        response = requests.get(self.url)
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+            "Referer": "https://www.coindesk.com/",
+            "Connection": "keep-alive",
+            "Upgrade-Insecure-Requests": "1",
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "same-origin",
+            "Sec-Fetch-User": "?1",
+            "Cache-Control": "max-age=0",
+            # 若有 cookie 可以在這裡加 "Cookie": "你的登入Cookie"
+        }
+        response = requests.get(self.url, headers=headers)
         soup = BeautifulSoup(response.text, 'html.parser')
 
         # 找到 img 標籤
@@ -157,7 +178,7 @@ class CoindeskArticle(BaseArticle):
 
         self.image_url = url
 
-        time_tag = soup.find('span',class_="md:ml-2")
+        time_tag = soup.find('span', class_="md:ml-2")
         if time_tag:
             t = time_tag.get_text()
             t = parse_relative_time2(t)
@@ -165,7 +186,6 @@ class CoindeskArticle(BaseArticle):
                 self.time = t
         else:
             outer_div = soup.find("div", class_="font-metadata flex gap-4 text-charcoal-600 flex-col md:block")
-            # 再從這個 div 找到 <span>
             if outer_div:
                 time_tag = outer_div.find("span")
                 if time_tag:
@@ -173,6 +193,12 @@ class CoindeskArticle(BaseArticle):
                     t = parse_relative_time2(t)
                     if t:
                         self.time = t
+
+        # 如果前面沒成功，再從 URL 解析時間
+        if not hasattr(self, 'time') or self.time is None:
+            t = parse_date_from_url(self.url)
+            if t:
+                self.time = t
         
         
         

@@ -68,4 +68,4 @@ class BitcoinMetricData(models.Model):
         unique_together = ('metric', 'date')  # 避免同一時間重複資料
 
     def __str__(self):
-        return f"{self.metric.name} - {self.timestamp}: {self.value}"
+        return f"{self.metric.name} - {self.date}: {self.value}"

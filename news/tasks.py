@@ -2,6 +2,7 @@ from celery import shared_task
 from datetime import datetime, timedelta
 from dateutil import parser
 from data_collector.coin_history.ccxt_price import CryptoHistoryFetcher
+from data_analysis.crypto_ai_agent.news_agent import initialize_news_vector_store
 
 @shared_task
 def news_crawler():
@@ -37,7 +38,7 @@ def news_crawler():
         Q(content__isnull=True) | Q(content__exact="") |
         Q(title__isnull=True) | Q(title__exact="") |  
         Q(time__isnull=True) | Q(image_url__isnull=True)
-    ).order_by('-id')[:10]
+    ).order_by('-id')[:20]
     #articles_empty = NewsArticle.objects.all()
     print(len(articles_empty))
     for article in articles_empty:
@@ -61,27 +62,94 @@ def news_crawler():
             print(f"發生錯誤: {e}")
             continue
 
+
 @shared_task
 def news_sentiment():
-    from .models import Article
+    from news.models import Article
     from data_analysis.sentiment.multi_model_voting import predict_sentiment
+    """
+    批次分析情緒，每次抓 10 篇未分析文章，有 summary，依時間最新排序
+    """
+    print(f"分析情緒")
+    # 篩選條件：summary 不為空 & sentiment 為空或 null
+    articles = Article.objects.filter(
+        summary__isnull=False
+    ).exclude(
+        summary=""
+    ).filter(
+        sentiment__isnull=True
+    ) | Article.objects.filter(
+        summary__isnull=False
+    ).exclude(
+        summary=""
+    ).filter(
+        sentiment=""
+    )
 
-    articles = Article.objects.filter(sentiment__isnull=True) | Article.objects.filter(sentiment="")
-    # 建立對應字典
-    sentiment_mapping = {
-        "-1": "negative",
-        "0": "neutral",
-        "1": "positive"
-    }
+    # 依時間最新排序（假設有欄位 time 或 created_at）
+    articles = articles.order_by('-time')[:10]
 
     for article in articles:
-        if article.content:  # 確保 content 欄位有內容
-            sentiment_value = predict_sentiment(article.content)  # 取得 -1, 0, 1
-            article.sentiment = sentiment_mapping.get(sentiment_value, "neutral")  # 預設為 neutral
-            article.save()
-            print(article)
+        print(f"Processing Article ID: {article.id}, Title: {article.title}")
+        # 使用 summary 進行情緒分析
+        sentiment, score = predict_sentiment(article.summary)
 
-def test():
-    news_crawler()
+        # 存回模型
+        article.sentiment = sentiment
+        article.sentiment_score = score
+        article.save()
+    
+    return f"Processed {len(articles)} articles."
+
+
+
+
+@shared_task
+def news_summary():
+    from news.models import Article
+    from data_analysis.sentiment.summary import summarize_long_text  # 你的摘要程式
+    """
+    批次生成摘要，每次抓 10 篇 content 不為空且 summary 為空的文章
+    """
+    print(f"生成摘要")
+    # 篩選條件：content 不為空 & summary 為空或 null
+    articles = Article.objects.filter(
+        content__isnull=False
+    ).exclude(
+        content=""
+    ).filter(
+        summary__isnull=True
+    ) | Article.objects.filter(
+        content__isnull=False
+    ).exclude(
+        content=""
+    ).filter(
+        summary=""
+    )
+
+    # 依時間最新排序，只取前 10 筆
+    articles = articles.order_by('-time')[:10]
+
+    processed_count = 0
+    for article in articles:
+        print(f"Processing Article ID: {article.id}, Title: {article.title}")
+        summary = summarize_long_text(article.content)
+        if summary:
+            article.summary = summary
+            article.save()
+            processed_count += 1
+
+    return f"Processed {processed_count} articles."
+
+
+
+
+
+@shared_task
+def refresh_news_vector_store():
+    initialize_news_vector_store()
+
+
+
 
 

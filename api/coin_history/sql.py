@@ -4,13 +4,13 @@ import os
 from pathlib import Path
 from datetime import datetime
 
-env_path = Path(__file__).resolve().parents[2] / '.env'
+env_path = Path(__file__).resolve().parents[0] / '.env'
 
 # 加載 .env 檔案
 load_dotenv(dotenv_path=env_path)
 
 
-def get_name(n):
+def get_name(n=None):
     # 初始化交易所
     conn = MySQLdb.connect(
         host="localhost",
@@ -23,8 +23,10 @@ def get_name(n):
     # 創建 cursor 物件
     cursor = conn.cursor()
 
-    # 編寫查詢語句，抓取 n 筆 abbreviation
-    query = f"SELECT id, abbreviation FROM main_coin LIMIT {n};"
+    if n is not None:
+        query = f"SELECT id, abbreviation FROM main_coin LIMIT {int(n)};"
+    else:
+        query = "SELECT id, abbreviation FROM main_coin;"
 
     # 執行查詢
     cursor.execute(query)

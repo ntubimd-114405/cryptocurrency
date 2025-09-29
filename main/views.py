@@ -22,6 +22,18 @@ import re
 import pandas as pd
 from decimal import Decimal
 import ta
+from pathlib import Path
+from dotenv import load_dotenv
+
+import os
+import numpy as np
+
+env_path = Path(__file__).resolve().parents[2] / '.env'
+
+# 加載 .env 檔案
+load_dotenv(dotenv_path=env_path)
+
+api = os.getenv('OPEN_API')
 
 def home(request):
     try:
@@ -755,10 +767,7 @@ def favorite_coins(request):
     }
     return render(request, 'favorite_coins.html', context)
 
-@login_required
-def feedback_form_view(request):
-    questions = FeedbackQuestion.objects.prefetch_related('options').all()
-    return render(request, 'feedback_form.html', {'questions': questions})
+
 
 @login_required
 def submit_questionnaire(request):
@@ -832,7 +841,16 @@ def coin_history_api(request):
         .order_by('date')
     )
 
-    df = pd.DataFrame.from_records(queryset.values('date', 'close_price'))
+    fields = ['date', 'close_price', 'high_price', 'low_price', 'volume']
+    print(fields)  # 確認沒有空字串
+
+    # 1️⃣ 先把 queryset 讀成 DataFrame
+    df = pd.DataFrame.from_records(queryset.values(*fields))
+
+    # 2️⃣ 再把數值欄位轉成 float，避免 Decimal 與 float 運算錯誤
+    for col in ['close_price', 'high_price', 'low_price', 'volume']:
+        if col in df.columns:
+            df[col] = df[col].astype(float)
 
     if df.empty:
         return JsonResponse({'error': '此時間區間無資料'}, status=204)
@@ -844,12 +862,232 @@ def coin_history_api(request):
     df['rsi'] = ta.momentum.RSIIndicator(close=df['close_price'], window=14).rsi()
     df = df.dropna(subset=['ema20', 'rsi'])
 
+    bb = ta.volatility.BollingerBands(close=df['close_price'], window=20, window_dev=2)
+    df['bb_high'] = bb.bollinger_hband()
+    df['bb_low'] = bb.bollinger_lband()
+
+    stoch = ta.momentum.StochasticOscillator(
+        high=df['high_price'], low=df['low_price'], close=df['close_price'], window=14
+    )
+    df['stoch'] = stoch.stoch()
+
+    df['cci'] = ta.trend.CCIIndicator(
+        high=df['high_price'], low=df['low_price'], close=df['close_price'], window=20
+    ).cci()
+
+    df['williams_r'] = ta.momentum.WilliamsRIndicator(
+        high=df['high_price'], low=df['low_price'], close=df['close_price'], lbp=14
+    ).williams_r()
+
+    df['obv'] = ta.volume.OnBalanceVolumeIndicator(close=df['close_price'], volume=df['volume']).on_balance_volume()
+    df['mfi'] = ta.volume.MFIIndicator(
+        high=df['high_price'], low=df['low_price'], close=df['close_price'], volume=df['volume'], window=14
+    ).money_flow_index()
+
+    df['atr'] = ta.volatility.AverageTrueRange(
+        high=df['high_price'], low=df['low_price'], close=df['close_price'], window=14
+    ).average_true_range()
+
+    import math
+
+    def safe_list(values):
+        """把 NaN 或 None 轉成 None，方便 JSON 回傳"""
+        return [v if v is not None and not (isinstance(v, float) and math.isnan(v)) else None for v in values]
+
+
     chart_data = {
+        'coin_id': int(coin_id),
         'selected_coin_name': selected_coin.coinname,
         'dates': df['date'].dt.strftime('%Y-%m-%d').tolist(),
-        'close': df['close_price'].tolist(),
-        'ema20': df['ema20'].round(2).tolist(),
-        'rsi': df['rsi'].round(2).tolist(),
+
+        # 價格相關
+        'close': safe_list(df['close_price'].tolist()),
+        'ema20': safe_list(df['ema20'].round(2).tolist()),
+        'bb_high': safe_list(df['bb_high'].round(2).tolist()),
+        'bb_low': safe_list(df['bb_low'].round(2).tolist()),
+
+        # 動能指標
+        'rsi': safe_list(df['rsi'].round(2).tolist()),
+        'stoch': safe_list(df['stoch'].round(2).tolist()),
+        'cci': safe_list(df['cci'].round(2).tolist()),
+        'williams_r': safe_list(df['williams_r'].round(2).tolist()),
+
+        # 成交量
+        'obv': safe_list(df['obv'].round(2).tolist()),
+        'mfi': safe_list(df['mfi'].round(2).tolist()),
+
+        # 波動率
+        'atr': safe_list(df['atr'].round(2).tolist())
     }
 
     return JsonResponse(chart_data, encoder=DecimalEncoder, safe=False)
+
+
+import os
+import pandas as pd
+import numpy as np
+import traceback
+import joblib
+from django.http import JsonResponse
+from sklearn.ensemble import RandomForestClassifier
+
+# ----------- 特徵工程 -----------
+def add_features(df):
+    df = df.copy()
+    df["return"] = df["close_price"].pct_change()
+    df["ma5"] = df["close_price"].rolling(5).mean()
+    df["ma20"] = df["close_price"].rolling(20).mean()
+    # 標籤：明天漲跌（回測用，不影響已訓練模型）
+    df["label"] = (df["close_price"].shift(-1) > df["close_price"]).astype(int)
+    df["vol_ma5"] = df["volume"].rolling(5).mean()
+    df["vol_ratio"] = df["volume"] / (df["vol_ma5"] + 1e-6)
+    df = df.dropna().reset_index(drop=True)
+    return df
+
+# ----------- 使用已訓練模型回測 -----------
+def backtest_with_model(df, model):
+    df = add_features(df)
+
+    # 與模型訓練一致的特徵
+    features = ["ma5", "ma20", "return", "vol_ratio"]
+    df = df.dropna(subset=features).reset_index(drop=True)
+
+    # 模型預測
+    df["pred"] = model.predict(df[features])
+
+    # 策略報酬
+    df["strategy"] = df["pred"].shift(1) * df["return"]
+    df["strategy"].fillna(0, inplace=True)
+    df["cum_strategy"] = (1 + df["strategy"]).cumprod()
+    df["cum_buy_hold"] = (1 + df["return"]).cumprod()
+
+    return df
+
+def backtest_view(request):
+    try:
+        current_dir = os.path.dirname(__file__)
+
+        # 取得 coin_id
+        coin_param = request.GET.get('coin_id')
+        if not coin_param:
+            return JsonResponse({'error': '缺少 coin_id 參數'}, status=400)
+
+        try:
+            coin_list = [int(c.strip()) for c in coin_param.split(',')]
+        except ValueError:
+            return JsonResponse({'error': 'coin_id 格式錯誤'}, status=400)
+
+        # 模型路徑
+        model_path = os.path.abspath(os.path.join(current_dir, "../data_analysis/backtest/BackTest0925-2.pkl"))
+
+        # 載入已訓練模型
+        if os.path.exists(model_path):
+            model = joblib.load(model_path)
+            print("已載入訓練好的模型")
+        else:
+            return JsonResponse({'error': '模型不存在'}, status=500)
+
+        result_data = {}
+
+        for coin_id in coin_list:
+            try:
+                selected_coin = Coin.objects.get(id=coin_id)
+            except Coin.DoesNotExist:
+                continue  # 找不到就跳過
+
+            # 從資料庫取出 CoinHistory
+            queryset = (
+                CoinHistory.objects
+                .filter(coin_id=coin_id)
+                .select_related('coin')
+                .order_by('date')
+            )
+
+            fields = ['date', 'close_price', 'high_price', 'low_price', 'volume']
+            df = pd.DataFrame.from_records(queryset.values(*fields))
+
+            if df.empty:
+                continue  # 沒有資料就跳過
+
+            # 將 Decimal 欄位轉 float
+            for col in ['close_price', 'high_price', 'low_price', 'volume']:
+                df[col] = df[col].astype(float)
+
+            # 技術指標計算
+            df["ema20"] = df["close_price"].ewm(span=20, adjust=False).mean()
+
+            delta = df["close_price"].diff()
+            gain = np.where(delta > 0, delta, 0)
+            loss = np.where(delta < 0, -delta, 0)
+            avg_gain = pd.Series(gain).rolling(window=14).mean()
+            avg_loss = pd.Series(loss).rolling(window=14).mean()
+            df["rsi"] = 100 - (100 / (1 + avg_gain / (avg_loss + 1e-10)))
+
+            # 使用已訓練模型回測
+            g = backtest_with_model(df, model)
+            print(g)
+            print(g["pred"].value_counts())
+            print(g[["ma5","ma20","return","pred"]])
+
+            # 計算策略績效（最後一天累積報酬）
+            strategy_final = g["cum_strategy"].iloc[-1]
+            buy_hold_final = g["cum_buy_hold"].iloc[-1]
+
+            # 可以選擇用百分比表示
+            strategy_pct = (strategy_final - 1) * 100
+            buy_hold_pct = (buy_hold_final - 1) * 100
+
+            result_data[coin_id] = {
+                "coin_name": selected_coin.coinname,
+                "dates": g["date"].dt.strftime("%Y-%m-%d").tolist(),
+                "strategy": g["cum_strategy"].astype(float).tolist(),
+                "buy_hold": g["cum_buy_hold"].astype(float).tolist(),
+                "close": g["close_price"].astype(float).tolist(),
+                "ema20": g["ema20"].astype(float).fillna(0).tolist(),
+                "rsi": g["rsi"].astype(float).fillna(0).tolist(),
+                "strategy_final": strategy_final,          # ✅ 累積報酬數值
+                "buy_hold_final": buy_hold_final,          # ✅ 累積報酬數值
+                "strategy_pct": round(strategy_pct, 2),    # ✅ 百分比
+                "buy_hold_pct": round(buy_hold_pct, 2),    # ✅ 百分比
+            }
+
+    # ============ 🔽 這裡加 GPT 分析 🔽 ============
+        analysis_prompt = f"""
+        以下是加密貨幣回測的數據：
+        {json.dumps(result_data, ensure_ascii=False)}
+
+        請幫我做以下事情：
+        1. 比較每個幣種策略 vs Buy&Hold 的最終報酬率。
+        2. 評估策略表現是否優於 Buy&Hold。
+        3. 指出哪個幣種的策略表現最佳，以及哪個最差。
+        4. 提供投資上的建議（例如：是否適合長期持有、需注意的風險）。
+        請用中文回答，並條列重點。
+        """
+
+        url = "https://free.v36.cm/v1/chat/completions"
+        headers = {
+            "Authorization": f"Bearer {api}",  # 你的 API KEY
+            "Content-Type": "application/json",
+        }
+        data = {
+            "model": "gpt-4o-mini",
+            "messages": [
+                {"role": "system", "content": "你是一位專業的加密貨幣投資顧問。"},
+                {"role": "user", "content": analysis_prompt}
+            ]
+        }
+
+        gpt_response = requests.post(url, headers=headers, json=data)
+        gpt_response.raise_for_status()
+        gpt_result = gpt_response.json()
+        gpt_reply = gpt_result["choices"][0]["message"]["content"]
+
+        # ✅ 把 GPT 分析加進回傳
+        return JsonResponse({
+            "result_data": result_data,
+            "gpt_analysis": gpt_reply
+        })
+
+    except Exception as e:
+        print(traceback.format_exc())
+        return JsonResponse({"error": str(e)}, status=500)

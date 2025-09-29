@@ -4,6 +4,7 @@ import re
 from collections import Counter
 from decimal import Decimal
 from datetime import date,datetime,timedelta
+import time
 
 import numpy as np
 import pandas as pd
@@ -17,6 +18,8 @@ from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 from django.utils.timezone import now
 from django.db import IntegrityError
+from django.db.models import Min, Max, Sum, DateField
+from django.db.models.functions import Cast
 from django.urls import reverse
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -24,10 +27,17 @@ from django.views.decorators.csrf import csrf_exempt
 from .models import WeeklyReport
 from main.models import CoinHistory,Coin,UserProfile, BitcoinPrice
 from news.models import Article
-from other.models import FinancialData, IndicatorValue, BitcoinMetricData
+from other.models import FinancialSymbol, FinancialData, Indicator, IndicatorValue, BitcoinMetric, BitcoinMetricData
 from agent.models import Questionnaire, Question, AnswerOption, UserAnswer, UserQuestionnaireRecord
 from data_analysis.text_generation.chatgpt_api import call_chatgpt
 from data_analysis.crypto_ai_agent.news_agent import search_news
+
+from django.http import StreamingHttpResponse, JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+
+
+
 
 def load_price_data_from_db(coin_id, start_date=None, end_date=None):
     queryset = CoinHistory.objects.filter(coin_id=coin_id)
@@ -480,20 +490,60 @@ def parse_coin_from_input(user_input):
 
 
 
-def run_news_agent(user_input, start_date=None, end_date=None):
-    news_summary = search_news(
-            question=user_input,
-            start_date=start_date,
-            end_date=end_date
+def run_news_agent(user, user_input, start_date=None, end_date=None):
+
+    """
+    搜尋新聞並直接將標題轉換為可點擊連結 (news_detail)，
+    並換行處理輸出 HTML
+    """
+    translated = call_chatgpt(
+    "翻譯助手",
+    f"請將以下中文翻譯成英文：\n{user_input}"
     )
-    news_summary_with_links = convert_id_and_newline(news_summary)
-    
-    return {"text": f"📰★新聞模塊", "extra_data": news_summary_with_links}
+    # 取得新聞資料 (list)
+    news_summary = search_news(
+        question=translated,
+        start_date=start_date,
+        end_date=end_date
+    )
+
+    # 把 list 資料轉為 HTML
+    def convert_and_link(news_list):
+        text_parts = []
+        for item in news_list:
+            article_id = item.get("id")
+            title = item.get("title", "")
+            summary = item.get("summary", "")
+            d=item.get("date")
+            try:
+                url = reverse('news_detail', kwargs={'article_id': article_id})
+                title_html = f'<a href="{url}" target="_blank">{title}</a>'
+            except:
+                title_html = title
+            text_parts.append(f"<b>{title_html}</b><br><b>{d}</b><br>{summary}")
+        return "<br><br>".join(text_parts)
+
+    news_summary_with_links = convert_and_link(news_summary)
+    analysis_prompt = f"""
+    你是一位專業新聞分析師。請幫我分析以下新聞內容：
+    {news_summary}
+
+    請提供：
+    1. 新聞的主要事件或主題
+    2. 每則新聞的重要資訊摘要
+    3. 對加密貨幣市場可能的影響（若有）
+    """
+
+    analyze = call_chatgpt("新聞分析師", analysis_prompt).replace("\n", "<br>")
+
+    return {
+        "text": "📰★新聞模塊",
+        "extra_data": news_summary_with_links,
+        "analyze" : analyze
+    }
 
 
-from django.db.models import Min, Max, Sum
-from django.db.models import DateField
-from django.db.models.functions import Cast
+
 
 def parse_safe_date(date_str):
     """將字串轉成 date，失敗回傳 None"""
@@ -504,15 +554,15 @@ def parse_safe_date(date_str):
     except Exception:
         return None
 
-def run_price_agent(user_input, start_date=None, end_date=None):
+def run_price_agent(user, user_input, start_date=None, end_date=None):
     coin_symbol = parse_coin_from_input(user_input)
     # 確認幣種存在
     if not Coin.objects.filter(abbreviation=coin_symbol).exists():
-        return {"text": f"⚠️ 抱歉，系統內沒有找到 {coin_symbol} 的資料。", "extra_data": []}
+        return {"text": f"⚠️ 抱歉，系統內沒有找到 {coin_symbol} 的資料。", "extra_data": [],"analyze" : ""}
 
     qs = CoinHistory.objects.filter(coin__abbreviation=coin_symbol)
     if not qs.exists():
-        return {"text": f"⚠️ 模組 price 執行失敗：{coin_symbol} 暫無資料", "extra_data": []}
+        return {"text": f"⚠️ 模組 price 執行失敗：{coin_symbol} 暫無資料", "extra_data": [],"analyze" : ""}
 
     # 安全轉換傳入日期
     if start_date:
@@ -530,7 +580,7 @@ def run_price_agent(user_input, start_date=None, end_date=None):
         )
         latest_days = sorted([d["day"] for d in latest_days])
         if not latest_days:
-            return {"text": f"⚠️ 模組 price 執行失敗：{coin_symbol} 暫無資料", "extra_data": []}
+            return {"text": f"⚠️ 模組 price 執行失敗：{coin_symbol} 暫無資料", "extra_data": [],"analyze" : ""}
         start_date = latest_days[0]
         end_date = latest_days[-1]
 
@@ -564,49 +614,163 @@ def run_price_agent(user_input, start_date=None, end_date=None):
         })
 
     if not results:
-        return {"text": f"⚠️ 模組 price 執行失敗：{coin_symbol} 在 {start_date} 至 {end_date} 之間沒有資料", "extra_data": []}
+        return {"text": f"⚠️ 模組 price 執行失敗：{coin_symbol} 在 {start_date} 至 {end_date} 之間沒有資料", "extra_data": [],"analyze" : ""}
+
+    # 生成 prompt
+    analysis_prompt = f"""
+    你是一個專業加密貨幣分析師。請幫我分析以下比特幣交易數據：
+    {results}
+
+    請分析每一天的價格走勢（開盤、收盤、最高、最低）、交易量變化，以及整體趨勢特徵。
+    請提供：
+    1. 價格趨勢分析（上升、下降、盤整）
+    2. 交易量變化趨勢
+    3. 總體觀察與短期預測
+    請用簡明扼要的文字列出。
+    """
+
+    analyze = call_chatgpt("比特幣價格分析師", analysis_prompt).replace("\n", "<br>")
+
+    return {"text": f"💰★價格模塊", "extra_data": results,"analyze" : analyze}
 
 
 
-    return {"text": f"💰★價格模塊", "extra_data": results}
 
 
 
+def run_other_agent(user, user_input, start_date=None, end_date=None):
+    if end_date is None:
+        end_date = datetime.now().date()
+
+    # FinancialData - 折線圖用 close_price
+    financial_data_sample = []
+    symbols = FinancialSymbol.objects.all()[:1]
+    for symbol in symbols:
+        data_qs = symbol.financial_data.filter(
+            date__lte=end_date
+        ).order_by('-date')[:7]
+        for d in data_qs:
+            financial_data_sample.append({
+                "symbol": symbol.name,
+                "date": d.date.isoformat(),  # 用字串
+                "value": d.close_price       # 折線圖用值
+            })
+
+    # IndicatorValue - 折線圖用 value
+    indicator_data_sample = []
+    indicators = Indicator.objects.all()[:1]
+    for indicator in indicators:
+        data_qs = IndicatorValue.objects.filter(
+            indicator=indicator,
+            date__lte=end_date
+        ).order_by('-date')[:7]
+        for d in data_qs:
+            indicator_data_sample.append({
+                "indicator": indicator.name,
+                "date": d.date.isoformat(),
+                "value": d.value
+            })
+    '''
+    # BitcoinMetricData - 折線圖用 value
+    bitcoin_data_sample = []
+    metrics = BitcoinMetric.objects.all()[:1]
+    for metric in metrics:
+        data_qs = metric.data.filter(
+            date__lte=end_date
+        ).order_by('-date')[:7]
+        for d in data_qs:
+            bitcoin_data_sample.append({
+                "metric": metric.name,
+                "date": d.date.isoformat(),
+                "value": d.value
+            })
+    '''
+    # 合併到 extra_data，保留分類
+    extra_data = {
+        "financial_data": financial_data_sample,
+        "indicator_data": indicator_data_sample,
+        #"bitcoin_data": bitcoin_data_sample
+    }
+
+    # 生成 prompt
+    analysis_prompt = f"""
+    你是一位專業加密貨幣與經濟分析師，請根據以下資料進行分析：
+    {extra_data}
+
+    請提供每個分類的趨勢、重要觀察與簡短結論。
+    """
+
+    analyze = call_chatgpt("分析師", analysis_prompt).replace("\n", "<br>")
+
+    return {
+        "text": "📊★其他經濟數據折線圖資料",
+        "extra_data": extra_data,
+        "analyze": analyze
+    }
+
+RISK_QUESTIONNAIRE_IDS = [2, 3, 4, 9]
+
+def run_survey_agent(user, user_input, start_date=None, end_date=None): 
 
 
+    # 取得使用者的問卷風險分析
+    user_answers = UserAnswer.objects.filter(
+        user=user,
+    ).prefetch_related("selected_options")
+    total_score = 0
+    answer_count = 0
+    for ans in user_answers:
+        for option in ans.selected_options.all():
+            q_order = ans.question.questionnaire.id
+            if q_order in RISK_QUESTIONNAIRE_IDS:
+                total_score += option.score
+                answer_count += 1
 
-def run_other_agent(user_input, start_date=None, end_date=None):
-    financial_data = FinancialData.objects.select_related("symbol").order_by("-date")
-    indicator_values = IndicatorValue.objects.select_related("indicator").order_by("-date")
-    btc_metrics = BitcoinMetricData.objects.select_related("metric").order_by("-date")
+    if answer_count == 0:
+        link = reverse('agent:questionnaire_list')
+        return {
+        "text": f"🧾📢★問卷模塊",
+        "extra_data": f'<a href="{link}">請先填寫問卷頁面(填問卷編號2、3、4、9能更準確判斷)</a>',
+        "analyze": "使用者沒有填寫問卷，無法判斷屬性"
+        }
+    else:
+        average = total_score / answer_count
 
-    if start_date:
-        financial_data = financial_data.filter(date__gte=start_date)
-        indicator_values = indicator_values.filter(date__gte=start_date)
-        btc_metrics = btc_metrics.filter(date__gte=start_date)
-    if end_date:
-        financial_data = financial_data.filter(date__lte=end_date)
-        indicator_values = indicator_values.filter(date__lte=end_date)
-        btc_metrics = btc_metrics.filter(date__lte=end_date)
+        # allocation 與風險屬性判斷
+        ratio = min(max(average / 5, 0), 1)
+        allocation = {
+            "穩定幣": 0.6 * (1 - ratio),
+            "主流幣": 0.3,
+            "成長幣": 0.1 + 0.3 * ratio,
+            "迷因幣": 0.0 + 0.2 * ratio,
+            "其他": 0.0 + 0.1 * ratio,
+        }
+        total = sum(allocation.values())
+        allocation = {k: round(v/total, 2) for k, v in allocation.items()}
 
-    lines = ["📊★其他經濟數據模塊"]
-    lines.append("[FinancialData]")
-    lines.extend([f"{x.symbol.symbol} ({x.symbol.name}): 開={x.open_price}, 高={x.high_price}, 低={x.low_price}, 收={x.close_price}, 量={x.volume}（{x.date}）" for x in financial_data[:10]])
-    lines.append("[IndicatorValue]")
-    lines.extend([f"{x.indicator.name}: {x.value}（{x.date}）" for x in indicator_values[:10]])
-    lines.append("[BitcoinMetricData]")
-    lines.extend([f"{x.metric.name}: {x.value}（{x.date}）" for x in btc_metrics[:10]])
-    return "\n".join(lines)
+        if average <= 2.5:
+            risk_type = "保守型"
+        elif average <= 4:
+            risk_type = "穩健型"
+        else:
+            risk_type = "積極型"
+        allocation_text = "<br>".join([f"・{k}：{v*100:.0f}%" for k, v in allocation.items()])
 
-def run_survey_agent(user_input, start_date=None, end_date=None):
-    queryset = UserQuestionnaireRecord.objects.select_related("user", "questionnaire").order_by("-completed_at")
-    if start_date:
-        queryset = queryset.filter(completed_at__date__gte=start_date)
-    if end_date:
-        queryset = queryset.filter(completed_at__date__lte=end_date)
-    latest_records = queryset[:10]
-    records_list = [f"{r.user.username} - 問卷: {r.questionnaire.title}（完成於 {r.completed_at}）" for r in latest_records]
-    return "🧾📢★問卷模塊\n" + "\n".join(records_list)
+        link = reverse('agent:analysis_result_view')
+
+        records_text = (
+            f"📊 <b>您的投資風險屬性：</b><span style='color:blue'>{risk_type}</span><br>"
+            f"📈 <b>問卷平均分數：</b>{average:.2f} 分<br><br>"
+            f"💡 <b>建議資產配置：</b><br>{allocation_text}<br><br>"
+            f'<a href="{link}">查看更多</a>'
+        )
+
+    return {
+        "text": f"🧾📢★問卷模塊",
+        "extra_data": records_text,
+        "analyze": records_text
+    }
+
 
 def parse_date_range_from_input(user_input):
     """用 GPT 解析使用者輸入的時間範圍，回傳 start_date, end_date"""
@@ -634,126 +798,131 @@ def parse_date_range_from_input(user_input):
         return None, None
     
 
+
+
+
 @csrf_exempt
+@require_http_methods(["GET"])
 def classify_question_api(request):
-    if request.method != "POST":
-        return JsonResponse({"error": "Only POST allowed"}, status=405)
-
-    try:
-        data = json.loads(request.body)
-    except json.JSONDecodeError:
-        return JsonResponse({"error": "Invalid JSON"}, status=400)
-
-    user_input = data.get("user_input", "").strip()
-    selected_modules = data.get("selected_modules", [])
-
-    # ------------------------
-    # GPT 分類器
-    # ------------------------
-    classification_prompt = f"""
-    你是一個分類器，幫我判斷下列句子可能屬於哪些類別：
-    新聞（news）、價格（price）、其他經濟數據（other）、問卷（questionnaire）。
-    可以有多個，請以逗號分隔；如果都不屬於，請回傳 ()。
-    輸入句子：{user_input}
-    請只輸出分類結果（如：news, price）
-    """
-    result = call_chatgpt("你是一個精準的分類器", classification_prompt)
-    classifications = [c.strip().lower() for c in result.split(",") if c.strip()]
-    combined = list(set(selected_modules + classifications))
-
-    # ------------------------
-    # 解析使用者時間範圍
-    # ------------------------
-    start_date, end_date = parse_date_range_from_input(user_input)
-
-    # ------------------------
-    # 模組映射
-    # ------------------------
-    module_map = {
-        "news": run_news_agent,
-        "price": run_price_agent,
-        #"other": run_other_agent,
-        #"questionnaire": run_survey_agent
-    }
-
-    # ------------------------
-    # 統一儲存格式：列表 dict
-    # ------------------------
-    final_answers = []
-
-    for module_name in combined:
-        if module_name in module_map:
-            #try:
-            answer = module_map[module_name](user_input, start_date, end_date)
-            # 如果模組回傳 dict，拆成 text + chart_data + extra_data
-            if isinstance(answer, dict):
-                final_answers.append({
-                    "module": module_name,
-                    "text": answer.get("text", ""),
-                    "data": answer.get("extra_data", [])
-                })
-            else:
-                # 單純文字模組
-                final_answers.append({
-                    "module": module_name,
-                    "text": str(answer),
-                    "data": []
-                })
-            '''
-            except Exception as e:
-                final_answers.append({
-                    "module": module_name,
-                    "text": f"⚠️ 模組 {module_name} 執行失敗：{str(e)}",
-                    "data": []
-                })'''
-    if not final_answers:
-        final_answers.append({
-            "module": "none",
-            "text": "抱歉，我無法辨識您的問題類型或您未選擇相關模組。",
-            "data": []
-        })
-
-    # ------------------------
-    # 可選整合文字（GPT）
-    # ------------------------
-    integrated_summary = ""
-    try:
-        integration_contents = []
-
-        for f in final_answers:
-            data = f.get('data')
-            module_name = f.get('module', 'unknown')
-
-            if isinstance(data, list):
-                # list 型態，每個元素都轉成字串，再 join
-                data_str = "\n".join([str(d) for d in data])
-            else:
-                data_str = str(data)
-
-            # 加上模塊標籤，方便辨識
-            integration_contents.append(f"[{module_name} 模塊]\n{data_str}")
-
-        # 最後整合成一個大字串
-        integration_prompt_content = "\n".join(integration_contents)
-
-        integration_prompt = f"""
-        使用者問題：{user_input}
-        以下是多個不同來源的模塊輸出，請幫我整合成一段自然語言的回覆，
-        保留重要數據與事件，邏輯清晰，適合直接回覆使用者：
-        {integration_prompt_content}
+    def event_stream():
+        # 讀取傳入資料
+        data = json.loads(request.GET.get("payload", "{}"))
+        user_input = data.get("user_input", "").strip()
+        selected_modules = data.get("selected_modules", [])
+        user = request.user
+        yield f'data: {json.dumps({"progress": "loding", "result": {"module": "loding","text": "分析問題中", "data": []}}, ensure_ascii=False)}\n\n'
+        # 1️⃣ 分類
+        classification_prompt = f"""
+        你是一個分類器，幫我判斷下列句子可能屬於哪些類別：
+        新聞（news）、價格（price）、其他經濟數據（other）、問卷（questionnaire）。
+        可以有多個，請以逗號分隔；如果都不屬於，請回傳 ()。
+        輸入句子：{user_input}
+        請只輸出分類結果（如：news, price）
         """
-        integrated_summary = call_chatgpt("你是一個專業的資訊整合助理", integration_prompt)
-    except Exception as e:
-        integrated_summary = f"⚠️ 整合失敗：{str(e)}"
+        result = call_chatgpt("你是一個精準的分類器", classification_prompt)
+        classifications = [c.strip().lower() for c in result.split(",") if c.strip()]
+        combined = list(set(selected_modules + classifications))
 
-    return JsonResponse({
-        "classifications": combined,
-        "final_answers": final_answers,
-        "integrated_summary": integrated_summary
-    }, json_dumps_params={"ensure_ascii": False})
+        module_map = {
+            "price": run_price_agent,
+            "news": run_news_agent,
+            "other": run_other_agent,
+            "questionnaire": run_survey_agent
+        }
+        
+        ordered_combined = [k for k in module_map.keys() if k in combined]
 
+
+
+        # 推送分類結果
+        yield f"data: {json.dumps({'classifications': ordered_combined}, ensure_ascii=False)}\n\n"
+
+        # 解析日期
+        start_date, end_date = parse_date_range_from_input(user_input)
+
+
+
+        # 執行各模組
+        final_answers = []
+
+        for module_name in ordered_combined:
+            if module_name in module_map:
+                # 先推送「生成中」訊息
+                yield f'data: {json.dumps({"progress": "loding", "result": {"module": "loding","text": f"{module_name}生成中", "data": []}}, ensure_ascii=False)}\n\n'
+
+
+                # 執行 module
+                answer = module_map[module_name](user,user_input, start_date, end_date)
+
+                # 整理結果
+                if isinstance(answer, dict):
+                    final_answers.append({
+                        "module": module_name,
+                        "text": answer.get("text", ""),
+                        "data": answer.get("extra_data", []),
+                        "analyze" : answer.get("analyze", ""),
+                    })
+                else:
+                    final_answers.append({
+                        "module": module_name,
+                        "text": str(answer),
+                        "analyze" : ""
+                    })
+                print(final_answers[-1])
+                # 每跑完一個模組就推送真正結果
+                yield f"data: {json.dumps({'progress': module_name, 'result': final_answers[-1]}, ensure_ascii=False)}\n\n"
+
+
+        if not final_answers:
+            final_answers.append({
+                "module": "none",
+                "text": "抱歉，我無法辨識您的問題類型或您未選擇相關模組。",
+                "data": []
+            })
+            yield f"data: {json.dumps({'progress': 'none', 'result': final_answers[-1]}, ensure_ascii=False)}\n\n"
+
+        
+        # 5️⃣ 整合回覆
+        yield f'data: {json.dumps({"progress": "loding", "result": {"module": "loding","text": "整合回覆中", "data": []}}, ensure_ascii=False)}\n\n'
+        integrated_summary = ""
+        try:
+            integration_contents = []
+            for f in final_answers:
+                data_block = f.get('analyze')
+                module_name = f.get('module', 'unknown')
+                if isinstance(data_block, list):
+                    data_str = "\n".join([str(d) for d in data_block])
+                else:
+                    data_str = str(data_block)
+                integration_contents.append(f"[{module_name} 模塊]\n{data_str}")
+            integration_prompt_content = "\n".join(integration_contents)
+
+            integration_prompt = f"""
+            使用者問題：{user_input}
+            以下是多個不同來源的模塊輸出，請幫我整合成一段自然語言的回覆，
+            保留重要數據與事件，邏輯清晰，適合直接回覆使用者：
+            {integration_prompt_content}
+            """
+            integrated_summary = call_chatgpt("你是一個專業的資訊整合助理", integration_prompt)
+        except Exception as e:
+            integrated_summary = f"⚠️ 整合失敗：{str(e)}"
+
+        # 最後一次推送（整合回覆）
+        yield f"data: {json.dumps({'integrated_summary': integrated_summary}, ensure_ascii=False)}\n\n"
+
+        # 可以再補一個完成訊號
+        yield "event: end\ndata: done\n\n"
+
+    # SSE 回應
+    response = StreamingHttpResponse(event_stream(), content_type='text/event-stream')
+    response['Cache-Control'] = 'no-cache'
+    return response
 
 
 
 def chat_view(request):
     return render(request, "chat2.html")
+
+
+
+
