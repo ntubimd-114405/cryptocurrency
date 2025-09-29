@@ -132,7 +132,7 @@
 .tooltip-text {
   visibility: hidden;
   opacity: 0;
-  width: 300px;
+  width: 325px;
   background-color: rgba(0, 0, 0, 0.85);
   color: #fff;
   text-align: left;
@@ -147,6 +147,7 @@
   left: 50%;
   transform: translateX(-50%);
   transition: opacity 0.3s;
+  text-indent: -0.5em;
 }
 
 .tooltip:hover .tooltip-text {

@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 from datetime import datetime
 
-env_path = Path(__file__).resolve().parents[2] / '.env'
+env_path = Path(__file__).resolve().parents[0] / '.env'
 
 # 加載 .env 檔案
 load_dotenv(dotenv_path=env_path)

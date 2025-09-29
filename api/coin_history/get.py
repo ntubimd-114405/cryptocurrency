@@ -22,7 +22,7 @@ def get_history(coin):
 
     timeframe = '1d'  # K 線圖的時間間隔
     limit = 1000      # 單次抓取最多 1000 根 K 線
-    since = binance.parse8601('2025-09-23T00:00:00Z')  # 開始時間
+    since = binance.parse8601('2025-09-25T00:00:00Z')  # 開始時間
 
     all_data = []
 

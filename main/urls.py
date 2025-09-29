@@ -17,7 +17,6 @@ urlpatterns = [
     path('favorites/', views.favorite_coins, name='favorite_coins'),
     path('register/', views.register_view, name='register'),
     path('crypto_prices_ajax/', views.crypto_prices_ajax, name='crypto_prices_ajax'),
-    path('feedback/', views.feedback_form_view, name='feedback_form'),
     path('submit/', views.submit_questionnaire, name='submit_questionnaire'),
     path('api/track_impression/', track_impression),
     
