@@ -988,6 +988,7 @@ def backtest_view(request):
             return JsonResponse({'error': '模型不存在'}, status=500)
 
         result_data = {}
+        thirty_days_ago = timezone.now().date() - timedelta(days=60)
 
         for coin_id in coin_list:
             try:
@@ -995,10 +996,11 @@ def backtest_view(request):
             except Coin.DoesNotExist:
                 continue  # 找不到就跳過
 
-            # 從資料庫取出 CoinHistory
+            
+
             queryset = (
                 CoinHistory.objects
-                .filter(coin_id=coin_id)
+                .filter(coin_id=coin_id, date__gte=thirty_days_ago)
                 .select_related('coin')
                 .order_by('date')
             )
