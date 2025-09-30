@@ -16,8 +16,8 @@
   </div>
 
   <div class="module-select">
-    <label><input type="checkbox" value="news" checked> 📰 新聞</label>
     <label><input type="checkbox" value="price" checked> 💰 價格</label>
+    <label><input type="checkbox" value="news" checked> 📰 新聞</label>
     <label><input type="checkbox" value="other" checked> 📊 其他經濟數據</label>
     <label><input type="checkbox" value="questionnaire" checked> 🧠 問卷</label>
   </div>
@@ -218,6 +218,13 @@
 @keyframes opacityPulse {
   0%, 100% { opacity: 0.5; }
   50% { opacity: 1; }
+}
+.module-tags span {
+  background: #e0e0e0;
+  border-radius: 8px; /* 輕圓角 */
+  padding: 2px 6px;
+  margin-right: 3px;
+  display: inline-block;
 }
 </style>
 

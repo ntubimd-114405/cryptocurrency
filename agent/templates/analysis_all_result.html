@@ -73,7 +73,7 @@
 
 
   <!-- 互動提示區 -->
-  {% if overall_progress2.answered < overall_progress2.total %}
+  {% if overall_progress2.answered ==  0 %}
   <div class="mb-3">
     <div id="progressHint" class="alert alert-warning">
       ⚠ 您尚有問卷題目未完成，完成問卷可獲得更精準的總結果分析。
@@ -411,7 +411,7 @@
     }
   });
   </script>
-  {% if overall_progress2.answered >= overall_progress2.total %}
+  {% if overall_progress2.answered > 0 %}
   <script>
 
   // 核心雷達圖
