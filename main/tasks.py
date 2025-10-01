@@ -29,7 +29,7 @@ def fetch_coin_history(coin_id):
     latest_date = latest_history['latest_date']
     
     if latest_date is None:
-        latest_date = datetime(2024, 1, 1, 0, 0)
+        latest_date = datetime(2025, 10, 1, 0, 0)
     else:
         latest_date = latest_date + timedelta(minutes=1)
 

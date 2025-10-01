@@ -84,7 +84,7 @@ def news_sentiment():
     for article in articles:
         print(f"Processing Article ID: {article.id}, Title: {article.title}")
         # 使用 summary 進行情緒分析
-        sentiment, score = predict_sentiment(article.summary)
+        sentiment, score = predict_sentiment(article.title + article.summary)
 
         # 存回模型
         article.sentiment_score = score
