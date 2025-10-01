@@ -231,20 +231,14 @@ CELERY_BEAT_SCHEDULE = {
 
     #新聞情緒分析
     'news_sentiment-every-1-hour': {
-    'task': 'main.tasks.news_sentiment',  
+    'task': 'news.tasks.news_sentiment',  
     'schedule': 3600.0, 
     },
 
     #新聞摘要
     'news_summary-every-1-hour': {
-    'task': 'main.tasks.news_summary',  
+    'task': 'news.tasks.news_summary',  
     'schedule': 3600.0, 
-    },
-
-    #向量資料庫更新
-    'refresh_news_vector_store-every-1-hour': { 
-        'task': 'news.tasks.refresh_news_vector_store',
-        'schedule': 3600.0, #每1小時執行一次
     },
 
     #加密貨幣ohlcv資料
@@ -280,3 +274,10 @@ CELERY_BEAT_SCHEDULE = {
 }
 
 
+'''
+    #向量資料庫更新
+    'refresh_news_vector_store-every-1-hour': { 
+        'task': 'news.tasks.refresh_news_vector_store',
+        'schedule': 3600.0, #每1小時執行一次
+    },
+'''
