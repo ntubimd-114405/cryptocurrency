@@ -112,33 +112,38 @@ def news_list(request):
         'end_date': end_date,
     })
 
-# 新聞列表翻頁-----------------
+# 計算情緒百分比並顯示在文章詳細頁面
+from django.shortcuts import render, get_object_or_404
+from .models import Article, Comment  # 假設你的模型名稱為 Article 和 Comment
 
-from data_analysis.sentiment.api import predict_sentiment_api
+def article_detail(request, article_id):
+    # 獲取文章和相關評論
+    article = get_object_or_404(Article, id=article_id)
+    comments = article.comments.all()
 
+    # 正規化 sentiment_score (-1, 0, 1) 到 0-100 範圍
+    sentiment_score = article.sentiment_score
+    if sentiment_score == 1:
+        normalized_score = 100  # 正面
+        color = '#28a745'  # 綠色
+    elif sentiment_score == 0:
+        normalized_score = 50  # 中性
+        color = '#ffc107'  # 黃色
+    else:  # sentiment_score == -1
+        normalized_score = 0  # 負面
+        color = '#dc3545'  # 紅色
 
-def analyze_sentiment_by_id(request, article_id):
-    article = get_object_or_404(Article, pk=article_id)
-
-    if article.content:
-        sentiment_result = predict_sentiment_api(article.content)
-        article.sentiment = sentiment_result
-        article.save(update_fields=['sentiment'])
-        message = f"文章 (ID: {article_id}) 的情緒分析已完成，結果: {sentiment_result}"
-    else:
-        message = f"文章 (ID: {article_id}) 沒有內容，無法分析情緒"
-
-    sentiment_label_map = {
-        '-1': '負面',
-        '0': '中立',
-        '1': '正面',
-        '-9': '信心不足',
-        None: '尚未進行分析'
+    # 圖表數據
+    chart_data = {
+        'normalized_score': normalized_score,
+        'background_color': color,
+        'sentiment_score': sentiment_score  # 保留原始分數以顯示
     }
-    sentiment_label = sentiment_label_map.get(article.sentiment, '未知')
 
-    return render(request, 'analyze_single_result.html', {
+    # 上下文數據
+    context = {
         'article': article,
-        'message': message,
-        'sentiment_label': sentiment_label,
-    })
+        'comments': comments,
+        'chart_data': chart_data
+    }
+    return render(request, 'article_detail.html', context)

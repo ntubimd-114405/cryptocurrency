@@ -207,7 +207,15 @@ def questionnaire_list(request):
     # ---------- 計算整體完成比例 ----------
     overall_progress = int(total_all_answered / total_all_questions * 100) if total_all_questions > 0 else 0
     overall_remaining = 100 - overall_progress
-    know = None
+
+    user_profile = request.user.profile  # 取得使用者的 Profile
+    know = not user_profile.has_seen_know_modal  # 只在未看過時顯示
+
+    # 當使用者按下「我已了解」
+    if request.method == 'POST' and request.POST.get('know_confirm') == '1':
+        user_profile.has_seen_know_modal = True
+        user_profile.save()
+        return JsonResponse({'status': 'ok'})
 
     return render(request, 'questionnaire_list.html', {
         'data': data,
@@ -276,7 +284,7 @@ def analyze_user_responses(user, questionnaire, api):
     # 產生 prompt
     prompt_lines = [f"Q: {q}\nA: {a}" for q, a in qa_pairs]
     print(prompt_lines)
-    prompt = "不需要以每個題目做出分析，只須要做出總結就可以了：\n\n" + "\n\n".join(prompt_lines)
+    prompt = "不需要以每個題目做出分析，只須要做出總結就可以了，然後不要出現總結兩字：\n\n" + "\n\n".join(prompt_lines)
 
     # 呼叫 v36 API
     try:
@@ -307,7 +315,7 @@ def analyze_user_responses(user, questionnaire, api):
         return f"分析失敗：{e}"
     
 def get_total_analysis():
-    return "這是總分析結果"
+    
     records = UserQuestionnaireRecord.objects.filter(
         gpt_analysis_result__isnull=False
     ).select_related('questionnaire', 'user')
@@ -317,11 +325,11 @@ def get_total_analysis():
         title = record.questionnaire.title
         username = record.user.username
         analysis = record.gpt_analysis_result
-        block = f"【問卷】{title}（使用者：{username}）\n{analysis}"
+        block = analysis
         analysis_blocks.append(block)
 
     prompt = (
-        "以下是多份問卷的 GPT 分析結果，請根據這些內容進行第二層的彙總分析，每個項目不要太多字：\n\n"
+        "以下是多份問卷的 GPT 分析結果，請僅根據使用者填寫問卷的投資相關內容進行簡短分析，請使用繁體中文來回答：\n\n"
         + "\n\n".join(analysis_blocks)
     )
 
@@ -349,7 +357,8 @@ def get_total_analysis():
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from .models import UserAnswer, Questionnaire
-from main.models import Coin, CoinCategory, CoinCategoryRelation
+from main.models import Coin, CoinCategory, CoinCategoryRelation,BitcoinPrice
+from django.db.models import Max
 import random
 
 RISK_QUESTIONNAIRE_IDS = [2, 3, 4, 9]
@@ -384,10 +393,11 @@ def analysis_result_view(request):
     for ans in user_answers:
         for option in ans.selected_options.all():
 
-            total_score += option.score
-            answer_count += 1
             q_order = ans.question.questionnaire.id
-            # 核心題目
+            if q_order in RISK_QUESTIONNAIRE_IDS:
+                total_score += option.score
+                
+                answer_count += 1            # 核心題目
             if q_order == 2:
                 core_scores["score_investment_exp"] += option.score
                 core_counts["score_investment_exp"] += 1
@@ -427,7 +437,6 @@ def analysis_result_view(request):
             "主流幣": 0.3,
             "成長幣": 0.1 + 0.3 * ratio,
             "迷因幣": 0.0 + 0.2 * ratio,
-            "其他": 0.0 + 0.1 * ratio,
         }
         total = sum(allocation.values())
         allocation = {k: round(v/total, 2) for k, v in allocation.items()}
@@ -440,21 +449,32 @@ def analysis_result_view(request):
             risk_type = "積極型"
 
         recommended_coins = {}
+
         for category_name, ratio_value in allocation.items():
             try:
                 category = CoinCategory.objects.get(name=category_name)
-                coins_in_category = Coin.objects.filter(
-                    coincategoryrelation__category=category
-                )
+                # 取得屬於該類別的所有幣種
+                coins_in_category = Coin.objects.filter(coincategoryrelation__category=category)
+
                 if coins_in_category.exists():
-                    num_to_pick = max(1, round(10 * ratio_value))
-                    selected = random.sample(
-                        list(coins_in_category),
-                        min(num_to_pick, coins_in_category.count())
-                    )
-                    recommended_coins[category_name] = [coin.coinname for coin in selected]
+                    # 取得所有幣種的市值資料，並根據市值排序
+                    # 使用 GROUP BY 和 MAX() 來確保每個 Coin 只取一個最大市值資料
+                    coins_with_market_cap = BitcoinPrice.objects.filter(coin__in=coins_in_category) \
+                        .values('coin') \
+                        .annotate(max_market_cap=Max('market_cap')) \
+                        .order_by('-max_market_cap')
+
+                    # 取出市值最高的前三個幣種
+                    top_coins = []
+                    for entry in coins_with_market_cap[:3]:
+                        coin = Coin.objects.get(id=entry['coin'])
+                        top_coins.append(coin)
+
+                    # 組織推薦幣種的名稱
+                    recommended_coins[category_name] = [coin.coinname for coin in top_coins]
                 else:
                     recommended_coins[category_name] = []
+
             except CoinCategory.DoesNotExist:
                 recommended_coins[category_name] = []
 
@@ -466,7 +486,6 @@ def analysis_result_view(request):
         int(allocation.get("主流幣", 0) * 100),
         int(allocation.get("成長幣", 0) * 100),
         int(allocation.get("迷因幣", 0) * 100),
-        int(allocation.get("其他", 0) * 100),
     ]
 
    # ---------- 總進度計算 ----------
@@ -535,48 +554,7 @@ class DecimalEncoder(json.JSONEncoder):
         if isinstance(obj, Decimal):
             return float(obj)
         return super().default(obj)
-
-def coin_history_view(request):
-    coins = Coin.objects.all()
-    coin_id = request.GET.get('coin_id', coins.first().id)
-    selected_coin = Coin.objects.get(id=coin_id)  # ← 取得選擇的幣
-
-    thirty_days_ago = timezone.now().date() - timedelta(days=60)
-
-    # 取得歷史資料
-    queryset = (
-        CoinHistory.objects
-        .filter(coin_id=coin_id, date__gte=thirty_days_ago)
-        .select_related('coin')
-        .order_by('date')
-    )
-
-    # 轉成 DataFrame
-    df = pd.DataFrame.from_records(queryset.values('date', 'close_price'))
-    df['date'] = pd.to_datetime(df['date'])
-    df = df.sort_values('date')
-
-    # 計算指標
-    df['ema20'] = ta.trend.EMAIndicator(close=df['close_price'], window=20).ema_indicator()
-    df['rsi'] = ta.momentum.RSIIndicator(close=df['close_price'], window=14).rsi()
-
-    # ➤ 把含 NaN 的列整個移除
-    df = df.dropna(subset=['ema20', 'rsi'])
-
-    # 準備要傳給 Chart.js 的資料
-    chart_data = {
-        'dates': df['date'].dt.strftime('%Y-%m-%d').tolist(),
-        'close': df['close_price'].tolist(),
-        'ema20': df['ema20'].round(2).tolist(),
-        'rsi': df['rsi'].round(2).tolist(),
-    }
-
-    return render(request, 'coin_history.html', {
-        'coins': coins,
-        'coin_id': int(coin_id),
-        'selected_coin_name': selected_coin.coinname,  # 傳給前端用
-        'chart_data': json.dumps(chart_data, cls=DecimalEncoder)
-    })
+    
 # agent/views.py
 from django.shortcuts import render
 from django.http import JsonResponse

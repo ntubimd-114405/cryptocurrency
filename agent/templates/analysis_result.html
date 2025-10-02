@@ -44,14 +44,20 @@
   .fade-out {
     animation: fadeOut 0.5s ease-in-out forwards;
   }
+
+  .card-body {
+    text-align: justify;   /* 讓文字左右平均分布 */
+    text-indent: 2em;      /* 每段開頭縮排 */
+    padding: 1rem 1.5rem; /* 上下 1rem，左右 1.5rem */
+    margin: auto; /* 置中內容區塊 */
+  }
 </style>
 
-<!-- 分析頁面頂部區塊 -->
-<div id="page-content" class="container mt-5 fade-in text-center">
+
 
   <div id="page-content" class="container mt-5 fade-in">
     <div class="text-center mb-4">
-      <h2 class="fw-bold text-primary">總分析結果</h2>
+      <h2 class="fw-bold text-primary">分析結果</h2>
       <hr class="w-25 mx-auto" style="border-top: 3px solid #0d6efd;">
     </div>
 
