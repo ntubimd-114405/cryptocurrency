@@ -471,7 +471,7 @@ def analysis_result_view(request):
                         top_coins.append(coin)
 
                     # 組織推薦幣種的名稱
-                    recommended_coins[category_name] = [coin.coinname for coin in top_coins]
+                    recommended_coins[category_name] = [coin for coin in top_coins]
                 else:
                     recommended_coins[category_name] = []
 

@@ -161,24 +161,36 @@
         </thead>
         <tbody>
           {% if recommended_coins %}
-          {% for category, coins in recommended_coins.items %}
-          <tr>
-            <td>{{ category }}</td>
-            <td>
-              {% if coins %}
-              {{ coins|join:"、" }}
-              <small><a href="{% url 'crypto_list' %}" class="text-blue-500 text-sm ml-2">查看更多...</a></small>
-              {% else %}
-              暫無推薦
-              {% endif %}
-            </td>
-          </tr>
-          {% endfor %}
-          {% else %}
-          <tr>
-            <td colspan="2">暫無推薦</td>
-          </tr>
-          {% endif %}
+            {% for category, coins in recommended_coins.items %}
+            <tr>
+                <td>{{ category }}</td>
+                <td>
+                    {% if coins %}
+                        {% for coin in coins %}
+                            <span class="inline-flex items-center mr-2">
+                                {% if coin.logo_url %}
+                                    <img src="{{ coin.logo_url }}" alt="{{ coin.coinname }}" 
+                                        style="width:1em; height:1em; vertical-align:middle; margin-right:0.25em; border-radius:50%;">
+                                {% endif %}
+                                <a href="{% url 'crypto_detail' coin_id=coin.id %}" class="text-blue-500 hover:underline">
+                                    {{ coin.coinname }}
+                                </a>
+                            </span>
+                        {% endfor %}
+                        <small>
+                            <a href="{% url 'crypto_list' %}" class="text-blue-500 text-sm">查看更多...</a>
+                        </small>
+                    {% else %}
+                        暫無推薦
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+            {% else %}
+            <tr>
+                <td colspan="2">暫無推薦</td>
+            </tr>
+            {% endif %}
         </tbody>
       </table>
     </div>

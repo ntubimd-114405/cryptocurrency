@@ -11,12 +11,14 @@ import pandas as pd
 import ta
 from sklearn.feature_extraction.text import CountVectorizer
 
+
 from django.utils import timezone
 from django.conf import settings
 from django.shortcuts import render, get_object_or_404,redirect
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 from django.utils.timezone import now
+from django.utils.html import escape
 from django.db import IntegrityError
 from django.db.models import Min, Max, Sum, DateField
 from django.db.models.functions import Cast
@@ -285,13 +287,31 @@ def generate_weekly_report(request):
 
     # 重新計算資料
     coin,df = load_price_data_from_db(1)  # 或 user.id，視你的邏輯
+    
     df = add_technical_indicators(df).tail(30)
-
     ma20_data = decimal_to_float(df['ma20'].tolist())
     ma60_data = decimal_to_float(df['ma60'].tolist())
-    
-    news_summary = search_news("BTC") #目前寫死
-    news_summary_with_links = convert_id_and_newline(news_summary)
+
+    news_summary = search_news(
+        "BTC",# 目前寫死
+        start_date.strftime("%Y-%m-%d"),
+        end_date.strftime("%Y-%m-%d"),
+    )
+    news_summary_with_links = ""
+    for article in news_summary:
+        url = reverse('news_detail', kwargs={'article_id': article["id"]})
+        title_html = f'<a href="{url}" target="_blank">{escape(article["title"])}</a>'
+        date_str = escape(article.get("date", ""))
+        summary_html = escape(article.get("summary", ""))
+        # 組成單則新聞 HTML
+        news_summary_with_links += f'''
+        <div class="news-card">
+            <h3>{title_html}</h3>
+            <span class="news-date">{date_str}</span>
+            <p>{summary_html}</p>
+        </div>
+        '''
+
 
     news_text = "\n".join([
         " ".join(filter(None, [
@@ -712,64 +732,71 @@ RISK_QUESTIONNAIRE_IDS = [2, 3, 4, 9]
 
 def run_survey_agent(user, user_input, start_date=None, end_date=None): 
 
+    if user:
+        # 取得使用者的問卷風險分析
+        user_answers = UserAnswer.objects.filter(
+            user=user,
+        ).prefetch_related("selected_options")
+        total_score = 0
+        answer_count = 0
+        for ans in user_answers:
+            for option in ans.selected_options.all():
+                q_order = ans.question.questionnaire.id
+                if q_order in RISK_QUESTIONNAIRE_IDS:
+                    total_score += option.score
+                    answer_count += 1
 
-    # 取得使用者的問卷風險分析
-    user_answers = UserAnswer.objects.filter(
-        user=user,
-    ).prefetch_related("selected_options")
-    total_score = 0
-    answer_count = 0
-    for ans in user_answers:
-        for option in ans.selected_options.all():
-            q_order = ans.question.questionnaire.id
-            if q_order in RISK_QUESTIONNAIRE_IDS:
-                total_score += option.score
-                answer_count += 1
+        if answer_count == 0:
+            link = reverse('agent:questionnaire_list')
+            return {
+            "text": f"🧾📢★問卷模塊",
+            "extra_data": f'<a href="{link}" target="_blank">請先填寫問卷頁面(填問卷編號2、3、4、9能更準確判斷)</a>',
+            "analyze": "使用者沒有填寫問卷，無法判斷屬性"
+            }
+        else:
+            average = total_score / answer_count
 
-    if answer_count == 0:
-        link = reverse('agent:questionnaire_list')
+            # allocation 與風險屬性判斷
+            ratio = min(max(average / 5, 0), 1)
+            allocation = {
+                "穩定幣": 0.6 * (1 - ratio),
+                "主流幣": 0.3,
+                "成長幣": 0.1 + 0.3 * ratio,
+                "迷因幣": 0.0 + 0.2 * ratio,
+            }
+            total = sum(allocation.values())
+            allocation = {k: round(v/total, 2) for k, v in allocation.items()}
+
+            if average <= 2.5:
+                risk_type = "保守型"
+            elif average <= 4:
+                risk_type = "穩健型"
+            else:
+                risk_type = "積極型"
+            allocation_text = "<br>".join([f"・{k}：{v*100:.0f}%" for k, v in allocation.items()])
+
+            link = reverse('agent:analysis_result_view')
+
+            records_text = (
+                f"📊 <b>您的投資風險屬性：</b><span style='color:blue'>{risk_type}</span><br>"
+                f"📈 <b>問卷平均分數：</b>{average:.2f} 分<br><br>"
+                f"💡 <b>建議資產配置：</b><br>{allocation_text}<br><br>"
+                f'<a href="{link}" target="_blank">查看更多</a>'
+            )
+
         return {
-        "text": f"🧾📢★問卷模塊",
-        "extra_data": f'<a href="{link}">請先填寫問卷頁面(填問卷編號2、3、4、9能更準確判斷)</a>',
-        "analyze": "使用者沒有填寫問卷，無法判斷屬性"
+            "text": f"🧾📢★問卷模塊",
+            "extra_data": records_text,
+            "analyze": records_text
         }
     else:
-        average = total_score / answer_count
+        link = reverse('login')
+        return {
+            "text": f"🧾📢★問卷模塊",
+            "extra_data": f'<a href="{link}">請先登入，以取得更準確的判斷</a>',
+            "analyze": "使用者沒有登入，無法判斷屬性"
+            }
 
-        # allocation 與風險屬性判斷
-        ratio = min(max(average / 5, 0), 1)
-        allocation = {
-            "穩定幣": 0.6 * (1 - ratio),
-            "主流幣": 0.3,
-            "成長幣": 0.1 + 0.3 * ratio,
-            "迷因幣": 0.0 + 0.2 * ratio,
-            "其他": 0.0 + 0.1 * ratio,
-        }
-        total = sum(allocation.values())
-        allocation = {k: round(v/total, 2) for k, v in allocation.items()}
-
-        if average <= 2.5:
-            risk_type = "保守型"
-        elif average <= 4:
-            risk_type = "穩健型"
-        else:
-            risk_type = "積極型"
-        allocation_text = "<br>".join([f"・{k}：{v*100:.0f}%" for k, v in allocation.items()])
-
-        link = reverse('agent:analysis_result_view')
-
-        records_text = (
-            f"📊 <b>您的投資風險屬性：</b><span style='color:blue'>{risk_type}</span><br>"
-            f"📈 <b>問卷平均分數：</b>{average:.2f} 分<br><br>"
-            f"💡 <b>建議資產配置：</b><br>{allocation_text}<br><br>"
-            f'<a href="{link}">查看更多</a>'
-        )
-
-    return {
-        "text": f"🧾📢★問卷模塊",
-        "extra_data": records_text,
-        "analyze": records_text
-    }
 
 
 def parse_date_range_from_input(user_input):
@@ -839,7 +866,6 @@ def classify_question_api(request):
 
         # 解析日期
         start_date, end_date = parse_date_range_from_input(user_input)
-
 
 
         # 執行各模組

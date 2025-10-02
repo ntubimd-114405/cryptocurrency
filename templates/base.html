@@ -68,6 +68,9 @@
                         <li class="nav-item">
                             <a href="{% url 'agent:questionnaire_list' %}" class="nav-link text-white">問卷</a>
                         </li>
+                        <li class="nav-item">
+                            <a href="{% url 'weekly_report_list' %}" class="nav-link text-white">個人化報告</a>
+                        </li>
                     {% if user.is_superuser %}
                         <li class="nav-item">
                             <a href="{% url 'administrator:administrator_dashboard' %}" class="nav-link text-white">進入後台</a>

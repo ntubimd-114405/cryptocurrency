@@ -4,7 +4,6 @@
 {% block content %}
 
 <h1>{{ request.user.username }} 的週報記錄</h1>
-  <p><a href="{% url 'chat' %}">分類問題頁面</a></p>
 <form action="{% url 'generate_weekly_report' %}" method="post" class="mb-3">
   {% csrf_token %}
   <div class="row g-2 align-items-center">

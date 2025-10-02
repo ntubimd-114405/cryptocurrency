@@ -16,6 +16,7 @@ class CryptoHistoryFetcher:
             return f'{coin}/USDT'  # 其他情況是 coin/USDT
 
     def get_history(self):
+        ohlcv = None
         for ex_name in self.exchange:
             try:
                 # 獲取交易所實例

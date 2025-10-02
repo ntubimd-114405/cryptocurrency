@@ -1,10 +1,21 @@
 import os
 from typing import Optional
 from datetime import datetime
-from news.models import Article
 from langchain_ollama import OllamaEmbeddings
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
+
+vector_store_global = None
+
+def initialize_global_store():
+    global vector_store_global
+    if vector_store_global is None:
+        embeddings = OllamaEmbeddings(model="mxbai-embed-large")
+        vector_store_global = Chroma(
+            collection_name="crypto_news_articles",
+            persist_directory="./vector_db/news",
+            embedding_function=embeddings,
+        )
 
 
 def initialize_news_vector_store(
@@ -12,8 +23,9 @@ def initialize_news_vector_store(
     model_name: str = "mxbai-embed-large",
     max_docs: int = 100,
 ) -> Chroma:
+    from news.models import Article
     embeddings = OllamaEmbeddings(model=model_name)
-
+    
     vector_store = Chroma(
         collection_name="crypto_news_articles",
         persist_directory=db_location,
@@ -34,11 +46,11 @@ def initialize_news_vector_store(
         if aid in existing_ids:
             continue  # 避免重複
         # 只存 title + summary
+        timestamp = int(article.time.timestamp())
         documents.append(Document(
             page_content=f"{article.title}\n{article.summary}",
             metadata={
-                "url": article.url,
-                "date": str(article.time.date()),  # ISO 格式方便查詢
+                "date": timestamp,  # timestamp 秒數
             },
             id=aid
         ))
@@ -58,21 +70,16 @@ def search_news(
     question: str,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
-    db_path: str = "./vector_db/news",
-    embed_model: str = "mxbai-embed-large",
     top_k: int = 5,
 ):
-    #vector_store = initialize_news_vector_store(db_location=db_path, model_name=embed_model) 每次搜尋都要重整向量庫
-
-    embeddings = OllamaEmbeddings(model=embed_model)
-    vector_store = Chroma(
-        collection_name="crypto_news_articles",
-        persist_directory=db_path,
-        embedding_function=embeddings,
-    )
+    global vector_store_global
+    if vector_store_global is None:
+        raise RuntimeError("Vector store not initialized yet")
+    vector_store = vector_store_global
     # --- 時間過濾條件 ---
     where = None
     date_filters = []
+    print(start_date,end_date)
     if start_date:
         start_timestamp = int(datetime.fromisoformat(start_date).timestamp())
         date_filters.append({"date": {"$gte": start_timestamp}})
@@ -81,6 +88,7 @@ def search_news(
         date_filters.append({"date": {"$lte": end_timestamp}})
     if date_filters:
         where = {"$and": date_filters} if len(date_filters) > 1 else date_filters[0]
+
     print(f"🔍 搜尋條件：{where}")
 
     # --- 相似度搜尋 ---
@@ -96,12 +104,14 @@ def search_news(
         parts = doc.page_content.split("\n", 1)
         title = parts[0] if len(parts) > 0 else ""
         summary = parts[1] if len(parts) > 1 else ""
+        date_ts = doc.metadata.get("date")
+        date_str = datetime.fromtimestamp(date_ts).strftime("%Y-%m-%d")
 
         results.append({
-            "id": doc.id,  # 使用 Django DB 的 id
+            "id": doc.id,
             "title": title,
             "summary": summary,
-            "date": doc.metadata.get("date"), # 這裡取 date
+            "date": date_str,
         })
 
     return results

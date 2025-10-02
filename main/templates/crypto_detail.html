@@ -199,6 +199,9 @@
       回測
     </button>
   </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" id="news-tab" data-bs-toggle="tab" data-bs-target="#news" type="button" role="tab">相關新聞</button>
+  </li>
 </ul>
 
 <!-- 分頁內容 -->
@@ -224,6 +227,10 @@
 
   <div class="tab-pane fade" id="backtest" role="tabpanel" aria-labelledby="backtest-tab">
     {% include 'cypto_detail/backtest.html' %}
+  </div>
+
+  <div class="tab-pane fade" id="news" role="tabpanel" aria-labelledby="news-tab">
+    {% include 'cypto_detail/news_related.html' %}
   </div>
 </div>
 {% endblock %}
