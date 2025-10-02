@@ -11,12 +11,14 @@ import pandas as pd
 import ta
 from sklearn.feature_extraction.text import CountVectorizer
 
+
 from django.utils import timezone
 from django.conf import settings
 from django.shortcuts import render, get_object_or_404,redirect
 from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 from django.utils.timezone import now
+from django.utils.html import escape
 from django.db import IntegrityError
 from django.db.models import Min, Max, Sum, DateField
 from django.db.models.functions import Cast
@@ -289,24 +291,26 @@ def generate_weekly_report(request):
     df = add_technical_indicators(df).tail(30)
     ma20_data = decimal_to_float(df['ma20'].tolist())
     ma60_data = decimal_to_float(df['ma60'].tolist())
-    '''
+
     news_summary = search_news(
         "BTC",# 目前寫死
         start_date.strftime("%Y-%m-%d"),
         end_date.strftime("%Y-%m-%d"),
     )
-    print(news_summary)
-    news_summary_with_links = []
+    news_summary_with_links = ""
     for article in news_summary:
         url = reverse('news_detail', kwargs={'article_id': article["id"]})
-        title_html = f'<a href="{url}" target="_blank">{article["title"]}</a>'
-        news_summary_with_links.append({
-            **article,              # 保留原本的內容
-            "title_html": title_html,  # 新增 HTML 版標題
-        })
-    '''
-    news_summary=""
-    news_summary_with_links=[]
+        title_html = f'<a href="{url}" target="_blank">{escape(article["title"])}</a>'
+        date_str = escape(article.get("date", ""))
+        summary_html = escape(article.get("summary", ""))
+        # 組成單則新聞 HTML
+        news_summary_with_links += f'''
+        <div class="news-card">
+            <h3>{title_html}</h3>
+            <span class="news-date">{date_str}</span>
+            <p>{summary_html}</p>
+        </div>
+        '''
 
 
     news_text = "\n".join([
@@ -862,7 +866,6 @@ def classify_question_api(request):
 
         # 解析日期
         start_date, end_date = parse_date_range_from_input(user_input)
-
 
 
         # 執行各模組
