@@ -147,3 +147,83 @@ def article_detail(request, article_id):
         'chart_data': chart_data
     }
     return render(request, 'article_detail.html', context)
+
+
+from django.shortcuts import render
+from django.http import JsonResponse
+from django.urls import reverse
+from datetime import datetime, date
+from data_analysis.crypto_ai_agent.news_agent import search_news  # 你的搜尋函數
+
+# -------- API View --------
+def search_news_api(request):
+    """
+    搜尋新聞 API
+    GET 參數：
+        - question: 搜尋關鍵字
+        - start_date: yyyy-mm-dd
+        - end_date: yyyy-mm-dd
+    """
+    question = request.GET.get("question", "BTC")
+    start_date_str = request.GET.get("start_date", "2025-01-01")
+    end_date_str = request.GET.get("end_date", "2025-10-02")
+
+
+    try:
+        results = search_news(
+            question,
+            start_date=start_date_str,
+            end_date=end_date_str,
+        )
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+    # 從 search_news 結果取出所有 id
+    ids = [r.get("id") for r in results if r.get("id")]
+
+    # 一次查詢所有文章
+    articles = Article.objects.filter(id__in=ids).select_related("website")
+
+    # 建立 dict，方便用 id 找文章
+    article_map = {a.id: a for a in articles}
+
+    news_data = []
+    for r in results:
+        article_id = r.get("id")
+        try:
+            article_id = int(article_id)  # 🔑 確保型別正確
+        except (TypeError, ValueError):
+            article_id = None
+        db_article = article_map.get(article_id)
+        if db_article:
+            news_data.append({
+                "id": db_article.id,
+                "title": db_article.title,
+                "summary": db_article.summary,
+                "content": db_article.content,
+                "url": db_article.url,
+                "image_url": db_article.image_url,
+                "time": db_article.time.strftime("%Y-%m-%d %H:%M") if db_article.time else "",
+                "website": {
+                    "name": db_article.website.name,
+                    "url": db_article.website.url,
+                    "icon_url": db_article.website.icon_url,
+                },
+                "sentiment_score": db_article.sentiment_score,
+            })
+        else:
+            # 沒找到的話就保留基本資料
+            news_data.append({
+                "id": article_id,
+                "title": r.get("title", "未知標題"),
+                "summary": r.get("summary", ""),
+            })
+
+    return JsonResponse({"results": news_data})
+
+# -------- HTML View --------
+def search_news_page(request):
+    """
+    搜尋網頁頁面，透過 AJAX 呼叫 API
+    """
+    return render(request, "search_news_page.html")

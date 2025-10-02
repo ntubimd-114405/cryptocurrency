@@ -1,0 +1,119 @@
+<div class="container mt-4">
+    <div class="card p-4">
+        <h3 class="mb-3">
+            最近一個月 <span style="color:#4facfe; font-weight:600;">{{ coin.coinname }}</span> 相關新聞 🔍
+        </h3>
+        <ul id="newsList" style="list-style:none; padding:0;"></ul>
+    </div>
+</div>
+
+
+<style>
+    .news-item {
+        display: flex;
+        gap: 15px;
+        align-items: flex-start;
+        margin-bottom: 15px;
+        padding: 15px;
+        border-radius: 16px;
+        background: #fff;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        transition: transform 0.2s;
+    }
+    .news-item:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    }
+    .news-item img {
+        width: 80px;
+        height: 80px;
+        object-fit: cover;
+        border-radius: 12px;
+    }
+    .news-content .news-title {
+        font-weight: 600;
+        font-size: 16px;
+        color: #222;
+        text-decoration: none;
+    }
+    .news-content .news-summary {
+        font-size: 14px;
+        color: #555;
+        margin: 4px 0;
+    }
+    .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #4facfe;
+        border-radius: 50%;
+        width: 28px;
+        height: 28px;
+        animation: spin 1s linear infinite;
+        margin: 20px auto;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg);}
+        100% { transform: rotate(360deg);}
+    }
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const newsList = document.getElementById("newsList");
+
+    function getSentimentLabel(score) {
+        if (score === null || score === undefined) return `<span style="color:gray;">中立</span>`;
+        if (score > 0.1) return `<span style="color:green;">正向 (${score.toFixed(2)})</span>`;
+        if (score < -0.1) return `<span style="color:red;">負向 (${score.toFixed(2)})</span>`;
+        return `<span style="color:gray;">中立 (${score.toFixed(2)})</span>`;
+    }
+
+    function fetchNews() {
+        const question = "{{ coin.coinname|escapejs }}";
+
+        // 最近一個月
+        const endDate = new Date();
+        const startDate = new Date();
+        startDate.setMonth(endDate.getMonth() - 1);
+
+        const formatDate = d => d.toISOString().split('T')[0];
+
+        newsList.innerHTML = '<div class="spinner"></div>';
+
+        fetch(`/news/api/search-news/?question=${encodeURIComponent(question)}&start_date=${formatDate(startDate)}&end_date=${formatDate(endDate)}`)
+            .then(response => response.json())
+            .then(data => {
+                newsList.innerHTML = "";
+                if (data.results && data.results.length > 0) {
+                    data.results.forEach(article => {
+                        const li = document.createElement("li");
+                        li.classList.add("news-item");
+
+                        const image = article.image_url 
+                            ? `<img src="${article.image_url}" alt="news">`
+                            : `<img src="https://via.placeholder.com/80" alt="news">`;
+
+                        li.innerHTML = `
+                            ${image}
+                            <div class="news-content">
+                                <a href="/news/detail/${article.id}/" target="_blank" class="news-title">${article.title}</a>
+                                <p class="news-summary">${article.summary || "（無摘要）"}</p>
+                                <p style="font-size:12px; color:#666; margin:4px 0;">🕒 ${article.time || "未知時間"}</p>
+                                <p style="font-size:13px; margin:4px 0;">情緒：${getSentimentLabel(article.sentiment_score)}</p>
+                            </div>
+                        `;
+                        newsList.appendChild(li);
+                    });
+                } else {
+                    newsList.innerHTML = "<li>沒有搜尋結果</li>";
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                newsList.innerHTML = "<li>搜尋失敗</li>";
+            });
+    }
+
+    // 載入時自動抓最近一個月新聞
+    fetchNews();
+});
+</script>

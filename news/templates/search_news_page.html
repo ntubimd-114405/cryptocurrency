@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% block content %}
+<style>
+    .container .card {
+        max-width: 900px;
+        margin: 40px auto;
+        padding: 20px;
+    }
+    .card {
+        background: #fff;
+        border-radius: 24px;
+        box-shadow: 0 6px 16px rgba(0,0,0,0.08);
+        padding: 30px;
+    }
+    h2 {
+        text-align: center;
+        color: #333;
+        margin-bottom: 20px;
+    }
+    .search-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: center;
+        margin-bottom: 25px;
+    }
+    .search-bar input {
+        padding: 10px 14px;
+        border-radius: 12px;
+        border: 1px solid #ccc;
+        outline: none;
+        flex: 1;
+        min-width: 150px;
+        transition: all 0.2s ease;
+    }
+    .search-bar input:focus {
+        border-color: #4facfe;
+        box-shadow: 0 0 6px rgba(79,172,254,0.4);
+    }
+    .search-bar button {
+        padding: 10px 18px;
+        border: none;
+        border-radius: 12px;
+        background: linear-gradient(90deg,#4facfe,#00f2fe);
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: 0 4px 8px rgba(79,172,254,0.3);
+    }
+    .search-bar button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 12px rgba(79,172,254,0.4);
+    }
+    .search-bar button:active {
+        transform: scale(0.97);
+    }
+    #newsList {
+        list-style: none;
+        padding: 0;
+    }
+    .news-item {
+        display: flex;
+        gap: 15px;
+        align-items: flex-start;
+        margin-bottom: 15px;
+        padding: 15px;
+        border-radius: 16px;
+        background: #fff;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        transition: transform 0.2s ease;
+    }
+    .news-item:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    }
+    .news-item img {
+        width: 50px;
+        height: 50px;
+        object-fit: cover;
+        border-radius: 12px;
+    }
+    .news-content {
+        flex: 1;
+    }
+    .news-title {
+        font-size: 16px;
+        font-weight: 600;
+        margin: 0 0 6px;
+        color: #222;
+    }
+    .news-summary {
+        font-size: 14px;
+        color: #555;
+        margin: 0;
+    }
+    .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #4facfe;
+        border-radius: 50%;
+        width: 28px;
+        height: 28px;
+        animation: spin 1s linear infinite;
+        margin: 20px auto;
+    }
+    @keyframes spin {
+        0% { transform: rotate(0deg);}
+        100% { transform: rotate(360deg);}
+    }
+</style>
+
+<div class="container">
+    <div class="card">
+        <h2>🔍 新聞搜尋</h2>
+        <div class="search-bar">
+            <input type="text" id="question" placeholder="輸入關鍵字 (例如：BTC)">
+            <input type="date" id="start_date">
+            <input type="date" id="end_date">
+            <button id="searchBtn">搜尋</button>
+        </div>
+        <ul id="newsList"></ul>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const searchBtn = document.getElementById("searchBtn");
+    const newsList = document.getElementById("newsList");
+
+    function getSentimentLabel(score) {
+        if (score === null || score === undefined) return `<span style="color:gray;">中立</span>`;
+        if (score > 0.1) return `<span style="color:green;">正向 (${score.toFixed(2)})</span>`;
+        if (score < -0.1) return `<span style="color:red;">負向 (${score.toFixed(2)})</span>`;
+        return `<span style="color:gray;">中立 (${score.toFixed(2)})</span>`;
+    }
+
+    searchBtn.addEventListener("click", function() {
+        const question = document.getElementById("question").value || "BTC";
+        const start_date = document.getElementById("start_date").value || "2025-09-01";
+        const end_date = document.getElementById("end_date").value || "2025-10-02";
+
+        newsList.innerHTML = '<div class="spinner"></div>';
+
+        fetch(`/news/api/search-news/?question=${encodeURIComponent(question)}&start_date=${start_date}&end_date=${end_date}`)
+            .then(response => response.json())
+            .then(data => {
+                newsList.innerHTML = "";
+                if (data.results && data.results.length > 0) {
+                    data.results.forEach(article => {
+                        const li = document.createElement("li");
+                        li.classList.add("news-item");
+
+                        // 圖片處理
+                        const image = article.image_url 
+                            ? `<img src="${article.image_url}" alt="news" style="width:80px; height:80px; object-fit:cover; border-radius:12px;">`
+                            : `<img src="https://via.placeholder.com/80" alt="news">`;
+
+                        li.innerHTML = `
+                                        ${image}
+                                        <div class="news-content">
+                                            <a href="/news/detail/${article.id}/" target="_blank" class="news-title">${article.title}</a>
+                                            <p class="news-summary">${article.summary || "（無摘要）"}</p>
+                                            <p style="font-size:12px; color:#666; margin:4px 0;">🕒 ${article.time || "未知時間"}</p>
+                                            <p style="font-size:13px; margin:4px 0;">情緒：${getSentimentLabel(article.sentiment_score)}</p>
+                                        </div>
+                                    `;
+
+                        newsList.appendChild(li);
+                    });
+                } else {
+                    newsList.innerHTML = "<li>沒有搜尋結果</li>";
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                newsList.innerHTML = "<li>搜尋失敗</li>";
+            });
+    });
+});
+</script>
+{% endblock %}

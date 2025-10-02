@@ -7,5 +7,7 @@ urlpatterns = [
     path('list/', news_list, name='news_list'),
     path('detail/<int:article_id>/', news_detail, name='news_detail'),
     path('post/', views.X_list, name='X_list'),
+    path('api/search-news/', views.search_news_api, name='search_news_api'),
+    path('search-news/', views.search_news_page, name='search_news_page'),
 ]
 
