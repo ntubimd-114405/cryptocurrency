@@ -1,0 +1,262 @@
+@startuml
+
+' User Related Classes
+class auth_user {
+  +id: int
+  +password: varchar(128)
+  +last_login: datetime
+  +is_superuser: bool
+  +username: varchar(150)
+  +first_name: varchar(150)
+  +last_name: varchar(150)
+  +email: varchar(254)
+  +is_staff: bool
+  +is_active: bool
+  +date_joined: datetime
+  --
+  +check_password(): bool
+  +get_full_name(): str
+  +authenticate(): bool
+}
+
+class main_userprofile {
+  +id: bigint
+  +profile_image: varchar(100)
+  +user_id: int
+  +membership: varchar(10)
+  +has_seen_know_modal: bool
+  --
+  +get_profile_info(): dict
+}
+
+class main_userprofile_favorite_coin {
+  +id: bigint
+  +userprofile_id: bigint
+  +coin_id: bigint
+  --
+  +add_favorite(): void
+  +remove_favorite(): void
+  +get_user_favorites(user_id: int): list
+}
+
+' Coin Related Classes
+class main_coin {
+  +id: bigint
+  +coinname: varchar(100)
+  +abbreviation: varchar(100)
+  +logo_url: varchar(200)
+  +api_id: bigint
+  --
+  +get_current_price(): decimal
+}
+
+class main_bitcoinprice {
+  +id: bigint
+  +usd: float
+  +twd: float
+  +jpy: float
+  +eur: float
+  +market_cap: decimal
+  +volume_24h: decimal
+  +change_24h: decimal
+  +timestamp: datetime
+  +coin_id: bigint
+  --
+  +to_dict(): dict
+}
+
+class main_coinhistory {
+  +id: bigint
+  +date: datetime
+  +open_price: decimal
+  +high_price: decimal
+  +low_price: decimal
+  +close_price: decimal
+  +volume: decimal
+  +coin_id: bigint
+  --
+  +get_daily_summary(): dict
+}
+
+class main_coincategory {
+  +id: bigint
+  +name: varchar(100)
+  --
+  +get_category_info(): dict
+}
+
+class main_coincategoryrelation {
+  +id: bigint
+  +category_id: bigint
+  +coin_id: bigint
+}
+
+' News Related Classes
+class news_article {
+  +id: bigint
+  +title: varchar
+  +url: varchar
+  +image_url: varchar
+  +content: longtext
+  +time: datetime
+  +website_id: bigint
+  +summary: longtext
+  +sentiment_score: double
+  --
+  +view_article(): string
+}
+
+class news_website {
+  +id: bigint
+  +name: varchar
+  +url: varchar
+  +icon_url: varchar
+}
+
+' Financial Metrics and Indicators
+class other_bitcoinmetric {
+  +id: bigint
+  +name: varchar
+  +unit: varchar
+  +period: varchar
+  +description: longtext
+  --
+  +view_metrics(): list
+}
+
+class other_bitcoinmetricdata {
+  +id: bigint
+  +date: datetime
+  +value: double
+  +metric_id: bigint
+  --
+  +view_metric(): int
+}
+
+class other_financialdata {
+  +id: bigint
+  +date: date
+  +open_price: double
+  +high_price: double
+  +low_price: double
+  +close_price: double
+  +volume: bigint
+  +symbol_id: bigint
+  --
+  +view_financial_data(): int
+}
+
+class other_financialsymbol {
+  +id: bigint
+  +symbol: varchar
+  +name: varchar
+  --
+  +view_financial_datas(): list
+}
+
+class other_indicator {
+  +id: bigint
+  +name: varchar
+  +abbreviation: varchar
+  --
+  +view_indicators(): list
+}
+
+class other_indicatorvalue {
+  +id: bigint
+  +date: date
+  +value: double
+  +indicator_id: bigint
+  --
+  +view_indicator_(): int
+}
+
+class other_trenddata {
+  +id: bigint
+  +date: datetime
+  +coin_id: bigint
+  +abbreviated_value: int
+  +full_value: int
+  --
+  +view_trend_data(): int
+}
+
+' Agent Questionnaire Classes
+class AgentAnswerOption {
+  +id: bigint
+  +content: String
+  +order: int
+  +score: int
+  --
+  +validateOrder(): bool
+}
+
+class AgentQuestion {
+  +id: bigint
+  +order: int
+  +content: String
+  +questionType: String
+  --
+  +getOrderedOptions(): List<AgentAnswerOption>
+}
+
+class AgentQuestionnaire {
+  +id: bigint
+  +title: String
+  +description: String
+  --
+  +startQuestionnaire(): void
+  +endQuestionnaire(): void
+}
+
+class AgentUserAnswer {
+  +id: bigint
+  +userId: int
+  --
+  +submitAnswer(options: List<AgentAnswerOption>): void
+}
+
+class AgentUserAnswerSelectedOptions {
+  +id: bigint
+  --
+  +addSelectedOption(option: AgentAnswerOption): void
+  +removeSelectedOption(option: AgentAnswerOption): void
+}
+
+class AgentUserQuestionnaireRecord {
+  +id: bigint
+  +completedAt: DateTime
+  +gptAnalysisResult: String
+  +lastSubmittedHash: String
+  --
+  +recordCompletion(): void
+  +updateAnalysisResult(result: String): void
+}
+
+' Relationships
+
+auth_user "1" -- "0..1" main_userprofile : user_id
+main_userprofile "1" -- "0..*" main_userprofile_favorite_coin : userprofile_id
+main_coin "1" -- "0..*" main_userprofile_favorite_coin : coin_id
+
+main_bitcoinprice "0..*" --> "1" main_coin : coin_id
+main_coinhistory "0..*" --> "1" main_coin : coin_id
+main_coincategoryrelation "0..*" --> "1" main_coincategory : category_id
+main_coincategoryrelation "0..*" --> "1" main_coin : coin_id
+
+news_article "0..*" -- "1" news_website : website_id
+
+other_bitcoinmetricdata "0..*" -- "1" other_bitcoinmetric : metric_id
+other_financialdata "0..*" -- "1" other_financialsymbol : symbol_id
+other_indicatorvalue "0..*" -- "1" other_indicator : indicator_id
+
+AgentAnswerOption "0..*" -- "1" AgentQuestion : question
+AgentQuestion "0..*" -- "1" AgentQuestionnaire : questionnaire
+AgentUserAnswer "0..*" -- "1" AgentQuestion : question
+AgentUserAnswer "0..*" -- "1" auth_user : user
+AgentUserAnswerSelectedOptions "0..*" -- "1" AgentUserAnswer : userAnswer
+AgentUserAnswerSelectedOptions "0..*" -- "1" AgentAnswerOption : answerOption
+AgentUserQuestionnaireRecord "0..*" -- "1" AgentQuestionnaire : questionnaire
+AgentUserQuestionnaireRecord "0..*" -- "1" auth_user : user
+
+@enduml
