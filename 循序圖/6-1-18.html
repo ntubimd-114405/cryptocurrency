@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>Mermaid 序列圖</title>
+  <!-- 引入 MermaidJS -->
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({ startOnLoad: true });
+  </script>
+</head>
+<body>
+  <div class="mermaid">
+    sequenceDiagram
+    participant 使用者 as 使用者
+    participant 瀏覽器 as 前端報告頁面
+    participant 後端API as 後端報告服務
+    participant DB as 資料庫
+    participant 新聞API as 新聞資料源
+    participant 金融API as 金融資料源
+    participant AI服務 as AI 分析服務
+
+    使用者->>瀏覽器: 開啟個人化報告頁面
+    瀏覽器->>後端API: GET /reports/user/{id}
+    後端API->>DB: 查詢使用者已產生的報告
+    DB-->>後端API: 回傳報告清單
+    後端API-->>瀏覽器: 傳回歷史報告資料
+    瀏覽器-->>使用者: 顯示已產生的報告列表
+
+    使用者->>瀏覽器: 點擊「產生週報告」
+    瀏覽器->>後端API: POST /reports/generate {userId, week}
+    
+    note over 後端API: 蒐集各類資料
+    後端API->>新聞API: 取得本週新聞資料
+    後端API->>AI服務: 分析新聞 & 產生文字雲
+    後端API->>金融API: 取得金融市場資料
+    後端API->>AI服務: 計算技術指標
+    後端API->>DB: 儲存產生的報告內容 (新聞、文字雲、技術指標、金融資料)
+    DB-->>後端API: 儲存成功
+    
+    後端API-->>瀏覽器: 回傳新產生的報告
+    瀏覽器-->>使用者: 顯示週報告 (新聞 + 文字雲 + 技術指標 + 金融資料)
+
+
+  </div>
+</body>
+</html>
+
+
