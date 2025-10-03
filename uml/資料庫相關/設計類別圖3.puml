@@ -1,0 +1,74 @@
+@startuml
+
+class AgentAnswerOption {
+  +id: bigint
+  +content: String
+  +order: int
+  +score: int
+  --
+  +validateOrder(): bool
+}
+
+class AgentQuestion {
+  +id: bigint
+  +order: int
+  +content: String
+  +questionType: String
+  --
+  +getOrderedOptions(): List<AgentAnswerOption>
+}
+
+class AgentQuestionnaire {
+  +id: bigint
+  +title: String
+  +description: String
+  --
+  +startQuestionnaire(): void
+  +endQuestionnaire(): void
+}
+
+class AgentUserAnswer {
+  +id: bigint
+  +userId: int
+  --
+  +submitAnswer(options: List<AgentAnswerOption>): void
+}
+
+class AgentUserAnswerSelectedOptions {
+  +id: bigint
+  --
+  +addSelectedOption(option: AgentAnswerOption): void
+  +removeSelectedOption(option: AgentAnswerOption): void
+}
+
+class AgentUserQuestionnaireRecord {
+  +id: bigint
+  +completedAt: DateTime
+  +gptAnalysisResult: String
+  +lastSubmittedHash: String
+  --
+  +recordCompletion(): void
+  +updateAnalysisResult(result: String): void
+}
+
+class AuthUser {
+  +id: int
+  +username: String
+  +password: String
+  +email: String
+  --
+  +authenticate(): bool
+  +getFullName(): String
+}
+
+' Relations
+AgentAnswerOption "0..*" -- "1" AgentQuestion : question
+AgentQuestion "0..*" -- "1" AgentQuestionnaire : questionnaire
+AgentUserAnswer "0..*" -- "1" AgentQuestion : question
+AgentUserAnswer "0..*" -- "1" AuthUser : user
+AgentUserAnswerSelectedOptions "0..*" -- "1" AgentUserAnswer : userAnswer
+AgentUserAnswerSelectedOptions "0..*" -- "1" AgentAnswerOption : answerOption
+AgentUserQuestionnaireRecord "0..*" -- "1" AgentQuestionnaire : questionnaire
+AgentUserQuestionnaireRecord "0..*" -- "1" AuthUser : user
+
+@enduml
