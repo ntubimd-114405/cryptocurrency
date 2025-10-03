@@ -48,7 +48,45 @@
   .fade-out {
     animation: fadeOut 0.5s ease-in-out forwards;
   }
+
+  #page-content{
+    max-width: 900px;
+    margin: 40px auto;
+    background-color: #ffffff;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    text-align: left;
+  }
+  #page-content:hover{
+    transform: translateY(-10px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+  }
+  @media (max-width: 768px) {
+    #page-content {
+        padding: 20px;
+    }
+
+    h1 {
+        font-size: 2em;
+    }
+
+    h2 {
+        font-size: 1.5em;
+    }
+  }
+
+  h2 {
+      font-size: 1.8em;
+      color: #444;
+      margin-bottom: 10px;
+      border-bottom: 3px solid #4CAF50;
+      padding-bottom: 5px;
+      color: #4CAF50;
+  }
 </style>
+
 
 <!-- 分析頁面頂部區塊 -->
 <div id="page-content" class="container mt-5 fade-in text-center">
@@ -117,7 +155,6 @@
       <small>注：採用問卷第 2、3、4、9 題進行分析</small>
   </div>
 
-
 <!-- 分析結果 -->
  <hr  class="border-4 border-primary">
 <div class="table-responsive mb-4">
@@ -164,10 +201,10 @@
             {% for category, coins in recommended_coins.items %}
             <tr>
                 <td>{{ category }}</td>
-                <td>
+                <td class="text-start">
                     {% if coins %}
-                        {% for coin in coins %}
-                            <span class="inline-flex items-center mr-2">
+                        {% for coin in coins %} &nbsp;&nbsp;
+                            <span class="inline-flex items-center mr-2 ">
                                 {% if coin.logo_url %}
                                     <img src="{{ coin.logo_url }}" alt="{{ coin.coinname }}" 
                                         style="width:1em; height:1em; vertical-align:middle; margin-right:0.25em; border-radius:50%;">
@@ -177,8 +214,8 @@
                                 </a>
                             </span>
                         {% endfor %}
-                        <small>
-                            <a href="{% url 'crypto_list' %}" class="text-blue-500 text-sm">查看更多...</a>
+                        <small class="text-end">
+                            &nbsp;&nbsp;<a href="{% url 'crypto_list' %}" class="text-blue-500 text-sm">查看更多...</a>
                         </small>
                     {% else %}
                         暫無推薦
@@ -194,7 +231,6 @@
         </tbody>
       </table>
     </div>
-
     <!-- 投資金額輸入與計算 -->
     <h3 class="mt-4 text-center">選擇投資幣種與金額</h3>
     <div class="mb-3" style="max-width: 300px; margin: 0 auto;">
@@ -219,97 +255,106 @@
 
   </div>
 </div> 
+
 <!-- Accordion -->
-    <div class="accordion mt-5" id="accordionExample">
+ <div class="accordion mt-5 shadow-sm" id="accordionExample">
 
-      <!-- 風險屬性分級說明 -->
-      <div class="accordion-item">
-        <h2 class="accordion-header" id="headingRisk">
-          <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseRisk"
-            aria-expanded="true" aria-controls="collapseRisk">
-            風險屬性分級說明
-          </button>
-        </h2>
-        <div id="collapseRisk" class="accordion-collapse collapse show" aria-labelledby="headingRisk"
-          data-bs-parent="#accordionExample">
-          <div class="accordion-body">
-            <table class="table table-bordered">
-              <thead class="table-light">
-                <tr>
-                  <th>風險屬性</th>
-                  <th>資產配置建議</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>保守型</td>
-                  <td>60% 穩定幣、30% 主流幣、10% 成長幣</td>
-                </tr>
-                <tr>
-                  <td>穩健型</td>
-                  <td>40% 主流幣、30% 成長幣、20% 穩定幣、10% 迷因幣</td>
-                </tr>
-                <tr>
-                  <td>積極型</td>
-                  <td>50% 成長幣、30% 主流幣、20% 迷因幣</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
+  <!-- 風險屬性分級說明 -->
+  <div class="accordion-item">
+    <h2 class="accordion-header" id="headingRisk">
+      <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseRisk"
+        aria-expanded="true" aria-controls="collapseRisk">
+        風險屬性分級說明
+      </button>
+    </h2>
+    <div id="collapseRisk" class="accordion-collapse collapse show" aria-labelledby="headingRisk"
+      data-bs-parent="#accordionExample">
+      <div class="accordion-body">
+        <h6 class="mt-4 mb-2 text-success fw-bold">💡 建議資產配置（依屬性自動調整）</h6>
+        <table class="table table-bordered">
+          <thead class="table-light">
+            <tr>
+              <th>風險屬性</th>
+              <th>特性說明</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>保守型</td>
+              <td>重視資產安全，偏好低風險、穩定回報的資產組合。</td>
+            </tr>
+            <tr>
+              <td>穩健型</td>
+              <td>在穩定與成長間取得平衡，適度承擔風險以追求報酬。</td>
+            </tr>
+            <tr>
+              <td>積極型</td>
+              <td>追求高報酬，願意承擔較大波動，偏好高成長型資產。</td>
+            </tr>
+          </tbody>
+        </table>
 
-      <!-- 幣種分類說明 -->
-      <div class="accordion-item" id="more-content">
-        <h2 class="accordion-header" id="headingCoins">
-          <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-            data-bs-target="#collapseCoins" aria-expanded="false" aria-controls="collapseCoins">
-            幣種分類說明
-          </button>
-        </h2>
-        <div id="collapseCoins" class="accordion-collapse collapse" aria-labelledby="headingCoins"
-          data-bs-parent="#accordionExample">
-          <div class="accordion-body">
-            <table class="table table-bordered">
-              <thead class="table-light">
-                <tr>
-                  <th>分類</th>
-                  <th>定義</th>
-                  <th>特徵 / 分類依據</th>
-                  <th>用途 / 適合族群</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>穩定幣</td>
-                  <td>價格與法幣掛鉤的加密貨幣</td>
-                  <td>波動低，依法幣錨定</td>
-                  <td>避險、交易媒介、資金停泊；適合降低風險者</td>
-                </tr>
-                <tr>
-                  <td>主流幣</td>
-                  <td>市值高、流動性強的加密貨幣</td>
-                  <td>市值排名靠前、生態成熟</td>
-                  <td>投資核心資產，長期穩健成長</td>
-                </tr>
-                <tr>
-                  <td>成長幣</td>
-                  <td>具有技術創新或應用潛力的幣種</td>
-                  <td>市值中等、技術或生態發展</td>
-                  <td>追求資本增值，中風險中報酬</td>
-                </tr>
-                <tr>
-                  <td>迷因幣</td>
-                  <td>以社群熱度或迷因文化驅動的幣種</td>
-                  <td>缺乏明確應用，價格受社群影響大</td>
-                  <td>高風險短線投機</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <p class="text-muted mt-3">
+          ⚠️ 本分析僅供參考，並非投資建議。請依個人財務狀況與風險承受能力謹慎決策。
+        </p>
       </div>
     </div>
+  </div>
+
+  <!-- 幣種分類說明 -->
+  <div class="accordion-item">
+    <h2 class="accordion-header" id="headingCoins">
+      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+        data-bs-target="#collapseCoins" aria-expanded="false" aria-controls="collapseCoins">
+        幣種分類說明
+      </button>
+    </h2>
+    <div id="collapseCoins" class="accordion-collapse collapse" aria-labelledby="headingCoins"
+      data-bs-parent="#accordionExample">
+      <div class="accordion-body">
+        <p class="mb-3 text-secondary">為了建立更清晰的配置邏輯，系統將幣種劃分為以下四大類：</p>
+        <table class="table table-bordered align-middle">
+          <thead class="table-success">
+            <tr>
+              <th>分類</th>
+              <th>定義</th>
+              <th>特徵 / 分類依據</th>
+              <th>用途 / 適合族群</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>穩定幣</td>
+              <td>價格與法幣掛鉤的加密貨幣</td>
+              <td>波動低，依法幣（如美元）錨定</td>
+              <td>避險、資金停泊，適合風險低者</td>
+            </tr>
+            <tr>
+              <td>主流幣</td>
+              <td>市值高、流動性強的加密貨幣</td>
+              <td>市值排名前段、生態成熟</td>
+              <td>核心配置，適合長期穩健投資者</td>
+            </tr>
+            <tr>
+              <td>成長幣</td>
+              <td>具技術創新或應用潛力的幣種</td>
+              <td>市值中等、具成長潛力</td>
+              <td>中風險中報酬，追求資本成長者</td>
+            </tr>
+            <tr>
+              <td>迷因幣</td>
+              <td>以社群熱度或迷因文化驅動</td>
+              <td>缺乏應用、價格波動劇烈</td>
+              <td>高風險短線投機者</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
 
   <br>
   <div class="text-center" style="animation-delay: 0.6s;">

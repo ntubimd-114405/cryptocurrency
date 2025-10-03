@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>Mermaid 序列圖</title>
+  <!-- 引入 MermaidJS -->
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({ startOnLoad: true });
+  </script>
+</head>
+<body>
+  <div class="mermaid">
+    sequenceDiagram
+    participant 使用者 as 使用者
+    participant 瀏覽器 as 瀏覽器 / 前端
+    participant 問卷API as 問卷服務
+    participant 資料庫 as 資料庫
+    participant AI服務 as AI 分析服務
+
+    note over 使用者, 瀏覽器: 總分析（綜合多份問卷）
+    使用者->>瀏覽器: 點擊「總分析」
+    瀏覽器->>AI服務: POST /analysis/aggregate {questionnaireIds, filter}
+    AI服務->>資料庫: 取得多份問卷回應 (依 filter)
+    資料庫-->>AI服務: 回傳多份回應資料
+    AI服務->>AI服務: 執行彙整與跨問卷分析
+    AI服務-->>瀏覽器: 回傳總分析報告與視覺化資料
+    瀏覽器-->>使用者: 顯示總分析結果（圖表/摘要/檢視細節）
+
+  </div>
+</body>
+</html>

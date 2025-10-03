@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>Mermaid 序列圖</title>
+  <!-- 引入 MermaidJS -->
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({ startOnLoad: true });
+  </script>
+</head>
+<body>
+  <div class="mermaid">
+    sequenceDiagram
+    participant 管理員 as 管理員
+    participant 瀏覽器 as 後台前端
+    participant 後端API as 後端服務
+    participant DB as 資料庫
+
+    管理員->>瀏覽器: 登入並進入後台頁面
+    瀏覽器-->>管理員: 顯示「使用者管理」、「幣種管理」選項
+
+    note over 管理員, 瀏覽器: 使用者管理流程
+    管理員->>瀏覽器: 點擊「使用者管理」
+    後端API->>DB: 查詢所有使用者資料
+    DB-->>後端API: 回傳使用者清單
+    後端API-->>瀏覽器: 傳回使用者清單
+    瀏覽器-->>管理員: 顯示所有使用者
+
+    管理員->>瀏覽器: 輸入關鍵字搜尋使用者
+    後端API->>DB: 搜尋使用者
+    DB-->>後端API: 回傳符合結果
+    後端API-->>瀏覽器: 傳回搜尋結果
+    瀏覽器-->>管理員: 顯示搜尋結果
+
+    管理員->>瀏覽器: 對使用者點擊「停權」
+    後端API->>DB: 更新使用者狀態為停權
+    DB-->>後端API: 更新成功
+    後端API-->>瀏覽器: 回傳操作成功
+    瀏覽器-->>管理員: 顯示「停權成功」
+
+    note over 管理員, 瀏覽器: 幣種管理流程
+    管理員->>瀏覽器: 點擊「幣種管理」
+    後端API->>DB: 查詢所有幣種
+    DB-->>後端API: 回傳幣種清單
+    後端API-->>瀏覽器: 傳回幣種清單
+    瀏覽器-->>管理員: 顯示所有幣種
+
+  </div>
+</body>
+</html>
+
+
