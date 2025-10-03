@@ -1,30 +1,105 @@
-<div class="text-block">
-  <h2>新聞熱詞雲</h2>
-</div>
-
-<div class="chart-container" style="margin-top: 0;">
-  <canvas id="wordcloud" width="1200" height="600"></canvas>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/wordcloud@1.1.2/src/wordcloud2.min.js"></script>
-<script>
-  // 你的詞頻資料
-  const wordList = {{ word_freqs_json|safe }}.slice(0, 30);
-
-  // WordCloud2.js 需要格式: [ [word, weight], ... ]
-  // 這裡直接用原資料
-
-  WordCloud(document.getElementById('wordcloud'), {
-    list: wordList,
-    gridSize: 12,          // 格子大小，影響詞距離
-    weightFactor: 10,      // 字體大小縮放倍數
-    fontFamily: 'Arial',
-    color: 'random-dark',  // 文字顏色，隨機深色
-    backgroundColor: '#f0f0f0',
-    rotateRatio: 0.1,      // 50% 文字會旋轉 90 度
-    rotationSteps: 2,      // 旋轉角度階段 (0°,90°)
-    click: function(item) {
-      alert(item[0] + ': ' + item[1]);
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    .text-block {
+      text-align: center;
+      font-family: 'Noto Sans TC', sans-serif;
+      color: #1a1a1a;
+      margin-bottom: 20px;
     }
-  });
-</script>
+    .text-block h2 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+    .chart-container2 {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f0 100%);
+      border-radius: 16px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+    #wordcloud {
+      opacity: 0;
+      animation: fadeIn 1.5s ease-in-out forwards;
+    }
+    #wordcloud-tooltip {
+      position: absolute;
+      padding: 8px 12px;
+      background: rgba(10, 10, 10, 0.85);
+      color: #fff;
+      border-radius: 8px;
+      font-family: 'Noto Sans TC', sans-serif;
+      font-size: 0.9rem;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+      opacity: 0;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      transform: translateY(10px);
+      pointer-events: none;
+    }
+    #wordcloud-tooltip.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+  </style>
+  <div class="text-block">
+    <h2>新聞熱詞雲</h2>
+  </div>
+
+  <div class="chart-container2">
+    <canvas id="wordcloud" width="1000" height="500"></canvas>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/wordcloud@1.1.2/src/wordcloud2.min.js"></script>
+  <script>
+    const wordList = {{ word_freqs_json|safe }}.slice(0, 50);
+
+    const weights = wordList.map(item => item[1]);
+    const maxWeight = Math.max(...weights);
+    const minWeight = Math.min(...weights);
+
+    WordCloud(document.getElementById('wordcloud'), {
+      list: wordList,
+      gridSize: 8,
+      weightFactor: function(weight) {
+        return 20 + (weight - minWeight) / (maxWeight - minWeight) * 100;
+      },
+      fontFamily: 'Noto Sans TC, sans-serif',
+      fontWeight: '700',
+      color: function(word, weight) {
+        const gradient = (weight - minWeight) / (maxWeight - minWeight);
+        const hue = 200 + gradient * 40;
+        const lightness = 40 + gradient * 20;
+        return `hsl(${hue}, 80%, ${lightness}%)`;
+      },
+      backgroundColor: 'transparent',
+      rotateRatio: 0.3,
+      rotationSteps: 2,
+      drawOutOfBound: false,
+      shrinkToFit: true,
+      shuffle: true,
+      shape: 'circle',
+      ellipticity: 0.65,
+      hover: function(item, dimension, event) {
+        let tooltip = document.getElementById('wordcloud-tooltip');
+        if (!tooltip) {
+          tooltip = document.createElement('div');
+          tooltip.id = 'wordcloud-tooltip';
+          document.body.appendChild(tooltip);
+        }
+        tooltip.innerText = `${item[0]}: ${item[1]}`;
+        tooltip.style.left = event.pageX + 15 + 'px';
+        tooltip.style.top = event.pageY + 15 + 'px';
+        tooltip.classList.add('show');
+      },
+      mouseout: function() {
+        const tooltip = document.getElementById('wordcloud-tooltip');
+        if (tooltip) tooltip.classList.remove('show');
+      }
+    });
+  </script>

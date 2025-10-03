@@ -1,10 +1,10 @@
 import os
 import json
 import re
-from collections import Counter
+from collections import Counter,defaultdict
 from decimal import Decimal
-from datetime import date,datetime,timedelta
-import time
+from datetime import date,datetime,timedelta, time
+
 
 import numpy as np
 import pandas as pd
@@ -159,6 +159,10 @@ def process_word_frequency_sklearn(news_texts, top_n=30, max_features=1000):
     ]
     if isinstance(news_texts, str):
         news_texts = [news_texts]
+
+    # 處理空列表或全是空字串的情況
+    if not news_texts or all(not text.strip() for text in news_texts):
+        return []
     vectorizer = CountVectorizer(
         stop_words=stop_words,   # 可放預設的 'english' 或自訂停用詞列表
         max_features=max_features
@@ -195,11 +199,29 @@ def full_month_data_view():
     )))
 
     # 🧠 IndicatorValue 資料
-    indicator_qs = IndicatorValue.objects.select_related('indicator').filter(date__range=(start_date, today))
-    indicator_df = pd.DataFrame(list(indicator_qs.values(
-        'indicator__name', 'indicator__abbreviation', 'date', 'value'
-    )))
+    indicator_qs = IndicatorValue.objects.select_related('indicator') \
+        .order_by('-date')
 
+    # 分組，每個指標取最近 10 筆
+    indicator_dict = defaultdict(list)
+    for iv in indicator_qs:
+        if len(indicator_dict[iv.indicator_id]) < 10:
+            indicator_dict[iv.indicator_id].append({
+                'indicator__name': iv.indicator.name,
+                'indicator__abbreviation': iv.indicator.abbreviation,
+                'date': iv.date,
+                'value': iv.value
+            })
+
+    # 將所有資料合併成 DataFrame
+    all_rows = []
+    for rows in indicator_dict.values():
+        # 每個指標的資料按照日期正序排列
+        sorted_rows = sorted(rows, key=lambda x: x['date'])
+        all_rows.extend(sorted_rows)
+
+    indicator_df = pd.DataFrame(all_rows)
+    
     # 🔗 BitcoinMetricData 資料
     bitcoin_qs = BitcoinMetricData.objects.select_related('metric').filter(date__range=(start_date, today))
     bitcoin_df = pd.DataFrame(list(bitcoin_qs.values(
@@ -298,37 +320,94 @@ def generate_weekly_report(request):
         end_date.strftime("%Y-%m-%d"),
     )
     news_summary_with_links = ""
-    for article in news_summary:
-        url = reverse('news_detail', kwargs={'article_id': article["id"]})
-        title_html = f'<a href="{url}" target="_blank">{escape(article["title"])}</a>'
-        date_str = escape(article.get("date", ""))
-        summary_html = escape(article.get("summary", ""))
-        # 組成單則新聞 HTML
+
+    # 先取出所有文章 id
+    article_ids = [article_data["id"] for article_data in news_summary]
+
+    # 從資料庫抓對應的 Article 物件
+    articles = Article.objects.filter(id__in=article_ids)
+    articles_dict = {article.id: article for article in articles}
+
+    # 依照 news_summary 的順序生成 HTML
+    for article_data in news_summary:
+        article_id = article_data["id"]
+        article = articles_dict.get(article_id)
+
+        if not article:
+            continue  # 如果資料庫沒有該文章就跳過
+
+        url = reverse('news_detail', kwargs={'article_id': article.id})
+        title_html = f'<a href="{url}" target="_blank">{escape(article.title)}</a>'
+        date_str = escape(article_data.get("date", ""))
+        summary_html = escape(article.summary or "")
+
+    news_summary_with_links = ""
+
+    # 先取出所有文章 id
+    article_ids = [int(article_data["id"]) for article_data in news_summary]
+
+    # 從資料庫抓對應的 Article 物件
+    articles = Article.objects.filter(id__in=article_ids)
+    articles_dict = {article.id: article for article in articles}
+
+    # 依照 news_summary 的順序生成 HTML 並累積文字
+    for article_data in news_summary:
+        article_id = int(article_data["id"])
+        article = articles_dict.get(article_id)
+        if not article:
+            continue
+
+        # 文章連結
+        url = reverse('news_detail', kwargs={'article_id': article.id})
+        title_html = f'<a href="{url}" target="_blank">{escape(article.title)}</a>'
+
+        # 日期
+        date_str = article.time.strftime("%Y-%m-%d %H:%M") if article.time else escape(article_data.get("date", ""))
+
+        # 文章圖片（小圖）
+        article_image_html = ""
+        if article.image_url:
+            article_image_html = f'<img src="{article.image_url}" alt="Article Image" class="article-image">'
+
+        # 文章摘要
+        summary_html = escape(article.summary or "")
+
+        # 情緒分數
+        sentiment_html = f'<div class="sentiment-score">情緒分數: {article.sentiment_score:.2f}</div>' if article.sentiment_score else ""
+
+        # 組成新聞卡片 HTML
         news_summary_with_links += f'''
         <div class="news-card">
             <h3>{title_html}</h3>
             <span class="news-date">{date_str}</span>
-            <p>{summary_html}</p>
+            <div class="news-body">
+                {f'<div class="news-thumb">{article_image_html}</div>' if article_image_html else ''}
+                <p class="news-summary">{summary_html}</p>
+                {sentiment_html}
+            </div>
         </div>
         '''
 
 
-    news_text = "\n".join([
-        " ".join(filter(None, [
-            article.title or "",
-            article.summary or "",
-            article.content or ""
-        ]))
-        for article in get_recent_articles(start_date, end_date)
-    ])
 
+    # 從資料庫抓取這段時間的文章 content
+    start_datetime = datetime.combine(start_date, time.min)  # 00:00:00
+    end_datetime   = datetime.combine(end_date, time.max)    # 23:59:59.999999
+
+    # 從資料庫抓文章
+    articles_qs = Article.objects.filter(
+        time__range=(start_datetime, end_datetime)
+    ).values_list('content', flat=True)
+
+    # 過濾 None 或空字串
+    news_text_list = [content for content in articles_qs if content]
+
+    # 合併成單一字串給詞頻分析
+    news_text = "\n".join(news_text_list)
+
+    # 計算詞頻
     word_freqs = process_word_frequency_sklearn(news_text)
-    print(call_chatgpt(
-        system="你是一位專業金融分析師",
-        text=f"""幫我分析以下詞頻內容
-        {word_freqs}
-        """
-    ))
+
     data = {
         "MA20": list(ma20_data[-7:]),
         "MA60": list(ma60_data[-7:]),
@@ -339,13 +418,14 @@ def generate_weekly_report(request):
     }
     formatted = json.dumps(data, ensure_ascii=False)
 
+
     coin_analysis = call_chatgpt(
         system="你是一位專業金融分析師，請用 HTML <div> 包裝你的技術分析評論。",
         text=f"""請依據以下加密貨幣 {coin} 的技術分析資料進行簡潔評論，描述目前市場趨勢與可能的變化，避免逐筆說明，只需總體分析與解釋。請輸出為一段 HTML <div>...</div>，不要額外文字：
         {formatted}
         """
     ).strip("```").strip("html")
-
+    
     summary = call_chatgpt(
         system="你是一位擅長撰寫財經總結的分析師。",
         text=f"""
@@ -379,7 +459,7 @@ def generate_weekly_report(request):
         1. 金融價格資料（financial_data_json）：
         {financial_json[:100]}
 
-        2. 技術指標資料（indicator_data_json）：
+        2. 宏觀指標資料（indicator_data_json）：
         {indicator_json[:100]}
 
         3. 比特幣鏈上指標資料（bitcoin_data_json）：
@@ -475,9 +555,6 @@ def view_weekly_report_by_id(request, report_id):
         'created_at': report.created_at,
         'watchlist': my_favorite_coins_view(request),  # <-- 加入這行
     }
-
-    # 也可以把共用的 full_month_data 加進 context，如果需要
-    context.update(full_month_data_view())
 
     return render(request, 'weekly_report.html', context)
 
