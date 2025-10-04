@@ -397,7 +397,6 @@ function appendMessage(messagesContainer, text, sender, isTag=false, extraData=n
     div.appendChild(dotSpan);
 
     messagesContainer.appendChild(div);
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
     return div;  // 保存 div 方便後續刪除
 
@@ -563,7 +562,6 @@ function appendMessage(messagesContainer, text, sender, isTag=false, extraData=n
   }
 
   messagesContainer.appendChild(div);
-  messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
   window.agentLoadingDivs = window.agentLoadingDivs || {};

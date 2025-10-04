@@ -14,7 +14,7 @@ def home(request):
     return render(request, 'news_home.html', context)
 
 
-
+# 2. 新聞詳細內容與留言、回覆機制-----------
 def news_detail(request, article_id):
     article = get_object_or_404(Article, pk=article_id)
     content = article.content
@@ -41,22 +41,17 @@ def news_detail(request, article_id):
 
     comments = article.comments.all()
     return render(request, 'news_detail.html', {'article': article, 'comments': comments, 'content': content})
+# 2. 新聞詳細內容與留言、回覆機制-----------
 
-
+# 1. 新聞首頁與最新新聞展示-----------
 def news_home(request):
     all_articles = Article.objects.all().order_by('-time')[:3]  # 查詢新聞文章
-    xposts = XPost.objects.all().order_by('-ids')[:3]  # 使用共用的函數來獲取 Twitter 貼文
-
 
     return render(request, 'news_home.html', {
         'all_articles': all_articles,  # 傳遞新聞文章
-        'xposts': xposts,              # 傳遞 Twitter 貼文
     })
+# -----------1. 新聞首頁與最新新聞展示
 
-def X_list(request):
-    # 获取指定 id 的 XPost 对象
-    xposts = XPost.objects.all()
-    return render(request, 'x_list.html', {'xposts': xposts})
 
 # 新聞列表翻頁-----------------
 from django.core.paginator import Paginator
@@ -71,6 +66,8 @@ from django.core.paginator import Paginator
 from django.shortcuts import render
 from .models import Article
 
+
+# 3. 新聞搜尋、關鍵字與日期篩選 + 分頁-----------
 def news_list(request):
     query = request.GET.get('q', '')  # 搜尋關鍵字
     start_date = request.GET.get('start_date', '')  # 開始日期
@@ -111,11 +108,15 @@ def news_list(request):
         'start_date': start_date,
         'end_date': end_date,
     })
+# -----------3. 新聞搜尋、關鍵字與日期篩選 + 分頁
+
 
 # 計算情緒百分比並顯示在文章詳細頁面
 from django.shortcuts import render, get_object_or_404
 from .models import Article, Comment  # 假設你的模型名稱為 Article 和 Comment
 
+
+# 4. 新聞情緒分數圖表-----------
 def article_detail(request, article_id):
     # 獲取文章和相關評論
     article = get_object_or_404(Article, id=article_id)
@@ -147,6 +148,7 @@ def article_detail(request, article_id):
         'chart_data': chart_data
     }
     return render(request, 'article_detail.html', context)
+# -----------4. 新聞情緒分數圖表
 
 
 from django.shortcuts import render
@@ -155,7 +157,7 @@ from django.urls import reverse
 from datetime import datetime, date
 from data_analysis.crypto_ai_agent.news_agent import search_news  # 你的搜尋函數
 
-# -------- API View --------
+# 5.進階搜尋 API 與資料整合（後端/前端）-----------
 def search_news_api(request):
     """
     搜尋新聞 API
@@ -227,3 +229,12 @@ def search_news_page(request):
     搜尋網頁頁面，透過 AJAX 呼叫 API
     """
     return render(request, "search_news_page.html")
+# -----------5.進階搜尋 API 與資料整合（後端/前端）
+
+
+
+
+def X_list(request):
+    # 获取指定 id 的 XPost 对象
+    xposts = XPost.objects.all()
+    return render(request, 'x_list.html', {'xposts': xposts})
