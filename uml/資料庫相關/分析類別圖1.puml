@@ -1,0 +1,86 @@
+@startuml
+
+class auth_user {
+  +id: int <<PK>>
+  +password: varchar(128)
+  +last_login: datetime
+  +is_superuser: tinyint
+  +username: varchar(150) <<unique>>
+  +first_name: varchar(150)
+  +last_name: varchar(150)
+  +email: varchar(254)
+  +is_staff: tinyint
+  +is_active: tinyint
+  +date_joined: datetime
+}
+
+class main_userprofile {
+  +id: bigint <<PK>>
+  +profile_image: varchar(100)
+  +user_id: int <<FK>>
+  +membership: varchar(10)
+  +has_seen_know_modal: tinyint
+}
+
+class main_userprofile_favorite_coin {
+  +id: bigint <<PK>>
+  +userprofile_id: bigint <<FK>>
+  +coin_id: bigint <<FK>>
+  --
+  <<unique>> userprofile_id + coin_id
+}
+
+class main_coin {
+  +id: bigint <<PK>>
+  +coinname: varchar(100)
+  +abbreviation: varchar(100)
+  +logo_url: varchar(200)
+  +api_id: bigint <<unique>>
+}
+
+class main_coincategory {
+  +id: bigint <<PK>>
+  +name: varchar(100) <<unique>>
+}
+
+class main_coincategoryrelation {
+  +id: bigint <<PK>>
+  +category_id: bigint <<FK>>
+  +coin_id: bigint <<FK>>
+}
+
+class main_coinhistory {
+  +id: bigint <<PK>>
+  +date: datetime
+  +open_price: decimal(20,10)
+  +high_price: decimal(20,10)
+  +low_price: decimal(20,10)
+  +close_price: decimal(20,10)
+  +volume: decimal(65,10)
+  +coin_id: bigint <<FK>>
+}
+
+class main_bitcoinprice {
+  +id: bigint <<PK>>
+  +usd: double
+  +twd: double
+  +jpy: double
+  +eur: double
+  +market_cap: decimal(30,2)
+  +volume_24h: decimal(30,2)
+  +change_24h: decimal(10,2)
+  +timestamp: datetime
+  +coin_id: bigint <<FK>>
+}
+
+auth_user "1" -- "0..1" main_userprofile : "user_id"
+main_userprofile "1" -- "0..*" main_userprofile_favorite_coin : "userprofile_id"
+main_coin "1" -- "0..*" main_userprofile_favorite_coin : "coin_id"
+
+main_coincategory "1" -- "0..*" main_coincategoryrelation : "category_id"
+main_coin "1" -- "0..*" main_coincategoryrelation : "coin_id"
+
+main_coin "1" -- "0..*" main_coinhistory : "coin_id"
+main_coin "1" -- "0..*" main_bitcoinprice : "coin_id"
+
+@enduml

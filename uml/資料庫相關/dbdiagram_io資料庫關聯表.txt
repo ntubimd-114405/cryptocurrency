@@ -1,0 +1,185 @@
+Table auth_user {
+  id int [pk]
+  password varchar(128)
+  last_login datetime
+  is_superuser bool
+  username varchar(150)
+  first_name varchar(150)
+  last_name varchar(150)
+  email varchar(254)
+  is_staff bool
+  is_active bool
+  date_joined datetime
+}
+
+Table main_userprofile {
+  id bigint [pk]
+  profile_image varchar(100)
+  user_id int [ref: > auth_user.id]
+  membership varchar(10)
+  has_seen_know_modal bool
+}
+
+Table main_userprofile_favorite_coin {
+  id bigint [pk]
+  userprofile_id bigint [ref: > main_userprofile.id]
+  coin_id bigint [ref: > main_coin.id]
+}
+
+Table main_coin {
+  id bigint [pk]
+  coinname varchar(100)
+  abbreviation varchar(100)
+  logo_url varchar(200)
+  api_id bigint
+}
+
+Table main_bitcoinprice {
+  id bigint [pk]
+  usd float
+  twd float
+  jpy float
+  eur float
+  market_cap decimal
+  volume_24h decimal
+  change_24h decimal
+  timestamp datetime
+  coin_id bigint [ref: > main_coin.id]
+}
+
+Table main_coinhistory {
+  id bigint [pk]
+  date datetime
+  open_price decimal
+  high_price decimal
+  low_price decimal
+  close_price decimal
+  volume decimal
+  coin_id bigint [ref: > main_coin.id]
+}
+
+Table main_coincategory {
+  id bigint [pk]
+  name varchar(100)
+}
+
+Table main_coincategoryrelation {
+  id bigint [pk]
+  category_id bigint [ref: > main_coincategory.id]
+  coin_id bigint [ref: > main_coin.id]
+}
+
+Table news_article {
+  id bigint [pk]
+  title varchar
+  url varchar
+  image_url varchar
+  content longtext
+  time datetime
+  website_id bigint [ref: > news_website.id]
+  summary longtext
+  sentiment_score double
+}
+
+Table news_website {
+  id bigint [pk]
+  name varchar
+  url varchar
+  icon_url varchar
+}
+
+Table other_bitcoinmetric {
+  id bigint [pk]
+  name varchar
+  unit varchar
+  period varchar
+  description longtext
+}
+
+Table other_bitcoinmetricdata {
+  id bigint [pk]
+  date datetime
+  value double
+  metric_id bigint [ref: > other_bitcoinmetric.id]
+}
+
+Table other_financialdata {
+  id bigint [pk]
+  date date
+  open_price double
+  high_price double
+  low_price double
+  close_price double
+  volume bigint
+  symbol_id bigint [ref: > other_financialsymbol.id]
+}
+
+Table other_financialsymbol {
+  id bigint [pk]
+  symbol varchar
+  name varchar
+}
+
+Table other_indicator {
+  id bigint [pk]
+  name varchar
+  abbreviation varchar
+}
+
+Table other_indicatorvalue {
+  id bigint [pk]
+  date date
+  value double
+  indicator_id bigint [ref: > other_indicator.id]
+}
+
+Table other_trenddata {
+  id bigint [pk]
+  date datetime
+  coin_id bigint
+  abbreviated_value int
+  full_value int
+}
+
+Table AgentAnswerOption {
+  id bigint [pk]
+  content varchar
+  order int
+  score int
+  question bigint [ref: > AgentQuestion.id]
+}
+
+Table AgentQuestion {
+  id bigint [pk]
+  order int
+  content varchar
+  questionType varchar
+  questionnaire bigint [ref: > AgentQuestionnaire.id]
+}
+
+Table AgentQuestionnaire {
+  id bigint [pk]
+  title varchar
+  description varchar
+}
+
+Table AgentUserAnswer {
+  id bigint [pk]
+  userId int [ref: > auth_user.id]
+  question bigint [ref: > AgentQuestion.id]
+}
+
+Table AgentUserAnswerSelectedOptions {
+  id bigint [pk]
+  userAnswer bigint [ref: > AgentUserAnswer.id]
+  answerOption bigint [ref: > AgentAnswerOption.id]
+}
+
+Table AgentUserQuestionnaireRecord {
+  id bigint [pk]
+  completedAt datetime
+  questionnaire bigint [ref: > AgentQuestionnaire.id]
+  user int [ref: > auth_user.id]
+  gptAnalysisResult text
+  lastSubmittedHash varchar
+}
