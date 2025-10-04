@@ -31,7 +31,6 @@
             <th class="text-center" style="width: 20%;">問卷名稱&nbsp;(點擊問卷名稱開始填寫)</th>
             <th class="text-center" style="width: 15%;">最後填寫時間</th>
             <th class="text-center" style="width: 10%;">進度</th>
-            <th class="text-center" style="width: 10%;">分析</th>
             <th class="text-center" style="width: 15%;">操作</th>
         </tr>
     </thead>
@@ -77,12 +76,6 @@
                         {{ item.progress }}%
                     </span>
                 </div>
-            </td>
-            
-            <td style="width: 10%;">
-                <a href="{% url 'agent:analyze_questionnaire' item.questionnaire.id %}">
-                    分析
-                </a>
             </td>
             
             <td style="white-space: nowrap; width: 15%;">
