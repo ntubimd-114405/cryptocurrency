@@ -140,7 +140,7 @@
             {% for price in page_obj.object_list %}
                 <tr>
                     <td style="text-align: center; vertical-align: middle;">
-                        <a href="{% url 'crypto_detail' price.pk %}">
+                        <a href="{% url 'crypto_detail' price.coin.pk %}">
                             <img src="{{ price.coin.logo_url }}" alt="logo" class="coin-logo"><br>{{ price.coin.coinname }}
                         </a>
                     </td>

@@ -5,6 +5,7 @@ from transformers import pipeline
 # 若是英文內容，使用 BART 模型
 summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
 
+# 5-2 文章摘要主函式
 # 將長文分段
 def chunk_text(text, chunk_size=800):
     return [text[i:i+chunk_size] for i in range(0, len(text), chunk_size)]

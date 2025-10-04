@@ -152,7 +152,7 @@ def questionnaire_detail(request, questionnaire_id):
         'questions_with_answers': questions_with_answers,
     })
 
-
+# 1. 問卷填寫與進度追蹤-----------
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from .models import Questionnaire, UserQuestionnaireRecord, UserAnswer
@@ -223,7 +223,7 @@ def questionnaire_list(request):
         'overall_remaining': overall_remaining,
         'know': know,
     })
-
+# -----------1. 問卷填寫與進度追蹤
 # 重新填問卷
 from django.views.decorators.http import require_POST
 
@@ -243,13 +243,15 @@ def reset_questionnaire_answers(request, questionnaire_id):
 
     # 4. 重新導向到問卷填寫頁面
     return redirect('agent:questionnaire_detail', questionnaire_id=questionnaire.id)
-    
+
+#  4. 所有問卷的 AI 總分析----------- 
 def get_total_analysis(user):
+
     records = UserQuestionnaireRecord.objects.filter(
         user=user,
         completed_at__isnull=False
     ).select_related('questionnaire')
-    
+        
     analysis_blocks = []
     for record in records:
         questionnaire_title = record.questionnaire.title
@@ -276,8 +278,6 @@ def get_total_analysis(user):
         + "\n\n".join(analysis_blocks)
     )
 
-    import requests
-    from django.conf import settings
 
     url = 'https://free.v36.cm/v1/chat/completions'
     headers = {
@@ -294,7 +294,9 @@ def get_total_analysis(user):
         content = f"總分析時發生錯誤：{str(e)}"
 
     return content
+#  ----------- 4. 所有問卷的 AI 總分析
 
+# 2. 風險屬性分析與資產配置建議-----------
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from .models import UserAnswer, Questionnaire
@@ -337,8 +339,8 @@ def analysis_result_view(request):
             q_order = ans.question.questionnaire.id
             if q_order in RISK_QUESTIONNAIRE_IDS:
                 total_score += option.score
-                
-                answer_count += 1            # 核心題目
+
+                answer_count += 1        
             if q_order == 2:
                 core_scores["score_investment_exp"] += option.score
                 core_counts["score_investment_exp"] += 1

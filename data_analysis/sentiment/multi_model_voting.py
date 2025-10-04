@@ -33,7 +33,7 @@ def split_long_text(text, tokenizer, max_tokens=512):
         tokens = tokens[max_tokens:]
     return chunks
 
-
+# 6-2單一模型情緒分析並加權平均
 def analyze_sentiment_weighted(text, model_name, sentiment_map, device, max_length=512):
     """
     【方案一】模型內加權平均法：
@@ -72,7 +72,7 @@ def analyze_sentiment_weighted(text, model_name, sentiment_map, device, max_leng
     print(f"→ {model_name} 平均情緒分數：{avg_score:.4f}，判斷結果：{sentiment}")
     return avg_score  # 回傳平均加權分數（非整數）
 
-
+# 6-3跨模型加權平均
 def predict_sentiment(text):
     """
     【方案二】跨模型加權平均法：

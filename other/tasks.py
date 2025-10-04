@@ -37,7 +37,7 @@ def fetch_trends_task():
     print(f"成功儲存 {coin.coinname} Google Trends 資料")
 
 
-
+# 8-1 抓取金融資料
 @shared_task
 def save_financial():
     from data_collector.fin.financial_data import get_finance
@@ -66,7 +66,7 @@ def save_financial():
 
         # 獲取金融數據
         data = get_finance(sym, start_date)
-        # 儲存或更新 FinancialData
+# 8-3 儲存或更新 FinancialData
         if data is not None:
             for index, row in data.iterrows():
                 FinancialData.objects.update_or_create(
@@ -84,7 +84,7 @@ def save_financial():
         else:
             print(f"{financial_symbol}更新0筆")
 
-
+#9-1 更新比特幣相關指標
 @shared_task
 def update_bitcoin_metrics():
     from .models import BitcoinMetric, BitcoinMetricData
@@ -113,7 +113,7 @@ def update_bitcoin_metrics():
         # 獲取新的 Bitcoin hash rate 數據
         data = get_all_data(metric.name, start_date.isoformat())
         
-        # 利用 update_or_create 確保資料庫中存在「Hash Rate」這個指標
+# 9-3利用 update_or_create 確保資料庫中存在「Hash Rate」這個指標
         metric, created = BitcoinMetric.objects.update_or_create(
             name=data["name"],
             defaults={
@@ -140,7 +140,7 @@ def update_bitcoin_metrics():
 
         print(f"{data['name']} 數據更新完成，新增數據條目數：{new_entries_count}")
 
-
+# 10-1 更新宏觀經濟指標
 @shared_task
 def macro_economy():
     from .models import Indicator,IndicatorValue
@@ -172,6 +172,7 @@ def macro_economy():
               
         data = get_fred_data(v) 
 
+# 10-3 儲存或更新 IndicatorValue
         for date, value in data.items():  
             date = date.date() 
             if pd.notna(value):

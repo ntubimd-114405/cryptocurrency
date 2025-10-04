@@ -17,7 +17,7 @@ def initialize_global_store():
             embedding_function=embeddings,
         )
 
-
+# 7-1 更新新聞向量庫
 def initialize_news_vector_store(
     db_location: str = "./vector_db/news",
     model_name: str = "mxbai-embed-large",
@@ -32,7 +32,7 @@ def initialize_news_vector_store(
         embedding_function=embeddings,
     )
 
-    # 取得已存在的向量庫 ID
+# 7-2 取得已存在的向量庫 ID
     existing_ids = set(vector_store.get()["ids"])
 
     # 找最新的新聞
@@ -47,6 +47,8 @@ def initialize_news_vector_store(
             continue  # 避免重複
         # 只存 title + summary
         timestamp = int(article.time.timestamp())
+        
+# 7-3 新增文件到向量庫
         documents.append(Document(
             page_content=f"{article.title}\n{article.summary}",
             metadata={

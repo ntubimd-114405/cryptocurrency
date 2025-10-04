@@ -78,6 +78,7 @@ def parse_date_from_url(url):
             return None
     return None
 
+#4-2 文章插入與更新資料庫過程----
 class CoindeskWebsite(BaseWebsite):
     def __init__(self):
         self.name = "coindesk"
@@ -110,6 +111,8 @@ class CoindeskWebsite(BaseWebsite):
 
             data.append({"title": title, "url": link, "time": time_str})
         return data
+#---- 4-2 文章插入與更新資料庫過程      
+
 
 class CoindeskArticle(BaseArticle):
     def __init__(self, data):
@@ -124,7 +127,7 @@ class CoindeskArticle(BaseArticle):
     def is_complete(self):
         return all([self.url, self.title, self.content, self.time, self.website])
     
-
+#4-3 取得新聞詳細內容
     def get_news_details(self):
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
@@ -143,27 +146,28 @@ class CoindeskArticle(BaseArticle):
         response = requests.get(self.url, headers=headers)
         soup = BeautifulSoup(response.text, 'html.parser')
 
-        # 找到 img 標籤
+        # 標題
         title_tag = soup.find('h1',class_="font-headline-lg")
         if title_tag is None:
             title = (self.url.split("/")[-1]).replace("-"," ")#用網址中的標題
         else:
             title = title_tag.text.strip()
         self.title = title.encode('ascii', 'ignore').decode('ascii')
+        # 摘要
         summary_tag = soup.find('h2',class_="font-headline-xs")
         if summary_tag is None:
             self.summary=None
         else:
             summary = summary_tag.text.strip()
             self.summary = summary
-            
+        # 文章內容    
         content_divs = [div.get_text(strip=True) for div in soup.find_all('div', class_='document-body') if div.get_text(strip=True)]
         if content_divs:
             content = ' '.join(content_divs)
             if content:
                 self.content=convert_emoji_to_text(content).encode('ascii', 'ignore').decode('ascii')
 
-
+        # 圖片
         img_tag = soup.find('img',class_="rounded-md")
         if img_tag is None:
             og_image = soup.find("meta", property="og:image")
@@ -178,6 +182,7 @@ class CoindeskArticle(BaseArticle):
 
         self.image_url = url
 
+        # 時間
         time_tag = soup.find('span', class_="md:ml-2")
         if time_tag:
             t = time_tag.get_text()

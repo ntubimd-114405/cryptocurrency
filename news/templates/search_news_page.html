@@ -1,4 +1,7 @@
 {% extends "base.html" %}
+
+{% load static %}
+{% block title %}進階新聞搜尋{% endblock %}
 {% block content %}
 <style>
     .container .card {
@@ -111,7 +114,7 @@
 
 <div class="container">
     <div class="card">
-        <h2>🔍 新聞搜尋</h2>
+        <h2>🔍 進階新聞搜尋</h2>
         <div class="search-bar">
             <input type="text" id="question" placeholder="輸入關鍵字 (例如：BTC)">
             <input type="date" id="start_date">
