@@ -453,34 +453,96 @@ def generate_weekly_report(request):
         """
     ).strip("```").strip("html").strip()
 # -----------3. 週報產生與多模組數據整合
+    from django.utils import timezone
+    import math
+    import pandas as pd
 
+    def clean_indicator(value, default=None):
+        """
+        將指標或資料清理成合法格式，避免 NaN 或 None 傳入 JSONField
+        - 可以處理單值 float/int
+        - list
+        - DataFrame Series
+        - list of dict (將 dict 內的 float NaN 轉成 default)
+        - dict
+        """
+        if default is None:
+            if isinstance(value, dict):
+                default = {}
+            elif isinstance(value, list):
+                default = []
+            else:
+                default = 0.0
 
-    # 更新或新增本週報告
+        if value is None:
+            return default
+
+        # DataFrame Series
+        if isinstance(value, pd.Series):
+            value = value.dropna().tolist()
+
+        # list 處理
+        if isinstance(value, list):
+            cleaned = []
+            for v in value:
+                if isinstance(v, dict):
+                    new_dict = {}
+                    for k, val in v.items():
+                        if isinstance(val, float) and math.isnan(val):
+                            new_dict[k] = default
+                        else:
+                            new_dict[k] = val
+                    cleaned.append(new_dict)
+                elif isinstance(v, float) and math.isnan(v):
+                    cleaned.append(default)
+                else:
+                    cleaned.append(v)
+            return cleaned
+
+        # dict 處理
+        if isinstance(value, dict):
+            new_dict = {}
+            for k, val in value.items():
+                if isinstance(val, float) and math.isnan(val):
+                    new_dict[k] = default
+                else:
+                    new_dict[k] = val
+            return new_dict
+
+        # 單一 float 處理
+        if isinstance(value, float) and math.isnan(value):
+            return default
+
+        return value
+
+    # 更新或新增 WeeklyReport
     WeeklyReport.objects.update_or_create(
         user=user,
         year=year,
         week=week,
         defaults={
-            'start_date': start_date,
-            'end_date': end_date,
-            'summary': summary,
-            'news_summary': news_summary_with_links,
-            'word_frequencies': word_freqs,
-            'ma20_data': ma20_data,
-            'ma60_data': ma60_data,
-            'ohlc_data': df['ohlc'].tolist(),
-            'rsi_data': df['rsi_point'].dropna().tolist(),
-            'macd_data': df['macd_bar'].dropna().tolist(),
-            'macd_signal_data': df['macd_signal_line'].dropna().tolist(),
-            'coin_analysis':coin_analysis,
-            'financial_data_json': financial_json,
-            'indicator_data_json': indicator_json,
-            'bitcoin_data_json': bitcoin_json,
-            'long_term_analysis': long_term_analysis,
+            'start_date': start_date or timezone.now().date(),
+            'end_date': end_date or timezone.now().date(),
+            'summary': summary or "",
+            'news_summary': news_summary_with_links or "",
+            'word_frequencies': clean_indicator(word_freqs, {}),
+            'ma20_data': clean_indicator(ma20_data, []),
+            'ma60_data': clean_indicator(ma60_data, []),
+            'ohlc_data': clean_indicator(df.get('ohlc', []), []),
+            'rsi_data': clean_indicator(df.get('rsi_point', []), []),
+            'macd_data': clean_indicator(df.get('macd_bar', []), []),
+            'macd_signal_data': clean_indicator(df.get('macd_signal_line', []), []),
+            'coin_analysis': coin_analysis or "",
+            'financial_data_json': clean_indicator(financial_json, {}),
+            'indicator_data_json': clean_indicator(indicator_json, {}),
+            'bitcoin_data_json': clean_indicator(bitcoin_json, {}),
+            'long_term_analysis': long_term_analysis or "",
         }
     )
 
-    return redirect('weekly_report_list')  # 重新導向你的週報頁
+    return redirect('weekly_report_list')
+
+
 
 
 
@@ -780,7 +842,7 @@ RISK_QUESTIONNAIRE_IDS = [2, 3, 4, 9]
 # 問卷模組
 def run_survey_agent(user, user_input, start_date=None, end_date=None): 
 
-    if user:
+    if user.is_authenticated:
         # 取得使用者的問卷風險分析
         user_answers = UserAnswer.objects.filter(
             user=user,
