@@ -103,6 +103,31 @@ def get_crypto_prices(symbols):
         return {}
 # -----------2.即時價格查詢（外部 API 串接）
 
+# ✅ 本地 RAG（輕量關鍵字版）
+FAQ_DATA = {
+    "網站介紹": "此網站是一個加密貨幣投資推薦平台，提供大量相關數據供使用者參考與分析。",
+    "貨幣列表": "「貨幣列表」提供超過 500 種以上加密貨幣的即時資訊，包含 K 線圖、訂單簿及技術指標，協助進行專業分析。",
+    "外部資訊": "「外部資訊」整合多個平台的最新新聞，幫助你掌握市場動態。",
+    "經濟指標": "「經濟指標」整理宏觀經濟數據與市場趨勢，協助觀察整體走向。",
+    "AI Agent": "「AI Agent」是智慧化投資助理，能分析市場數據並提供個人化投資建議。",
+    "問卷": "「問卷」是針對投資者設計的調查表，完成後系統會依據你的習慣提供專屬建議。",
+}
+
+
+def simple_rag_retrieval(user_input):
+    """根據關鍵字比對 FAQ 中最相關內容"""
+    text = user_input.lower()
+    scores = {}
+    for key, content in FAQ_DATA.items():
+        keywords = [key.lower()] + re.findall(r"[\u4e00-\u9fa5A-Za-z]+", content.lower())
+        match_count = sum(1 for k in keywords if k in text)
+        scores[key] = match_count
+
+    best_match = max(scores, key=scores.get)
+    if scores[best_match] > 0:
+        return FAQ_DATA[best_match]
+    return ""
+
 
 # ✅ Chat API
 @csrf_exempt
@@ -138,7 +163,9 @@ def chat_api(request):
                         "role": "system",
                         "content": (
                             "只能用英文或者繁體中文。\n"
-                            "你是加密貨幣專家 AI，只允許回答與虛擬貨幣、區塊鏈、代幣、DeFi、NFT、市場趨勢有關的問題。\n"
+                            "可以回答網站功能、操作指引或 FAQ 類問題，內容應根據提供的補充資訊或本地 FAQ 回答。。\n"
+                            "你是加密貨幣專家 AI，只允許回答與虛擬貨幣、區塊鏈、代幣、DeFi、NFT、市場趨勢有關的問題，同時，你可以回答網站功能、操作指引或 FAQ 類問題，內容應根據提供的補充資訊或本地 FAQ 回答。。\n"
+                            "如果使用者問同一個功能的應用或範例，你可以用加密貨幣相關的知識，合理生成實際應用示例。\n"
                             "若使用者的問題與主題無關，請回覆：「我只能協助回答加密貨幣相關的問題喔」。\n"
                             "⚠️ 特別規則：\n"
                             "- 幣種價格只能來自『📊 補充幣價資訊』，不要自己生成或假設數字。\n"
@@ -146,12 +173,18 @@ def chat_api(request):
                             "風格要求：\n"
                             "- 回答簡短精要\n"
                             "- 不要寫長篇大論\n"
+                            
                         )
                     }
                 ]
 #-----------3. 系統角色限制
 
             chat_history = request.session[session_key]
+            # ✅ Step 1: 嘗試找出網站功能說明（RAG）
+            rag_context = simple_rag_retrieval(user_prompt)
+            if rag_context:
+                user_prompt += f"\n\n📚 相關參考內容：\n{rag_context}"
+
             
 #5. 回答內容結合上下文 & 真實價格資訊-----------
             # ✅ 偵測幣種（Regex + DB）
