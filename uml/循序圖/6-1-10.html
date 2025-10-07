@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>Mermaid 序列圖 - 相關新聞</title>
+  <!-- 引入 MermaidJS -->
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({ startOnLoad: true });
+  </script>
+</head>
+<body>
+  <div class="mermaid">
+    sequenceDiagram
+    participant 使用者
+    participant 相關新聞
+    participant 資料庫
+
+    使用者 ->> 相關新聞: 點選某一幣種查看相關新聞
+    相關新聞 ->> 資料庫: 查詢近一個月新聞資料
+    資料庫 -->> 相關新聞: 回傳新聞資料
+    相關新聞 -->> 使用者: 顯示相關新聞列表
+
+  </div>
+</body>
+</html>

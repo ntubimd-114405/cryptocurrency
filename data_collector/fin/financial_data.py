@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 import time
 import pandas as pd
 
+# 8-2 Yahoo Finance
 def get_finance(symbol, start_date=None, interval="1d", max_retry=3):
     """
     從 Yahoo Finance 下載資料，支援自動重試與避免被封鎖

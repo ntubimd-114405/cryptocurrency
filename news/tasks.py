@@ -4,6 +4,7 @@ from dateutil import parser
 from data_collector.coin_history.ccxt_price import CryptoHistoryFetcher
 from data_analysis.crypto_ai_agent.news_agent import initialize_news_vector_store
 
+#4-1 新聞爬蟲
 @shared_task
 def news_crawler():
     from .models import Website,Article
@@ -20,7 +21,7 @@ def news_crawler():
             },
             )
         website_instance = Website.objects.get(name=site.name)
-        
+#4-2 文章插入與更新資料庫過程----       
         for article in site.fetch_page():
             defaults = {
             'website': website_instance
@@ -34,12 +35,13 @@ def news_crawler():
                 url=article["url"],
                 defaults=defaults,
             )
+#----4-2 文章插入與更新資料庫過程  
+#4-3 取得新聞詳細內容
     articles_empty = Article.objects.filter(
         Q(content__isnull=True) | Q(content__exact="") |
         Q(title__isnull=True) | Q(title__exact="") |  
-        Q(time__isnull=True) | Q(image_url__isnull=True)
+        Q(time__isnull=True) | Q(image_url__isnull=True) 
     ).order_by('-id')[:20]
-    #articles_empty = NewsArticle.objects.all()
     print(len(articles_empty))
     for article in articles_empty:
         try:
@@ -62,7 +64,7 @@ def news_crawler():
             print(f"發生錯誤: {e}")
             continue
 
-
+# 6-1 文章情緒分析
 @shared_task
 def news_sentiment():
     from news.models import Article
@@ -94,7 +96,7 @@ def news_sentiment():
 
 
 
-
+#5-1 文章摘要
 @shared_task
 def news_summary():
     from news.models import Article

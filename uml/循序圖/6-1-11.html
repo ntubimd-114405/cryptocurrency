@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>Mermaid 序列圖</title>
+  <!-- 引入 MermaidJS -->
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({ startOnLoad: true });
+  </script>
+</head>
+<body>
+  <div class="mermaid">
+    sequenceDiagram
+    participant 使用者 as 使用者
+    participant 瀏覽器 as 前端新聞頁面
+    participant 後端API as 後端新聞服務
+    participant DB as 資料庫
+
+
+    使用者->>瀏覽器: 開啟新聞頁面
+    瀏覽器->>後端API: GET /news
+    後端API->>DB: 查詢所有新聞
+    DB-->>後端API: 回傳新聞清單
+    後端API-->>瀏覽器: 回傳新聞資料
+    瀏覽器-->>使用者: 顯示所有新聞清單
+
+
+    note over 使用者, 瀏覽器: 使用者輸入關鍵字或日期搜尋
+    使用者->>瀏覽器: 輸入搜尋條件 (關鍵字 / 日期)
+    瀏覽器->>後端API: GET /news?keyword=xx&date=yy
+    後端API->>DB: 依條件查詢新聞
+    DB-->>後端API: 回傳符合新聞
+    後端API-->>瀏覽器: 傳回搜尋結果
+    瀏覽器-->>使用者: 顯示搜尋結果
+
+
+    使用者->>瀏覽器: 點擊「了解更多」
+    瀏覽器->>後端API: GET /news/{id}
+    後端API->>DB: 查詢新聞詳細內容
+    DB-->>後端API: 回傳詳細內容
+    後端API-->>瀏覽器: 回傳詳細新聞資料
+    瀏覽器-->>使用者: 顯示新聞詳細頁面
+
+  </div>
+</body>
+</html>
+

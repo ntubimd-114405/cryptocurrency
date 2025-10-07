@@ -832,7 +832,7 @@ def coin_history_api(request):
     except Coin.DoesNotExist:
         return JsonResponse({'error': '查無此幣種'}, status=404)
 
-    thirty_days_ago = timezone.now().date() - timedelta(days=60)
+    thirty_days_ago = timezone.now().date() - timedelta(days=3)
 
     queryset = (
         CoinHistory.objects
@@ -988,7 +988,7 @@ def backtest_view(request):
             return JsonResponse({'error': '模型不存在'}, status=500)
 
         result_data = {}
-        thirty_days_ago = timezone.now().date() - timedelta(days=60)
+        thirty_days_ago = timezone.now().date() - timedelta(days=3)
 
         for coin_id in coin_list:
             try:
@@ -1054,9 +1054,18 @@ def backtest_view(request):
             }
 
     # ============ 🔽 這裡加 GPT 分析 🔽 ============
+        summary_data = {
+            coin_id: {
+                "coin_name": v["coin_name"],
+                "strategy_pct": v["strategy_pct"],
+                "buy_hold_pct": v["buy_hold_pct"]
+            }
+            for coin_id, v in result_data.items()
+        }
+
         analysis_prompt = f"""
-        以下是加密貨幣回測的數據：
-        {json.dumps(result_data, ensure_ascii=False)}
+        以下是加密貨幣回測的摘要數據（單位：%）：
+        {json.dumps(summary_data, ensure_ascii=False, indent=2)}
 
         請幫我做以下事情：
         1. 比較每個幣種策略 vs Buy&Hold 的最終報酬率。
@@ -1065,6 +1074,7 @@ def backtest_view(request):
         4. 提供投資上的建議（例如：是否適合長期持有、需注意的風險）。
         請用中文回答，並條列重點。
         """
+
 
         url = "https://free.v36.cm/v1/chat/completions"
         headers = {

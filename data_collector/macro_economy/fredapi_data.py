@@ -3,6 +3,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 import os
 
+# 10-2 取得宏觀經濟指標數據
 def get_fred_data(series): #這個api還有多種資料還未開發 https://fred.stlouisfed.org/docs/api/fred/
     # 設定 .env 文件路徑
     env_path = Path(__file__).resolve().parents[2] / '.env'  # 上兩層目錄

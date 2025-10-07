@@ -152,7 +152,7 @@ def questionnaire_detail(request, questionnaire_id):
         'questions_with_answers': questions_with_answers,
     })
 
-
+# 1. 問卷填寫與進度追蹤-----------
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from .models import Questionnaire, UserQuestionnaireRecord, UserAnswer
@@ -223,7 +223,7 @@ def questionnaire_list(request):
         'overall_remaining': overall_remaining,
         'know': know,
     })
-
+# -----------1. 問卷填寫與進度追蹤
 # 重新填問卷
 from django.views.decorators.http import require_POST
 
@@ -244,116 +244,59 @@ def reset_questionnaire_answers(request, questionnaire_id):
     # 4. 重新導向到問卷填寫頁面
     return redirect('agent:questionnaire_detail', questionnaire_id=questionnaire.id)
 
-def get_user_answer_hash(user_id, questionnaire_id):
-    with connection.cursor() as cursor:
-        cursor.execute("""
-            SELECT q.content, ao.content
-            FROM agent_useranswer ua
-            JOIN agent_question q ON ua.question_id = q.id
-            JOIN agent_useranswer_selected_options uso ON uso.useranswer_id = ua.id
-            JOIN agent_answeroption ao ON uso.answeroption_id = ao.id
-            WHERE ua.user_id = %s
-                       AND q.questionnaire_id = %s
-            ORDER BY q.id
-        """, [user_id, questionnaire_id])
-        rows = cursor.fetchall()
+#  4. 所有問卷的 AI 總分析----------- 
+def get_total_analysis(user):
 
-    combined = "|".join([f"{q}-{a}" for q, a in rows])
-    return hashlib.sha256(combined.encode("utf-8")).hexdigest(), rows
-
-
-def analyze_user_responses(user, questionnaire, api):
-    
-
-    # 計算目前填答 hash
-    answer_hash, qa_pairs = get_user_answer_hash(user.id, questionnaire.id)
-    print(questionnaire)
-
-    
-
-    # 取得紀錄（若不存在就建立）
-    record, _ = UserQuestionnaireRecord.objects.get_or_create(
-        user=user,
-        questionnaire=questionnaire,
-    )
-
-    # 如果 hash 相同，代表沒改動過 → 直接回傳之前的結果
-    if record.last_submitted_hash == answer_hash and record.gpt_analysis_result:
-        return record.gpt_analysis_result
-
-    # 產生 prompt
-    prompt_lines = [f"Q: {q}\nA: {a}" for q, a in qa_pairs]
-    print(prompt_lines)
-    prompt = "不需要以每個題目做出分析，只須要做出總結就可以了，然後不要出現總結兩字：\n\n" + "\n\n".join(prompt_lines)
-
-    # 呼叫 v36 API
-    try:
-        url = 'https://free.v36.cm/v1/chat/completions'
-        headers = {
-            'Authorization': f'Bearer {api}',  # ← 這裡原本是錯的 api，已修正
-            'Content-Type': 'application/json',
-        }
-        data = {
-            "model": "gpt-4o-mini",
-            "messages": [
-                {"role": "user", "content": prompt}
-            ]
-        }
-        response = requests.post(url, headers=headers, json=data)
-        response.raise_for_status()
-        result = response.json()
-        content = result['choices'][0]['message']['content']
-
-        # 儲存結果
-        record.gpt_analysis_result = content
-        record.last_submitted_hash = answer_hash
-        record.completed_at = timezone.now()
-        record.save()
-
-        return content
-    except Exception as e:
-        return f"分析失敗：{e}"
-    
-def get_total_analysis():
-    
     records = UserQuestionnaireRecord.objects.filter(
-        gpt_analysis_result__isnull=False
-    ).select_related('questionnaire', 'user')
-
+        user=user,
+        completed_at__isnull=False
+    ).select_related('questionnaire')
+        
     analysis_blocks = []
     for record in records:
-        title = record.questionnaire.title
-        username = record.user.username
-        analysis = record.gpt_analysis_result
-        block = analysis
-        analysis_blocks.append(block)
+        questionnaire_title = record.questionnaire.title
+
+        answers = UserAnswer.objects.filter(
+            user=user,
+            question__questionnaire=record.questionnaire
+        ).select_related('question').prefetch_related('selected_options')
+
+        answer_texts = []
+        for ans in answers:
+            q_content = ans.question.content
+            if ans.selected_options.exists():
+                selected = "、".join([opt.content for opt in ans.selected_options.all()])
+                answer_texts.append(f"題目: {q_content}\n回答: {selected}")
+            else:
+                answer_texts.append(f"題目: {q_content}\n回答: (未填)")
+
+        user_block = f"問卷名稱: {questionnaire_title}\n" + "\n".join(answer_texts)
+        analysis_blocks.append(user_block)
 
     prompt = (
-        "以下是多份問卷的 GPT 分析結果，請僅根據使用者填寫問卷的投資相關內容進行簡短分析，請使用繁體中文來回答：\n\n"
+        "以下是使用者填寫的投資相關問卷內容，請僅根據填答進行簡短分析，請使用繁體中文回答：\n\n"
         + "\n\n".join(analysis_blocks)
     )
 
+
     url = 'https://free.v36.cm/v1/chat/completions'
     headers = {
-        'Authorization': f'Bearer {api}',  # 從 settings 或 config 獲取
+        'Authorization': f'Bearer {api}',
         'Content-Type': 'application/json',
     }
-    data = {
-        "model": "gpt-4o-mini",
-        "messages": [
-            {"role": "user", "content": prompt}
-        ]
-    }
+    data = {"model": "gpt-4o-mini", "messages": [{"role": "user", "content": prompt}]}
+
     try:
         response = requests.post(url, headers=headers, json=data)
         response.raise_for_status()
-        result = response.json()
-        content = result['choices'][0]['message']['content']
+        content = response.json()['choices'][0]['message']['content']
     except Exception as e:
         content = f"總分析時發生錯誤：{str(e)}"
 
     return content
+#  ----------- 4. 所有問卷的 AI 總分析
 
+# 2. 風險屬性分析與資產配置建議-----------
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from .models import UserAnswer, Questionnaire
@@ -368,7 +311,7 @@ def analysis_result_view(request):
     user = request.user
 
     # 取得全部分析結果（原 analyze_all_questionnaires）
-    total_analysis = get_total_analysis()
+    total_analysis = get_total_analysis(user)
 
     # 取得使用者的問卷風險分析
     user_answers = UserAnswer.objects.filter(
@@ -396,8 +339,8 @@ def analysis_result_view(request):
             q_order = ans.question.questionnaire.id
             if q_order in RISK_QUESTIONNAIRE_IDS:
                 total_score += option.score
-                
-                answer_count += 1            # 核心題目
+
+                answer_count += 1        
             if q_order == 2:
                 core_scores["score_investment_exp"] += option.score
                 core_counts["score_investment_exp"] += 1
@@ -536,18 +479,6 @@ def analysis_result_view(request):
         "progress_data": progress_data,
     })
 
-
-    
-@login_required
-def analyze_view(request, questionnaire_id):
-    questionnaire = get_object_or_404(Questionnaire, id=questionnaire_id)
-    user = request.user
-    print(f"[DEBUG] user = {user} (type={type(user)}) {questionnaire}")
-    api_key = api  # 從 settings 抓你的 GPT key
-
-    result = analyze_user_responses(user, questionnaire, api_key)
-
-    return render(request, "analysis_result.html", {"analysis": result,})
 
 class DecimalEncoder(json.JSONEncoder):
     def default(self, obj):

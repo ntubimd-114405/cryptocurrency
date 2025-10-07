@@ -11,7 +11,7 @@ def home(request):
     }
     return render(request, 'other_home.html', context)
 
-
+# 1. 金融市場數據總覽（finance_chart）-----------
 def finance_chart(request):
     # 取得所有金融符號及其對應的數據
     metrics = FinancialSymbol.objects.all()
@@ -31,10 +31,11 @@ def finance_chart(request):
         'chart_data': json.dumps(chart_data, cls=DjangoJSONEncoder)
     }
     return render(request, 'finance_charts.html', context)
+# -----------1. 金融市場數據總覽（finance_chart）
 
 
 
-
+# 2. 宏觀經濟指標動態圖（macro_chart）-----------
 def macro_chart(request):
     # 取得所有 Indicator 及其對應的 IndicatorValue
     indicators = Indicator.objects.all()
@@ -54,7 +55,9 @@ def macro_chart(request):
         'chart_data': json.dumps(chart_data, cls=DjangoJSONEncoder)
     }
     return render(request, 'macro_charts.html', context)
+# -----------2. 宏觀經濟指標動態圖（macro_chart）
 
+# 3. 比特幣鏈上指標展示（metric_chart）-----------
 def metric_chart(request):
     # 取得所有 Bitcoin Metric 及其對應的數據
     metrics = BitcoinMetric.objects.all()
@@ -74,7 +77,10 @@ def metric_chart(request):
         'chart_data': json.dumps(chart_data, cls=DjangoJSONEncoder)
     }
     return render(request, 'metric_charts.html', context)
+# -----------3. 比特幣鏈上指標展示（metric_chart）
 
+
+# 4. 幣種/趨勢類數據視覺化（trend_data_chart）-----------
 def trend_data_chart(request):
     trend_data = TrendData.objects.filter(coin_id=1).order_by('date')
     
@@ -92,3 +98,4 @@ def trend_data_chart(request):
         'chart_data': json.dumps(chart_data, cls=DjangoJSONEncoder)
     }
     return render(request, 'trend_data_charts.html', context)
+# -----------4. 幣種/趨勢類數據視覺化（trend_data_chart）

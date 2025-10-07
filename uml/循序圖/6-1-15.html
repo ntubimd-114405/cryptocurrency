@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>Mermaid 序列圖</title>
+  <!-- 引入 MermaidJS -->
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({ startOnLoad: true });
+  </script>
+</head>
+<body>
+  <div class="mermaid">
+    sequenceDiagram
+    participant 使用者 as 使用者
+    participant 瀏覽器 as 瀏覽器 / 前端
+    participant 問卷API as 問卷服務
+    participant 資料庫 as 資料庫
+
+    note over 使用者, 瀏覽器: 使用者填寫並送出問卷
+    使用者->>瀏覽器: 按下送出（Submit）
+    瀏覽器->>問卷API: POST /responses {answers}
+    問卷API->>資料庫: 儲存回答
+    資料庫-->>問卷API: 儲存成功回應
+    問卷API-->>瀏覽器: 回傳提交成功
+
+    note over 使用者, 瀏覽器: 使用者選擇重新填寫問卷
+    使用者->>瀏覽器: 點擊「重新填選問卷」
+    瀏覽器-->>使用者: 顯示問卷清單
+    瀏覽器->>問卷API: GET /questionnaire/{id}
+    問卷API->>資料庫: 查詢題目
+    資料庫-->>問卷API: 回傳題目
+    問卷API-->>瀏覽器: 回傳題目
+    瀏覽器-->>使用者: 顯示題目 (可再次填寫)
+
+  </div>
+</body>
+</html>

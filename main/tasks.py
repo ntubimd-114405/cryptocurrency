@@ -15,10 +15,10 @@ env_path = Path(__file__).resolve().parent.parent / '.env'
 # 加載 .env 檔案
 load_dotenv(dotenv_path=env_path)
 
+# 3-2取得指定幣種歷史數據任務函數細節編輯器
 @shared_task
 def fetch_coin_history(coin_id):
     from .models import Coin, CoinHistory
-    from django.db import transaction
     from django.db.models import Max
     
 
@@ -32,14 +32,12 @@ def fetch_coin_history(coin_id):
         latest_date = datetime(2025, 10, 1, 0, 0)
     else:
         latest_date = latest_date + timedelta(minutes=1)
-
-    # 获取历史数据
+# 3-3 CryptoHistoryFetcher類別ccxt抓取部分
     c = CryptoHistoryFetcher(coin.abbreviation, latest_date)
     data = c.get_history()
 
-    # 如果数据不为空，批量保存
+# 3-4 取得數據格式轉換與資料庫存儲部分
     if data:
-        coin_history_data = []
         for history_data in data:
             date = datetime.strptime(history_data[0], '%Y-%m-%d %H:%M:%S')
             date = str(date) + "+00:00"
@@ -56,61 +54,12 @@ def fetch_coin_history(coin_id):
                     "volume": volume,
                 }
             )
-        print(f"成功存入数据库 {len(data)} 筆：{c.coin} {data[-1][0]}")
+# 3-5成功或無數據日誌輸出
+        print(f"成功存入資料庫 {len(data)} 筆：{c.coin} {data[-1][0]}")
     else:
-        print(f"没有数据存入数据库：{c.coin} {c.starttime}")
+        print(f"沒有資料存入資料庫：{c.coin} {c.starttime}")
 
-# @shared_task
-# def fetch_coin_history(coin_id):
-#     from .models import Coin, CoinHistory
-#     from django.db.models import Max
-#     from datetime import datetime, timedelta
-
-#     # 取得 coin
-#     coin = Coin.objects.get(id=coin_id)
-
-#     # 查找該 coin 的最新日期
-#     latest_history = CoinHistory.objects.filter(coin=coin).aggregate(latest_date=Max('date'))
-#     latest_date = latest_history['latest_date']
-
-#     if latest_date is None:
-#         # 沒有任何歷史資料，從固定時間開始
-#         latest_date = datetime(2024, 1, 1)
-#     else:
-#         # 往後一天
-#         latest_date = latest_date + timedelta(days=1)
-
-#     # 取得歷史數據（假設 CryptoHistoryFetcher 可以指定日線資料）
-#     c = CryptoHistoryFetcher(coin.abbreviation, latest_date)  # 加 interval 參數，確保是日線
-#     data = c.get_history()
-
-#     if data:
-#         count_new = 0
-#         for history_data in data:
-#             # 解析日期（只取日期，不帶時間）
-#             date = pd.to_datetime(history_data[0]).date()
-            
-#             open_price, high_price, low_price, close_price, volume = history_data[1:6]
-
-#             # 判斷是否已存在，若不存在才新增
-#             obj, created = CoinHistory.objects.get_or_create(
-#                 coin=coin,
-#                 date=date,
-#                 defaults={
-#                     "open_price": open_price,
-#                     "high_price": high_price,
-#                     "low_price": low_price,
-#                     "close_price": close_price,
-#                     "volume": volume,
-#                 }
-#             )
-#             if created:
-#                 count_new += 1
-
-#         print(f"成功存入数据库 {count_new} 筆：{c.coin} 最新日期 {data[-1][0]}")
-#     else:
-#         print(f"没有数据存入数据库：{c.coin} {c.starttime}")
-
+# 3-1 Celery任務調度程式碼編輯器介面
 @shared_task
 def fetch_history():
     from celery import group
@@ -118,7 +67,6 @@ def fetch_history():
     from django.db.models import Q
     
     coin_history = Coin.objects.all().order_by('id')[:10]
-    #coin_history = Coin.objects.filter(Q(id=34) | Q(id__lte=5)).order_by('id')
     tasks = group(fetch_coin_history.s(coin.id) for coin in coin_history)
     tasks.apply_async()
 
@@ -139,6 +87,7 @@ def get_conversion_rates(headers):
             rates[currency.lower()] = conversion_response.json()['data']['quote'][currency]['price']
     return rates
 
+# 2-1「抓取並儲存加密貨幣行情資料」
 @shared_task
 def fetch_and_store_coin_data():
     import requests 
@@ -150,7 +99,7 @@ def fetch_and_store_coin_data():
         'X-CMC_PRO_API_KEY': api_key,
         'Accept': 'application/json'
     }
-
+#2-2「取得加密貨幣列表及匯率資料」
     url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/latest"
     params = {
         'start': '1',  # 從第1名開始
@@ -166,6 +115,7 @@ def fetch_and_store_coin_data():
         # 獲取美元到其他貨幣的匯率
         conversion_rates = get_conversion_rates(headers)
 
+#2-3「批量取得幣種logo與資訊」
         # 使用 Coin IDs 一次性請求 logo 和其他資料
         coin_ids = [str(coin["id"]) for coin in data]
         info_url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/info"
@@ -178,6 +128,7 @@ def fetch_and_store_coin_data():
             info_data = info_response.json()['data']
             timestamp = datetime.now() - timedelta(hours=8)  # 當前時間戳
 
+#2-4「資料庫新增或更新操作」
             # 使用 Django ORM 進行資料插入
             with transaction.atomic():
                 for coin in data:
@@ -198,7 +149,7 @@ def fetch_and_store_coin_data():
                         api_id=coin["id"],
                         defaults={'coinname': coin_name, 'abbreviation': coin_abbreviation, 'logo_url': logo_url}
                     )
-
+                    
                     # 插入或更新 BitcoinPrice，條件只用 coin
                     BitcoinPrice.objects.update_or_create(
                         coin=coin_record,
@@ -215,6 +166,8 @@ def fetch_and_store_coin_data():
                     )
                     print(f"數據已插入：{coin_name} ({coin_abbreviation}) - USD = {usd_price}, TWD = {twd_price}, JPY = {jpy_price}, EUR = {eur_price}, 時間 = {timestamp}")
         else:
+
+#2-5「日誌輸出與錯誤提示」
             print("獲取 logo 資料失敗，狀態碼：", info_response.status_code)
     else:
         print("請求失敗，狀態碼：", response.status_code)

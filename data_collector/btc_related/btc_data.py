@@ -25,7 +25,7 @@ def convert_data(data):
         "values": values_array
     }
     return result
-
+# 9-2 取得比特幣相關指標數據
 def get_bitcoin_data(chart_name, start_time):
     url = f"https://api.blockchain.info/charts/{chart_name}?timespan=1year&format=json&start={start_time}"
     response = requests.get(url)

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>Mermaid 序列圖</title>
+  <!-- 引入 MermaidJS -->
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({ startOnLoad: true });
+  </script>
+</head>
+<body>
+  <div class="mermaid">
+    sequenceDiagram
+    participant 使用者 as 使用者
+    participant 瀏覽器 as 瀏覽器 / 前端
+    participant 問卷API as 問卷服務
+    participant 資料庫 as 資料庫
+    participant AI服務 as AI 分析服務
+
+    note over 使用者, 瀏覽器: 使用者在問卷清單頁面操作
+
+    使用者->>瀏覽器: 點擊問卷名稱（開始填寫）
+    瀏覽器->>問卷API: GET /questionnaire/{id}
+    問卷API->>資料庫: 查詢問卷題目與設定
+    資料庫-->>問卷API: 傳回題目資料
+    問卷API-->>瀏覽器: 回傳問卷題目
+    瀏覽器-->>使用者: 顯示題目 (開始填寫)
+
+    使用者->>瀏覽器: 點擊「執行總分析」
+    瀏覽器->>AI服務: GET /analysis/total
+    AI服務->>資料庫: 查詢該使用者完成的所有問卷回答
+    資料庫-->>AI服務: 傳回回答資料
+    AI服務-->>瀏覽器: 回傳總分析結果
+    瀏覽器-->>使用者: 顯示總分析報告
+
+    note over 使用者, 瀏覽器: 重新選擇或重新填選問卷流程
+    使用者->>瀏覽器: 點擊「重新填選問卷」
+    瀏覽器-->>使用者: 顯示該問卷清單
+    問卷API->>資料庫: 查詢題目
+    資料庫-->>問卷API: 回傳題目
+    問卷API-->>瀏覽器: 回傳題目
+
+  </div>
+</body>
+</html>

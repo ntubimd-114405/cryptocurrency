@@ -38,7 +38,7 @@ def format_crypto_price(price):
         rounded = d.quantize(Decimal('1e{}'.format(exponent - digits_needed + 1)), rounding=ROUND_HALF_UP)
         return f"${rounded.normalize()}"
 
-
+# 1. 幣種智慧辨識 + 資料庫精準搜尋-----------
 # ✅ 從輸入文字解析幣種 abbreviation（Regex + DB 查詢）
 def resolve_symbols_from_db(text):
     text_lower = text.lower().strip()
@@ -55,14 +55,16 @@ def resolve_symbols_from_db(text):
             results.append(qs.first().abbreviation.upper())
 
     return list(set(results))
+# -----------1. 幣種智慧辨識 + 資料庫精準搜尋
 
-
+#自動偵測出所有可能的加密貨幣幣種縮寫
 def extract_symbols(text):
     regex_symbols = re.findall(r'\b[A-Z]{2,10}\b', text)
     db_symbols = resolve_symbols_from_db(text)
     return list(set(regex_symbols + db_symbols))
 
 
+# 2.即時價格查詢（外部 API 串接）-----------
 # ✅ 從 CoinMarketCap 查即時價格與漲跌
 def get_crypto_prices(symbols):
     if not symbols:
@@ -99,6 +101,7 @@ def get_crypto_prices(symbols):
         return result
     except Exception:
         return {}
+# -----------2.即時價格查詢（外部 API 串接）
 
 # ✅ 本地 RAG（輕量關鍵字版）
 FAQ_DATA = {
@@ -138,7 +141,8 @@ def chat_api(request):
 
             if not user_id:
                 return JsonResponse({'error': '請提供 user_id 參數'}, status=400)
-
+            
+# 4. 多輪記憶與清除重設功能-----------
             session_key = f'chat_history_{user_id}'
 
             # ✅ 清除記憶
@@ -149,7 +153,9 @@ def chat_api(request):
 
             if not user_prompt:
                 return JsonResponse({'error': '請提供 message 參數'}, status=400)
+# -----------4. 多輪記憶與清除重設功能
 
+#3. 系統角色限制-----------
             # ✅ 系統 prompt 初始化
             if session_key not in request.session:
                 request.session[session_key] = [
@@ -171,6 +177,7 @@ def chat_api(request):
                         )
                     }
                 ]
+#-----------3. 系統角色限制
 
             chat_history = request.session[session_key]
             # ✅ Step 1: 嘗試找出網站功能說明（RAG）
@@ -178,6 +185,8 @@ def chat_api(request):
             if rag_context:
                 user_prompt += f"\n\n📚 相關參考內容：\n{rag_context}"
 
+            
+#5. 回答內容結合上下文 & 真實價格資訊-----------
             # ✅ 偵測幣種（Regex + DB）
             mentioned_symbols = extract_symbols(user_prompt)
             price_data = get_crypto_prices(mentioned_symbols)
@@ -227,6 +236,7 @@ def chat_api(request):
 
     else:
         return JsonResponse({'error': '只支援 POST 請求'}, status=405)
+#-----------5. 回答內容結合上下文 & 真實價格資訊
 
 
 # ---- 顯示 WebChat 頁面 ----
