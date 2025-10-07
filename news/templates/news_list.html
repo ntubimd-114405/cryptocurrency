@@ -89,7 +89,19 @@
         text-align: right;
         margin-top: 10px;
     }
-
+        /* 查看更多按鈕 */
+    .btn-test {
+        display: inline-block;
+        background-color: #eab31a;
+        color: #fff;
+        padding: 14px 40px;
+        border-radius: 25px;
+        font-size: 16px;
+        font-weight: bold;
+        text-decoration: none;
+        transition: background-color 0.3s ease, transform 0.3s ease;
+        box-shadow: 0 4px 10px rgba(234, 179, 26, 0.4);
+    }
     /* RWD 優化 */
     @media (max-width: 768px) {
         .article-card {
@@ -119,6 +131,9 @@
             <input type="date" name="end_date" id="end_date" class="form-control" value="{{ request.GET.end_date }}">
         </div>
         <button type="submit" class="button-bu">Search</button>
+        <div class="text-center mt-4">
+            <a href="{% url 'search_news_page' %}" class="btn-test">🔍 進階新聞搜尋</a>
+        </div>
     </form>
 
     {% if error %}

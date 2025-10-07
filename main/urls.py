@@ -21,18 +21,12 @@ urlpatterns = [
     path('api/track_impression/', track_impression),
     
 
-    # 忘記密碼
-    # path('password_reset/', views.CustomPasswordResetView.as_view(), name='password_reset'),
-    # path('password_reset/done/', views.CustomPasswordResetDoneView.as_view(), name='password_reset_done'),
-    # path('reset/<uidb64>/<token>/', views.CustomPasswordResetConfirmView.as_view(), name='password_reset_confirm'),
-    # path('reset/done/', views.CustomPasswordResetCompleteView.as_view(), name='password_reset_complete'),
 
     path('update_password/', views.update_password, name='update_password'),
     path('update-firstname/', views.update_firstname, name='update_firstname'),
 
     path('send-email/', views.send_email_news, name='send_email'),
 
-    path("crypto_chart/", views.crypto_price_chart, name="crypto_chart"),
     
     path('coin-history/<int:coin_id>/', views.coin_history, name='coin_history'),
     path('crypto/<int:coin_id>/', views.crypto_detail, name='crypto_detail'),

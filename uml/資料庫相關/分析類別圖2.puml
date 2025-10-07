@@ -1,6 +1,24 @@
 @startuml
 
-' Define the class for each table
+class news_article {
+  +id: bigint
+  +title: varchar(255)
+  +url: varchar(255) <<unique>>
+  +image_url: varchar(500)
+  +content: longtext
+  +time: datetime
+  +website_id: bigint <<FK>>
+  +summary: longtext
+  +sentiment_score: double
+}
+
+class news_website {
+  +id: bigint
+  +name: varchar
+  +url: varchar
+  +icon_url: varchar
+}
+
 
 class other_bitcoinmetric {
   +bigint id
@@ -59,7 +77,6 @@ class other_trenddata {
 other_bitcoinmetricdata -- other_bitcoinmetric : "metric_id"
 other_financialdata -- other_financialsymbol : "symbol_id"
 other_indicatorvalue -- other_indicator : "indicator_id"
-
-
+news_article "0..*" -- "1" news_website : "website_id"
 
 @enduml

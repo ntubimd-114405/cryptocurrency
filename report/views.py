@@ -40,7 +40,7 @@ from django.views.decorators.http import require_http_methods
 
 
 
-
+# 1. K線、技術指標數據生成（K線 & TA）-----------
 def load_price_data_from_db(coin_id, start_date=None, end_date=None):
     queryset = CoinHistory.objects.filter(coin_id=coin_id)
     name = Coin.objects.get(id=1).coinname
@@ -78,26 +78,6 @@ def load_price_data_from_db(coin_id, start_date=None, end_date=None):
         daily_df[col] = daily_df[col].astype(float)
 
     return name,daily_df
-
-# 假資料生成器（方便測試）
-def fake_load_price_data_from_db():
-    date_range = pd.date_range(end='2025-06-23', periods=90)
-    np.random.seed(42)
-    close_prices = np.random.uniform(25000, 27000, size=len(date_range)).round(2)
-    open_prices = (close_prices + np.random.uniform(-300, 300, size=len(date_range))).round(2)
-    high_prices = np.maximum(close_prices, open_prices) + np.random.uniform(0, 200, size=len(date_range)).round(2)
-    low_prices = np.minimum(close_prices, open_prices) - np.random.uniform(0, 200, size=len(date_range)).round(2)
-    volumes = np.random.uniform(1000, 5000, size=len(date_range)).round()
-
-    df = pd.DataFrame({
-        'Date': date_range,
-        'Open': open_prices,
-        'High': high_prices,
-        'Low': low_prices,
-        'Close': close_prices,
-        'Volume': volumes
-    })
-    return df
 
 # 技術指標計算
 def add_technical_indicators(df):
@@ -138,6 +118,8 @@ def add_technical_indicators(df):
     }, axis=1)
 
     return df
+# -----------1. K線、技術指標數據生成（K線 & TA）
+
 
 def get_recent_articles(start, end):
     # 假設 start 和 end 是 datetime.date 或 datetime.datetime 物件
@@ -151,6 +133,7 @@ def get_recent_articles(start, end):
     return articles
 
 
+# 2. 熱門關鍵詞詞頻統計-----------
 def process_word_frequency_sklearn(news_texts, top_n=30, max_features=1000):
     stop_words = [
         'the', 'in', 'to', 'and', 'of', 'on', 'for', 'with', 'at', 'by', 'a', 'an',
@@ -178,6 +161,8 @@ def process_word_frequency_sklearn(news_texts, top_n=30, max_features=1000):
     keywords = [(feature_names[i], total_counts[i]) for i in sorted_indices]
     results = [(word, int(freq)) for word, freq in keywords]
     return results
+# -----------2. 熱門關鍵詞詞頻統計
+
 
 
 
@@ -296,6 +281,7 @@ def convert_id_and_newline(text: str) -> str:
     return replaced_text
 
 
+# 3. 週報產生與多模組數據整合-----------
 @login_required
 def generate_weekly_report(request):
     user = request.user
@@ -466,33 +452,97 @@ def generate_weekly_report(request):
         {bitcoin_json[:100]}
         """
     ).strip("```").strip("html").strip()
+# -----------3. 週報產生與多模組數據整合
+    from django.utils import timezone
+    import math
+    import pandas as pd
 
-    # 更新或新增本週報告
+    def clean_indicator(value, default=None):
+        """
+        將指標或資料清理成合法格式，避免 NaN 或 None 傳入 JSONField
+        - 可以處理單值 float/int
+        - list
+        - DataFrame Series
+        - list of dict (將 dict 內的 float NaN 轉成 default)
+        - dict
+        """
+        if default is None:
+            if isinstance(value, dict):
+                default = {}
+            elif isinstance(value, list):
+                default = []
+            else:
+                default = 0.0
+
+        if value is None:
+            return default
+
+        # DataFrame Series
+        if isinstance(value, pd.Series):
+            value = value.dropna().tolist()
+
+        # list 處理
+        if isinstance(value, list):
+            cleaned = []
+            for v in value:
+                if isinstance(v, dict):
+                    new_dict = {}
+                    for k, val in v.items():
+                        if isinstance(val, float) and math.isnan(val):
+                            new_dict[k] = default
+                        else:
+                            new_dict[k] = val
+                    cleaned.append(new_dict)
+                elif isinstance(v, float) and math.isnan(v):
+                    cleaned.append(default)
+                else:
+                    cleaned.append(v)
+            return cleaned
+
+        # dict 處理
+        if isinstance(value, dict):
+            new_dict = {}
+            for k, val in value.items():
+                if isinstance(val, float) and math.isnan(val):
+                    new_dict[k] = default
+                else:
+                    new_dict[k] = val
+            return new_dict
+
+        # 單一 float 處理
+        if isinstance(value, float) and math.isnan(value):
+            return default
+
+        return value
+
+    # 更新或新增 WeeklyReport
     WeeklyReport.objects.update_or_create(
         user=user,
         year=year,
         week=week,
         defaults={
-            'start_date': start_date,
-            'end_date': end_date,
-            'summary': summary,
-            'news_summary': news_summary_with_links,
-            'word_frequencies': word_freqs,
-            'ma20_data': ma20_data,
-            'ma60_data': ma60_data,
-            'ohlc_data': df['ohlc'].tolist(),
-            'rsi_data': df['rsi_point'].dropna().tolist(),
-            'macd_data': df['macd_bar'].dropna().tolist(),
-            'macd_signal_data': df['macd_signal_line'].dropna().tolist(),
-            'coin_analysis':coin_analysis,
-            'financial_data_json': financial_json,
-            'indicator_data_json': indicator_json,
-            'bitcoin_data_json': bitcoin_json,
-            'long_term_analysis': long_term_analysis,
+            'start_date': start_date or timezone.now().date(),
+            'end_date': end_date or timezone.now().date(),
+            'summary': summary or "",
+            'news_summary': news_summary_with_links or "",
+            'word_frequencies': clean_indicator(word_freqs, {}),
+            'ma20_data': clean_indicator(ma20_data, []),
+            'ma60_data': clean_indicator(ma60_data, []),
+            'ohlc_data': clean_indicator(df.get('ohlc', []), []),
+            'rsi_data': clean_indicator(df.get('rsi_point', []), []),
+            'macd_data': clean_indicator(df.get('macd_bar', []), []),
+            'macd_signal_data': clean_indicator(df.get('macd_signal_line', []), []),
+            'coin_analysis': coin_analysis or "",
+            'financial_data_json': clean_indicator(financial_json, {}),
+            'indicator_data_json': clean_indicator(indicator_json, {}),
+            'bitcoin_data_json': clean_indicator(bitcoin_json, {}),
+            'long_term_analysis': long_term_analysis or "",
         }
     )
 
-    return redirect('weekly_report_list')  # 重新導向你的週報頁
+    return redirect('weekly_report_list')
+
+
 
 
 
@@ -587,60 +637,6 @@ def parse_coin_from_input(user_input):
 
 
 
-def run_news_agent(user, user_input, start_date=None, end_date=None):
-
-    """
-    搜尋新聞並直接將標題轉換為可點擊連結 (news_detail)，
-    並換行處理輸出 HTML
-    """
-    translated = call_chatgpt(
-    "翻譯助手",
-    f"請將以下中文翻譯成英文：\n{user_input}"
-    )
-    # 取得新聞資料 (list)
-    news_summary = search_news(
-        question=translated,
-        start_date=start_date,
-        end_date=end_date
-    )
-
-    # 把 list 資料轉為 HTML
-    def convert_and_link(news_list):
-        text_parts = []
-        for item in news_list:
-            article_id = item.get("id")
-            title = item.get("title", "")
-            summary = item.get("summary", "")
-            d=item.get("date")
-            try:
-                url = reverse('news_detail', kwargs={'article_id': article_id})
-                title_html = f'<a href="{url}" target="_blank">{title}</a>'
-            except:
-                title_html = title
-            text_parts.append(f"<b>{title_html}</b><br><b>{d}</b><br>{summary}")
-        return "<br><br>".join(text_parts)
-
-    news_summary_with_links = convert_and_link(news_summary)
-    analysis_prompt = f"""
-    你是一位專業新聞分析師。請幫我分析以下新聞內容：
-    {news_summary}
-
-    請提供：
-    1. 新聞的主要事件或主題
-    2. 每則新聞的重要資訊摘要
-    3. 對加密貨幣市場可能的影響（若有）
-    """
-
-    analyze = call_chatgpt("新聞分析師", analysis_prompt).replace("\n", "<br>")
-
-    return {
-        "text": "📰★新聞模塊",
-        "extra_data": news_summary_with_links,
-        "analyze" : analyze
-    }
-
-
-
 
 def parse_safe_date(date_str):
     """將字串轉成 date，失敗回傳 None"""
@@ -650,7 +646,9 @@ def parse_safe_date(date_str):
         return datetime.strptime(date_str, "%Y-%m-%d").date()
     except Exception:
         return None
-
+    
+# 5. 各類智能分析小模組（價格、新聞、其他數據、問卷）-----------
+# 價格分析模組
 def run_price_agent(user, user_input, start_date=None, end_date=None):
     coin_symbol = parse_coin_from_input(user_input)
     # 確認幣種存在
@@ -730,11 +728,60 @@ def run_price_agent(user, user_input, start_date=None, end_date=None):
 
     return {"text": f"💰★價格模塊", "extra_data": results,"analyze" : analyze}
 
+# 新聞模組
+def run_news_agent(user, user_input, start_date=None, end_date=None):
 
+    """
+    搜尋新聞並直接將標題轉換為可點擊連結 (news_detail)，
+    並換行處理輸出 HTML
+    """
+    translated = call_chatgpt(
+    "翻譯助手",
+    f"請將以下中文翻譯成英文：\n{user_input}"
+    )
+    # 取得新聞資料 (list)
+    news_summary = search_news(
+        question=translated,
+        start_date=start_date,
+        end_date=end_date
+    )
 
+    # 把 list 資料轉為 HTML
+    def convert_and_link(news_list):
+        text_parts = []
+        for item in news_list:
+            article_id = item.get("id")
+            title = item.get("title", "")
+            summary = item.get("summary", "")
+            d=item.get("date")
+            try:
+                url = reverse('news_detail', kwargs={'article_id': article_id})
+                title_html = f'<a href="{url}" target="_blank">{title}</a>'
+            except:
+                title_html = title
+            text_parts.append(f"<b>{title_html}</b><br><b>{d}</b><br>{summary}")
+        return "<br><br>".join(text_parts)
 
+    news_summary_with_links = convert_and_link(news_summary)
+    analysis_prompt = f"""
+    你是一位專業新聞分析師。請幫我分析以下新聞內容：
+    {news_summary}
 
+    請提供：
+    1. 新聞的主要事件或主題
+    2. 每則新聞的重要資訊摘要
+    3. 對加密貨幣市場可能的影響（若有）
+    """
 
+    analyze = call_chatgpt("新聞分析師", analysis_prompt).replace("\n", "<br>")
+
+    return {
+        "text": "📰★新聞模塊",
+        "extra_data": news_summary_with_links,
+        "analyze" : analyze
+    }
+
+# 經濟/區塊鏈其他數據模組
 def run_other_agent(user, user_input, start_date=None, end_date=None):
     if end_date is None:
         end_date = datetime.now().date()
@@ -767,26 +814,11 @@ def run_other_agent(user, user_input, start_date=None, end_date=None):
                 "date": d.date.isoformat(),
                 "value": d.value
             })
-    '''
-    # BitcoinMetricData - 折線圖用 value
-    bitcoin_data_sample = []
-    metrics = BitcoinMetric.objects.all()[:1]
-    for metric in metrics:
-        data_qs = metric.data.filter(
-            date__lte=end_date
-        ).order_by('-date')[:7]
-        for d in data_qs:
-            bitcoin_data_sample.append({
-                "metric": metric.name,
-                "date": d.date.isoformat(),
-                "value": d.value
-            })
-    '''
+
     # 合併到 extra_data，保留分類
     extra_data = {
         "financial_data": financial_data_sample,
         "indicator_data": indicator_data_sample,
-        #"bitcoin_data": bitcoin_data_sample
     }
 
     # 生成 prompt
@@ -807,9 +839,10 @@ def run_other_agent(user, user_input, start_date=None, end_date=None):
 
 RISK_QUESTIONNAIRE_IDS = [2, 3, 4, 9]
 
+# 問卷模組
 def run_survey_agent(user, user_input, start_date=None, end_date=None): 
 
-    if user:
+    if user.is_authenticated:
         # 取得使用者的問卷風險分析
         user_answers = UserAnswer.objects.filter(
             user=user,
@@ -873,7 +906,7 @@ def run_survey_agent(user, user_input, start_date=None, end_date=None):
             "extra_data": f'<a href="{link}">請先登入，以取得更準確的判斷</a>',
             "analyze": "使用者沒有登入，無法判斷屬性"
             }
-
+# -----------5.各類智能分析小模組（價格、新聞、其他數據、問卷）
 
 
 def parse_date_range_from_input(user_input):
@@ -904,7 +937,7 @@ def parse_date_range_from_input(user_input):
 
 
 
-
+# 4. 智能對話/模組分類與多源數據SSE串流回覆-----------
 @csrf_exempt
 @require_http_methods(["GET"])
 def classify_question_api(request):
@@ -1020,7 +1053,7 @@ def classify_question_api(request):
     response = StreamingHttpResponse(event_stream(), content_type='text/event-stream')
     response['Cache-Control'] = 'no-cache'
     return response
-
+# -----------4. 智能對話/模組分類與多源數據SSE串流回覆
 
 
 def chat_view(request):
