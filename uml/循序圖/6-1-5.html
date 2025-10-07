@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>Mermaid 序列圖</title>
+  <!-- 引入 MermaidJS -->
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({ startOnLoad: true });
+  </script>
+</head>
+<body>
+  <div class="mermaid">
+    sequenceDiagram
+    participant 使用者
+    participant K線圖
+    participant 資料庫
+
+    使用者 ->> K線圖: 點選某一幣種查看歷史K線圖
+    K線圖 ->> 資料庫: 請求該幣種的歷史K線數據
+    資料庫 -->> K線圖: 回傳該幣種的歷史K線數據
+    K線圖 -->> 使用者: 顯示K線圖
+
+  </div>
+</body>
+</html>

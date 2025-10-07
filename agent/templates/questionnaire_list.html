@@ -10,11 +10,13 @@
 <h1>問卷首頁</h1>
 <hr>
     <div>
-        <button class="analysis" id="analysisBtn">
-            <span>
-                <a href="{% url 'agent:analysis_result_view' %}" style="color: #fff;">執行總分析</a>
-            </span>
-        </button>
+        <a href="{% url 'agent:analysis_result_view' %}" style="color: #fff;">
+            <button class="analysis" id="analysisBtn">
+                <span>
+                    執行總分析
+                </span>
+            </button>
+        </a>
         <div id="tooltip">
             特別提醒：問卷第 2、3、4、9 題將用來計算您的風險屬性分數，請務必仔細填寫。
         </div>

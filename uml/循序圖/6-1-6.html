@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>Mermaid 序列圖</title>
+  <!-- 引入 MermaidJS -->
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({ startOnLoad: true });
+  </script>
+</head>
+<body>
+  <div class="mermaid">
+    sequenceDiagram
+    participant 使用者
+    participant 基本資訊
+    participant 資料庫
+
+    使用者 ->> 基本資訊: 點選某一幣種查看基本資訊
+    基本資訊 ->> 資料庫: 請求該幣種的基本資訊
+    資料庫 -->> 基本資訊: 回傳該幣種的基本資訊
+    基本資訊 -->> 使用者: 顯示資料
+
+  </div>
+</body>
+</html>
