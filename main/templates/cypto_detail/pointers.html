@@ -14,6 +14,13 @@ let priceChart, rsiChart, stochChart, cciChart, williamsChart, obvChart, mfiChar
 const coinId = {{ coin_id }};
 console.log(coinId);
 
+function getRandomColor() {
+  const r = Math.floor(Math.random() * 156) + 100; // 100~255，避免太暗
+  const g = Math.floor(Math.random() * 156) + 100;
+  const b = Math.floor(Math.random() * 156) + 100;
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
 async function fetchChartData() {
     const res = await fetch(`/api/chart-data/?coin_id=${coinId}`);
     if (!res.ok) throw new Error("無法取得資料");
@@ -37,10 +44,10 @@ function renderCharts(data) {
     data: {
       labels: data.dates,
       datasets: [
-        { label: '收盤價', data: data.close, borderColor: 'blue', fill: false },
-        { label: 'EMA20', data: data.ema20, borderColor: 'orange', fill: false },
-        { label: 'BB High', data: data.bb_high, borderColor: 'red', borderDash: [5,5], fill: false },
-        { label: 'BB Low', data: data.bb_low, borderColor: 'green', borderDash: [5,5], fill: false }
+        { label: '收盤價', data: data.close, borderColor: getRandomColor(), fill: false },
+        { label: 'EMA20', data: data.ema20, borderColor: getRandomColor(), fill: false },
+        { label: 'BB High', data: data.bb_high, borderColor: getRandomColor(), borderDash: [5,5], fill: false },
+        { label: 'BB Low', data: data.bb_low, borderColor: getRandomColor(), borderDash: [5,5], fill: false }
       ]
     },
     options: { responsive: true, plugins: { title: { display: true, text: `${data.selected_coin_name} - 價格相關` } } }
@@ -49,49 +56,49 @@ function renderCharts(data) {
   // RSI
   rsiChart = new Chart(document.getElementById('rsiChart').getContext('2d'), {
     type: 'line',
-    data: { labels: data.dates, datasets: [{ label: 'RSI', data: data.rsi, borderColor: 'green', fill: false }] },
+    data: { labels: data.dates, datasets: [{ label: 'RSI', data: data.rsi, borderColor: getRandomColor(), fill: false }] },
     options: { responsive: true, plugins: { title: { display: true, text: `${data.selected_coin_name} - RSI` } } }
   });
 
   // Stochastic
   stochChart = new Chart(document.getElementById('stochChart').getContext('2d'), {
     type: 'line',
-    data: { labels: data.dates, datasets: [{ label: 'Stochastic', data: data.stoch, borderColor: 'orange', fill: false }] },
+    data: { labels: data.dates, datasets: [{ label: 'Stochastic', data: data.stoch, borderColor: getRandomColor(), fill: false }] },
     options: { responsive: true, plugins: { title: { display: true, text: `${data.selected_coin_name} - Stochastic` } } }
   });
 
   // CCI
   cciChart = new Chart(document.getElementById('cciChart').getContext('2d'), {
     type: 'line',
-    data: { labels: data.dates, datasets: [{ label: 'CCI', data: data.cci, borderColor: 'blue', fill: false }] },
+    data: { labels: data.dates, datasets: [{ label: 'CCI', data: data.cci, borderColor: getRandomColor(), fill: false }] },
     options: { responsive: true, plugins: { title: { display: true, text: `${data.selected_coin_name} - CCI` } } }
   });
 
   // Williams %R
   williamsChart = new Chart(document.getElementById('williamsChart').getContext('2d'), {
     type: 'line',
-    data: { labels: data.dates, datasets: [{ label: 'Williams %R', data: data.williams_r, borderColor: 'purple', fill: false }] },
+    data: { labels: data.dates, datasets: [{ label: 'Williams %R', data: data.williams_r, borderColor: getRandomColor(), fill: false }] },
     options: { responsive: true, plugins: { title: { display: true, text: `${data.selected_coin_name} - Williams %R` } } }
   });
 
   // OBV
   obvChart = new Chart(document.getElementById('obvChart').getContext('2d'), {
     type: 'line',
-    data: { labels: data.dates, datasets: [{ label: 'OBV', data: data.obv, borderColor: 'blue', fill: false }] },
+    data: { labels: data.dates, datasets: [{ label: 'OBV', data: data.obv, borderColor: getRandomColor(), fill: false }] },
     options: { responsive: true, plugins: { title: { display: true, text: `${data.selected_coin_name} - OBV` } } }
   });
 
   // MFI
   mfiChart = new Chart(document.getElementById('mfiChart').getContext('2d'), {
     type: 'line',
-    data: { labels: data.dates, datasets: [{ label: 'MFI', data: data.mfi, borderColor: 'green', fill: false }] },
+    data: { labels: data.dates, datasets: [{ label: 'MFI', data: data.mfi, borderColor: getRandomColor(), fill: false }] },
     options: { responsive: true, plugins: { title: { display: true, text: `${data.selected_coin_name} - MFI` } } }
   });
 
   // ATR
   atrChart = new Chart(document.getElementById('atrChart').getContext('2d'), {
     type: 'line',
-    data: { labels: data.dates, datasets: [{ label: 'ATR', data: data.atr, borderColor: 'orange', fill: false }] },
+    data: { labels: data.dates, datasets: [{ label: 'ATR', data: data.atr, borderColor: getRandomColor(), fill: false }] },
     options: { responsive: true, plugins: { title: { display: true, text: `${data.selected_coin_name} - ATR` } } }
   });
 

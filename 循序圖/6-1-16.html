@@ -20,7 +20,7 @@
 
     note over 使用者, 瀏覽器: 總分析（綜合多份問卷）
     使用者->>瀏覽器: 點擊「總分析」
-    瀏覽器->>AI服務: POST /analysis/aggregate {questionnaireIds, filter}
+    瀏覽器->>AI服務: POST /analysis/all {questionnaireIds, filter}
     AI服務->>資料庫: 取得多份問卷回應 (依 filter)
     資料庫-->>AI服務: 回傳多份回應資料
     AI服務->>AI服務: 執行彙整與跨問卷分析

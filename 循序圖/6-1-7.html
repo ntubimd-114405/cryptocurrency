@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>Mermaid 序列圖</title>
+  <!-- 引入 MermaidJS -->
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
+    mermaid.initialize({ startOnLoad: true });
+  </script>
+</head>
+<body>
+  <div class="mermaid">
+    sequenceDiagram
+    participant 使用者
+    participant 即時訂單簿
+    participant 資料庫
+    
+    使用者 ->> 即時訂單簿: 點選某一幣種查看即時訂單簿
+    即時訂單簿 ->> 資料庫: 請求該幣種的即時訂單簿
+    資料庫 -->> 即時訂單簿: 回傳該幣種的即時訂單簿
+    即時訂單簿 -->> 使用者: 顯示即時資料
+
+  </div>
+</body>
+</html>

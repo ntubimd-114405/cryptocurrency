@@ -2,37 +2,44 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <title>Mermaid 序列圖</title>
-  <!-- 引入 MermaidJS -->
+  <title>Mermaid 序列圖（前端 / 後端）</title>
   <script type="module">
     import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs";
     mermaid.initialize({ startOnLoad: true });
   </script>
+  
 </head>
 <body>
+
+  <h2>① 使用者端流程：查看新聞詳細頁</h2>
   <div class="mermaid">
     sequenceDiagram
     participant 使用者 as 使用者
     participant 瀏覽器 as 前端新聞詳細頁
     participant 後端API as 後端新聞服務
+
+    使用者->>瀏覽器: 點擊新聞標題（進入詳細頁）
+    瀏覽器->>後端API: GET /news/{id}
+    後端API-->>瀏覽器: 回傳新聞內文 + 摘要 + 情緒分析結果
+    瀏覽器-->>使用者: 顯示新聞內文、摘要、情緒儀表板
+    使用者->>瀏覽器: 點擊「新聞來源」
+    瀏覽器->>外部新聞網站: 跳轉至原始新聞頁面
+  </div>
+
+  <h2>② 後端產生流程：取得新聞內容與 AI 分析</h2>
+  <div class="mermaid">
+    sequenceDiagram
+    participant 後端API as 後端新聞服務
     participant DB as 資料庫
     participant AI服務 as AI 分析服務
 
-    使用者->>瀏覽器: 點擊新聞標題 (進入詳細頁面)
-    瀏覽器->>後端API: GET /news/{id}
     後端API->>DB: 查詢新聞內文與來源
     DB-->>後端API: 回傳新聞資料
     後端API->>AI服務: POST /analyze {news_content}
-    AI服務->>AI服務: 執行情緒分析 / 摘要生成
+    AI服務->>AI服務: 執行情緒分析與摘要生成
     AI服務-->>後端API: 回傳分析結果 (摘要 + 情緒分數)
-    後端API-->>瀏覽器: 回傳新聞內文 + 摘要 + 情緒分析
-    瀏覽器-->>使用者: 顯示新聞詳細頁面 (內文 + 摘要 + 情緒儀表板)
-
-    使用者->>瀏覽器: 點擊「新聞來源」
-    瀏覽器->>外部新聞網站: 跳轉至原始新聞頁面
-
-
+    後端API-->>前端: 整合新聞資料 + AI 分析結果
   </div>
+
 </body>
 </html>
-
