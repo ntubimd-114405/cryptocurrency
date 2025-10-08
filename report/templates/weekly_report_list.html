@@ -3,7 +3,7 @@
 {% block title %}週報紀錄{% endblock %}
 {% block content %}
 
-<h1>{{ request.user.username }} 的週報記錄</h1>
+<h1>{{ request.user.first_name|default:request.user.username }} 的週報記錄</h1>
 <form action="{% url 'generate_weekly_report' %}" method="post" class="mb-3">
   {% csrf_token %}
   <div class="row g-2 align-items-center">

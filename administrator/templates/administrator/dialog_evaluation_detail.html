@@ -1,0 +1,60 @@
+{% extends 'administrator/base.html' %}
+{% block content %}
+<style>
+  input[readonly], textarea[readonly], input[disabled] {
+    background-color: #e9ecef !important;
+    color: #6c757d !important;
+    cursor: not-allowed;
+  }
+</style>
+<div class="container mt-4">
+  <div class="card shadow p-4" style="border-radius: 16px;">
+    <h2 class="mb-4">🧠 Dialog Evaluation Detail — ID: {{ eval_obj.id }}</h2>
+
+    <form method="post">
+      {% csrf_token %}
+
+      <!-- User Input (readonly display) -->
+      <div class="mb-3">
+        <label class="form-label fw-bold">📝 使用者輸入 (User Input)</label>
+        <pre class="form-control" style="height:auto; white-space: pre-wrap;">{{ eval_obj.user_input }}</pre>
+      </div>
+
+      <!-- Intent -->
+      <div class="mb-3">
+        <label class="form-label fw-bold">🔍 預期意圖 (Expected Intent)</label>
+        <input type="text" class="form-control" name="expected_intent" value="{{ form.expected_intent.value }}">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-bold">🤖 預測意圖 (Predicted Intent)</label>
+        <input type="text" class="form-control" value="{{ form.predicted_intent.value }}" readonly>
+      </div>
+
+      <!-- Response fields -->
+      <div class="mb-3">
+        <label class="form-label fw-bold">✅ 預期回應 (Expected Response)</label>
+        <textarea name="expected_response" class="form-control" rows="4">{{ form.expected_response.value }}</textarea>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label fw-bold">💬 生成回應 (Generated Response)</label>
+        <textarea class="form-control" rows="4" readonly>{{ form.generated_response.value }}</textarea>
+      </div>
+
+      <!-- Task success (readonly checkbox) -->
+      <div class="mb-3">
+        <label class="form-label fw-bold">🎯 任務成功 (Task Success)</label>
+        <input type="checkbox" class="form-check-input" {% if form.task_success.value %} checked {% endif %} disabled>
+      </div>
+
+      <!-- Buttons -->
+      <div class="mt-4 d-flex justify-content-between">
+        <a href="{% url 'administrator:dialog_evaluation_list' %}" class="btn btn-secondary px-4">返回列表</a>
+        <button type="submit" class="btn btn-primary px-4">💾 儲存修改</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% endblock %}

@@ -9,7 +9,7 @@ from datetime import date,datetime,timedelta, time
 import numpy as np
 import pandas as pd
 import ta
-from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.feature_extraction.text import CountVectorizer,ENGLISH_STOP_WORDS
 
 
 from django.utils import timezone
@@ -26,7 +26,7 @@ from django.urls import reverse
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
-from .models import WeeklyReport
+from .models import WeeklyReport,DialogEvaluation
 from main.models import CoinHistory,Coin,UserProfile, BitcoinPrice
 from news.models import Article
 from other.models import FinancialSymbol, FinancialData, Indicator, IndicatorValue, BitcoinMetric, BitcoinMetricData
@@ -135,28 +135,33 @@ def get_recent_articles(start, end):
 
 # 2. 熱門關鍵詞詞頻統計-----------
 def process_word_frequency_sklearn(news_texts, top_n=30, max_features=1000):
-    stop_words = [
-        'the', 'in', 'to', 'and', 'of', 'on', 'for', 'with', 'at', 'by', 'a', 'an',
-        'is', 'are', 'was', 'were', 'has', 'have', 'it', 'this', 'that', 'as', 'but', 'or', 'if',
-        's', 'u', 'k'  # 額外噪音過濾
-    ]
+    # 自訂停用詞，增加通用無關詞，以免干擾文字雲
+    extra_stop_words = {
+        's', 'u', 'k', 'its', 'from', 'will', 'be', 'you', 'said', 'about', 'more', 'the',
+        'based', 'set', 'up', 'some', 'other', 'any', 'many', 'services', 'receive',
+        'story', 'call', 'please', 'in', 'on', 'at', 'by', 'for', 'and', 'or', 'but', 'has',
+        'have', 'of', 'to', 'with', 'as', 'is', 'it', 'that', 'this', 'their', 'they', 'them'
+        'its', 'from', 'will', 'set', 'you', 'said', 'journalists', 'receive', 'story', 'up',
+        'based', 'services', 'be', 'about', 'more', 'million', 'infrastructure', 'platform',
+        'coindesk'
+    }
+    stop_words = list(ENGLISH_STOP_WORDS.union(extra_stop_words))
+    
     if isinstance(news_texts, str):
         news_texts = [news_texts]
 
-    # 處理空列表或全是空字串的情況
     if not news_texts or all(not text.strip() for text in news_texts):
         return []
+
     vectorizer = CountVectorizer(
-        stop_words=stop_words,   # 可放預設的 'english' 或自訂停用詞列表
+        stop_words=stop_words,
         max_features=max_features
-        )
+    )
     word_count_matrix = vectorizer.fit_transform(news_texts)
     feature_names = vectorizer.get_feature_names_out()
 
-    # 合計所有文章的詞頻
     total_counts = word_count_matrix.sum(axis=0).A1
 
-    # 排序，取前 top_n
     sorted_indices = total_counts.argsort()[::-1][:top_n]
     keywords = [(feature_names[i], total_counts[i]) for i in sorted_indices]
     results = [(word, int(freq)) for word, freq in keywords]
@@ -823,11 +828,11 @@ def run_other_agent(user, user_input, start_date=None, end_date=None):
 
     # 生成 prompt
     analysis_prompt = f"""
-    你是一位專業加密貨幣與經濟分析師，請根據以下資料進行分析：
-    {extra_data}
+        你是一位專業加密貨幣與經濟分析師，請利用以下數據：
+        {extra_data}
 
-    請提供每個分類的趨勢、重要觀察與簡短結論。
-    """
+        請提供簡短結論。並根據使用者問題「{user_input}」回答，使分析更貼切其需求。
+        """
 
     analyze = call_chatgpt("分析師", analysis_prompt).replace("\n", "<br>")
 
@@ -950,12 +955,32 @@ def classify_question_api(request):
         yield f'data: {json.dumps({"progress": "loding", "result": {"module": "loding","text": "分析問題中", "data": []}}, ensure_ascii=False)}\n\n'
         # 1️⃣ 分類
         classification_prompt = f"""
-        你是一個分類器，幫我判斷下列句子可能屬於哪些類別：
-        新聞（news）、價格（price）、其他經濟數據（other）、問卷（questionnaire）。
-        可以有多個，請以逗號分隔；如果都不屬於，請回傳 ()。
+        你是一個精準的分類器，請判斷下列句子屬於哪些類別：
+        - 新聞（news）：內容涉及近期事件、時事、政策、公告或市場動態。
+        - 加密貨幣價格（price）：內容與加密貨幣、代幣或市場價格、行情、變化相關。
+        - 其他經濟數據（other）：內容需要更多市場、金融或經濟相關資料作為背景或分析依據。
+        - 問卷（questionnaire）：使用者表達個人意圖、需求、投資建議或偏好（如需要幫忙推薦、分析、建議）。
+
+        判斷邏輯：
+        - 只要句子包含「加密貨幣」、「比特幣」等關鍵字，或者提到加密貨幣名稱，請務必標示price。
+        - 若句子涉及近期事件、消息、市場公告，包含news。
+        - 若需查找及分析額外資料（非價格或新聞），包含other。
+        - 表達個人需求、投資建議則包含questionnaire。
+        - 若皆不符，回傳 ()。
+
+        範例：
+        輸入：我想查比特幣價格 → price
+        輸入：9月的比特幣行情怎麼樣？ → price
+        輸入：請給我其他相關數據 → price, other
+        輸入：最近比特幣有什麼消息？ → news
+        輸入：我想要投資建議 → questionnaire
+        輸入：這是無關內容 → ()
+
+        請只輸出分類結果（如：news, price）。
+
         輸入句子：{user_input}
-        請只輸出分類結果（如：news, price）
         """
+
         result = call_chatgpt("你是一個精準的分類器", classification_prompt)
         classifications = [c.strip().lower() for c in result.split(",") if c.strip()]
         combined = list(set(selected_modules + classifications))
@@ -973,51 +998,53 @@ def classify_question_api(request):
 
         # 推送分類結果
         yield f"data: {json.dumps({'classifications': ordered_combined}, ensure_ascii=False)}\n\n"
-
-        # 解析日期
-        start_date, end_date = parse_date_range_from_input(user_input)
-
-
-        # 執行各模組
         final_answers = []
-
-        for module_name in ordered_combined:
-            if module_name in module_map:
-                # 先推送「生成中」訊息
-                yield f'data: {json.dumps({"progress": "loding", "result": {"module": "loding","text": f"{module_name}生成中", "data": []}}, ensure_ascii=False)}\n\n'
+        if ordered_combined:
+        # 解析日期
+            start_date, end_date = parse_date_range_from_input(user_input)
 
 
-                # 執行 module
-                answer = module_map[module_name](user,user_input, start_date, end_date)
+            # 執行各模組
+            for module_name in ordered_combined:
+                if module_name in module_map:
+                    # 先推送「生成中」訊息
+                    yield f'data: {json.dumps({"progress": "loding", "result": {"module": "loding","text": f"{module_name}生成中", "data": []}}, ensure_ascii=False)}\n\n'
 
-                # 整理結果
-                if isinstance(answer, dict):
-                    final_answers.append({
-                        "module": module_name,
-                        "text": answer.get("text", ""),
-                        "data": answer.get("extra_data", []),
-                        "analyze" : answer.get("analyze", ""),
-                    })
-                else:
-                    final_answers.append({
-                        "module": module_name,
-                        "text": str(answer),
-                        "analyze" : ""
-                    })
-                print(final_answers[-1])
-                # 每跑完一個模組就推送真正結果
-                yield f"data: {json.dumps({'progress': module_name, 'result': final_answers[-1]}, ensure_ascii=False)}\n\n"
+
+                    # 執行 module
+                    answer = module_map[module_name](user,user_input, start_date, end_date)
+
+                    # 整理結果
+                    if isinstance(answer, dict):
+                        final_answers.append({
+                            "module": module_name,
+                            "text": answer.get("text", ""),
+                            "data": answer.get("extra_data", []),
+                            "analyze" : answer.get("analyze", ""),
+                        })
+                    else:
+                        final_answers.append({
+                            "module": module_name,
+                            "text": str(answer),
+                            "analyze" : ""
+                        })
+                    # 每跑完一個模組就推送真正結果
+                    yield f"data: {json.dumps({'progress': module_name, 'result': final_answers[-1]}, ensure_ascii=False)}\n\n"
 
 
         if not final_answers:
             final_answers.append({
                 "module": "none",
-                "text": "抱歉，我無法辨識您的問題類型或您未選擇相關模組。",
+                "text": ("抱歉，我無法理解您的問題或未能識別相關模組。"
+                        "請確認您的提問內容是否完整，或嘗試重新描述您的需求。謝謝！<br>"
+                        "使用說明：<br>"
+                        "1. 請直接輸入您的問題或需求。<br>"
+                        "2. 可選擇適合的模組以獲得更精準的協助，如新聞查詢、價格查詢、經濟數據分析等。<br>"
+                        "3. 若不確定，請簡單描述您的問題，我們會嘗試自動判斷所需模組。"),
                 "data": []
             })
             yield f"data: {json.dumps({'progress': 'none', 'result': final_answers[-1]}, ensure_ascii=False)}\n\n"
 
-        
         # 5️⃣ 整合回覆
         yield f'data: {json.dumps({"progress": "loding", "result": {"module": "loding","text": "整合回覆中", "data": []}}, ensure_ascii=False)}\n\n'
         integrated_summary = ""
@@ -1046,6 +1073,15 @@ def classify_question_api(request):
         # 最後一次推送（整合回覆）
         yield f"data: {json.dumps({'integrated_summary': integrated_summary}, ensure_ascii=False)}\n\n"
 
+        DialogEvaluation.objects.create(
+            user_input=user_input,
+            expected_intent="(人工)認為這句話應該屬於哪種意圖（標準答案）",  # 也可改成更精確的意圖
+            predicted_intent=", ".join(ordered_combined) + (f", date: {start_date} ~ {end_date}" if start_date and end_date else ", date:none"),
+            expected_response="(人工)認為合適的機器人回應",
+            generated_response=integrated_summary,
+            analyze_data=json.dumps([fa.get("analyze", "") for fa in final_answers], ensure_ascii=False),  # 這一行存所有 analyze
+            task_success=True  # 若有實際成功判斷條件可替換
+        )
         # 可以再補一個完成訊號
         yield "event: end\ndata: done\n\n"
 

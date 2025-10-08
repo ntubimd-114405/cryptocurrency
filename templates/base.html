@@ -147,13 +147,16 @@
 
     <!-- Main Content -->
     <main>
-        {% block main %}
-        <div class="container mt-4">
-            {% block content %} 
-            <!-- 預設內容區塊 -->
+        {% load tz %}
+        {% timezone "Asia/Taipei" %}
+            {% block main %}
+            <div class="container mt-4">
+                {% block content %} 
+                <!-- 預設內容區塊 -->
+                {% endblock %}
+            </div>
             {% endblock %}
-        </div>
-        {% endblock %}
+        {% endtimezone %}
     </main>
 
     <!-- Footer -->
