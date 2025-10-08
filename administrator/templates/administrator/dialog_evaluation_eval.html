@@ -1,0 +1,50 @@
+{% extends 'administrator/base.html' %}
+{% block content %}
+<div class="container mt-4">
+
+  <h1 class="mb-4">🤖 AI 評估分析結果</h1>
+
+  {% if error %}
+    <div class="alert alert-danger" role="alert">
+      {{ error }}
+    </div>
+  {% endif %}
+
+  {% if total_count %}
+    <div class="alert alert-info" role="alert">
+      📊 共 {{ total_count }} 筆對話資料，其中 {{ analyzed_count }} 筆參與分析，
+      剩下的未完成人工分析已自動略過。
+
+    </div>
+  {% endif %}
+
+  {% if structured_report %}
+    <div class="card shadow-sm border-primary mb-4" style="border-radius:16px;">
+      <div class="card-body">
+        <h5 class="card-title mb-3">分析指標</h5>
+
+        <ul class="list-group list-group-flush">
+          {% for key, val, val_float in structured_report %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <strong>{{ key }}</strong>
+              <span class="badge
+                {% if val_float > 0.8 %}
+                  bg-success
+                {% elif val_float > 0.5 %}
+                  bg-warning
+                {% else %}
+                  bg-danger
+                {% endif %}
+                rounded-pill px-3 py-2">{{ val }}</span>
+            </li>
+          {% endfor %}
+        </ul>
+
+      </div>
+    </div>
+  {% endif %}
+
+  <a href="{% url 'administrator:dialog_evaluation_list' %}" class="btn btn-outline-secondary">← 返回列表</a>
+
+</div>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends 'administrator/base.html' %}
+{% block content %}
+    <h1>Dialog Evaluation List</h1>
+    <form method="post" action="{% url 'administrator:dialog_evaluation_eval' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success mb-3">執行AI評估分析</button>
+    </form>
+    <table class="table table-bordered table-hover align-middle">
+        <thead class="table-primary">
+            <tr>
+                <th>ID</th>
+                <th>User Input</th>
+                <th>狀態</th>  <!-- 新增欄位顯示未完成 -->
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for eval in evals %}
+            <tr>
+                <td>{{ eval.id }}</td>
+                <td><pre>{{ eval.user_input }}</pre></td>
+                <td>
+                  {% if "(人工)" in eval.expected_intent or "(人工)" in eval.expected_response %}
+                    <span class="text-warning fw-bold">未完成</span>
+                  {% else %}
+                    <span class="text-success">已完成</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <a href="{% url 'administrator:dialog_evaluation_detail' eval.id %}" class="btn btn-sm btn-primary">修改</a>
+                </td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="text-center">No data available.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

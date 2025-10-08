@@ -29,7 +29,7 @@ def fetch_coin_history(coin_id):
     latest_date = latest_history['latest_date']
     
     if latest_date is None:
-        latest_date = datetime(2025, 10, 1, 0, 0)
+        latest_date = datetime(2025, 7, 1, 0, 0)
     else:
         latest_date = latest_date + timedelta(minutes=1)
 # 3-3 CryptoHistoryFetcher類別ccxt抓取部分
@@ -94,6 +94,7 @@ def fetch_and_store_coin_data():
     from datetime import datetime, timedelta  
     from main.models import Coin, BitcoinPrice
     from django.db import transaction
+    from django.utils import timezone
     api_key = os.getenv('coinmarketcap_api')
     headers = {
         'X-CMC_PRO_API_KEY': api_key,
@@ -126,7 +127,7 @@ def fetch_and_store_coin_data():
         
         if info_response.status_code == 200:
             info_data = info_response.json()['data']
-            timestamp = datetime.now() - timedelta(hours=8)  # 當前時間戳
+            timestamp = timezone.now()  # 取得當前帶時區的 UTC 時間
 
 #2-4「資料庫新增或更新操作」
             # 使用 Django ORM 進行資料插入
@@ -149,21 +150,33 @@ def fetch_and_store_coin_data():
                         api_id=coin["id"],
                         defaults={'coinname': coin_name, 'abbreviation': coin_abbreviation, 'logo_url': logo_url}
                     )
-                    
-                    # 插入或更新 BitcoinPrice，條件只用 coin
-                    BitcoinPrice.objects.update_or_create(
-                        coin=coin_record,
-                        defaults={
-                            'usd': usd_price,
-                            'twd': twd_price,
-                            'jpy': jpy_price,
-                            'eur': eur_price,
-                            'market_cap': market_cap,
-                            'volume_24h': volume_24h,
-                            'change_24h': change_24h,
-                            'timestamp': timestamp  # 覆蓋 timestamp 為最新
-                        }
-                    )
+                    # 先嘗試取得該 coin 現有資料
+                    obj = BitcoinPrice.objects.filter(coin=coin_record).first()
+
+                    if obj:
+                        # 更新現有資料
+                        obj.usd = usd_price
+                        obj.twd = twd_price
+                        obj.jpy = jpy_price
+                        obj.eur = eur_price
+                        obj.market_cap = market_cap
+                        obj.volume_24h = volume_24h
+                        obj.change_24h = change_24h
+                        obj.timestamp = timestamp  # 更新成當前時間
+                        obj.save()
+                    else:
+                        # 沒有資料則新增
+                        BitcoinPrice.objects.create(
+                            coin=coin_record,
+                            usd=usd_price,
+                            twd=twd_price,
+                            jpy=jpy_price,
+                            eur=eur_price,
+                            market_cap=market_cap,
+                            volume_24h=volume_24h,
+                            change_24h=change_24h,
+                            timestamp=timestamp
+                        )
                     print(f"數據已插入：{coin_name} ({coin_abbreviation}) - USD = {usd_price}, TWD = {twd_price}, JPY = {jpy_price}, EUR = {eur_price}, 時間 = {timestamp}")
         else:
 

@@ -66,6 +66,7 @@ def save_financial():
 
         # 獲取金融數據
         data = get_finance(sym, start_date)
+
 # 8-3 儲存或更新 FinancialData
         if data is not None:
             for index, row in data.iterrows():

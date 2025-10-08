@@ -15,4 +15,8 @@ urlpatterns = [
     path('delete-crypto-management/<int:id>/', delete_crypto, name='delete_crypto'),
     
     path("api/", include("chatbot.urls")),
+
+    path('dialog_evaluations/', dialog_evaluation_list, name='dialog_evaluation_list'),
+    path('dialog_evaluation/<int:pk>/', dialog_evaluation_detail, name='dialog_evaluation_detail'),
+    path('dialog_evaluation/evaluate/', evaluate_dialogs, name='dialog_evaluation_eval'), 
 ]

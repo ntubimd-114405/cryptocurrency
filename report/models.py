@@ -30,3 +30,16 @@ class WeeklyReport(models.Model):
     def __str__(self):
         return f'{self.user.username} - {self.year} W{self.week}'
 
+
+class DialogEvaluation(models.Model):
+    user_input = models.TextField(null=True, blank=True)
+    expected_intent = models.CharField(max_length=100)
+    predicted_intent = models.CharField(max_length=100)
+    expected_response = models.TextField()
+    generated_response = models.TextField()
+    task_success = models.BooleanField()
+    analyze_data = models.TextField(null=True, blank=True)  # 新增此欄位
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Eval-{self.id} Intent:{self.expected_intent} Success:{self.task_success}"

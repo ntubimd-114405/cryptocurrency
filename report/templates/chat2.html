@@ -16,10 +16,10 @@
   </div>
 
   <div class="module-select">
-    <label><input type="checkbox" value="price" checked> 💰 價格</label>
-    <label><input type="checkbox" value="news" checked> 📰 新聞</label>
-    <label><input type="checkbox" value="other" checked> 📊 其他經濟數據</label>
-    <label><input type="checkbox" value="questionnaire" checked> 🧠 問卷</label>
+    <label><input type="checkbox" value="price"> 💰 價格</label>
+    <label><input type="checkbox" value="news"> 📰 新聞</label>
+    <label><input type="checkbox" value="other"> 📊 其他經濟數據</label>
+    <label><input type="checkbox" value="questionnaire"> 🧠 問卷</label>
   </div>
 
   <div class="chat-input">
@@ -252,9 +252,8 @@ function appendMessage(messagesContainer, text, sender, isTag=false, extraData=n
 
 
   if (isTag) {
-    text = text.replace(/^分類：/, '').trim();
-    const tags = text.split(',').map(t => t.trim()).filter(t => t.length > 0);
-    if (tags.length > 0) {
+      text = text.replace(/^分類：/, '').trim();
+      const tags = text.split(',').map(t => t.trim()).filter(t => t.length > 0);
       const tagContainer = document.createElement('div');
       tagContainer.className = 'module-tags';
 
@@ -263,14 +262,19 @@ function appendMessage(messagesContainer, text, sender, isTag=false, extraData=n
       labelSpan.style.fontWeight = 'bold';
       tagContainer.appendChild(labelSpan);
 
-      tags.forEach(t => {
-        const span = document.createElement('span');
-        span.textContent = t;
-        tagContainer.appendChild(span);
-      });
+      if (tags.length > 0) {
+          tags.forEach(t => {
+              const span = document.createElement('span');
+              span.textContent = t;
+              tagContainer.appendChild(span);
+          });
+      } else {
+          const span = document.createElement('span');
+          span.textContent = '無';
+          tagContainer.appendChild(span);
+      }
 
       div.appendChild(tagContainer);
-    }
   } else if (sender === "user") {
     const p = document.createElement('p');
     p.textContent = text;
@@ -554,7 +558,7 @@ function appendMessage(messagesContainer, text, sender, isTag=false, extraData=n
     } else {
 
       const p = document.createElement('p');
-      p.textContent = text; // 用 textContent 避免 XSS
+      p.innerHTML = text; // 用 textContent 避免 XSS
       div.appendChild(p);
 
     }
@@ -606,7 +610,6 @@ function appendMessage(messagesContainer, text, sender, isTag=false, extraData=n
           const agent = ans.module;
 
 
-
             
           // 顯示最終訊息
           if (agent === "price") {
@@ -619,7 +622,8 @@ function appendMessage(messagesContainer, text, sender, isTag=false, extraData=n
             appendMessage(messages, ans.text, 'questionnaire', false, ans.data,analyze=ans.analyze);
           } else if (agent === "loding") { 
             appendMessage(messages, ans.text, 'loding', false, ans.data);
-            
+          } else if (agent === "none") { 
+            appendMessage(messages, ans.text, 'bot');
           } else {
             appendMessage(messages, ans.text + '<br>' + (ans.data || ''), 'bot');
           }

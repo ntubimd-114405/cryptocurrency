@@ -226,8 +226,6 @@ class AgentUserAnswerSelectedOptions {
 class AgentUserQuestionnaireRecord {
   +id: bigint
   +completedAt: DateTime
-  +gptAnalysisResult: String
-  +lastSubmittedHash: String
   --
   +recordCompletion(): void
   +updateAnalysisResult(result: String): void

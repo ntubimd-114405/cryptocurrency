@@ -230,3 +230,8 @@ zipp==3.23.0
 zope.event==5.0
 zope.interface==7.2
 zstandard==0.23.0
+jieba
+nltk
+py-rouge
+rouge
+
