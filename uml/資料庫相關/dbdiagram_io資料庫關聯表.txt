@@ -180,6 +180,4 @@ Table AgentUserQuestionnaireRecord {
   completedAt datetime
   questionnaire bigint [ref: > AgentQuestionnaire.id]
   user int [ref: > auth_user.id]
-  gptAnalysisResult text
-  lastSubmittedHash varchar
 }
