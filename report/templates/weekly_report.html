@@ -2,14 +2,18 @@
 {% load static %}
 {% block title %}個人化報告{% endblock %}
 {% block content %}
+<style>
+  h1{
+    font-size: 32px;
+    color: #2E6695;
+    margin-bottom: 40px;
+    text-align: center;
+    font-weight: bold;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+}
 
-{% include 'report/report_download.html' %}  {# PDF 匯出按鈕等 #}
-<form action="{% url 'generate_weekly_report' %}" method="post">
-  {% csrf_token %}
-  <input type="hidden" name="year" value="{{ year }}">
-  <input type="hidden" name="week" value="{{ week }}">
-  <button type="submit">重新生成第 {{ week }} 週報告</button>
-</form>
+</style>
+
 
 <div id="reportContent">
     <div class="text-block">

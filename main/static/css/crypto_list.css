@@ -6,3 +6,75 @@
 .table-bordered th, .table-bordered td {
     border: none; /* 移除表格單元格的邊框 */
 }
+.container1 {
+    padding: 20px 5px; /* 增加內距 */
+}
+
+/* 交錯列顏色（奇偶行） */
+.table tbody tr:nth-child(odd) {
+    background-color: #ffffff; /* 單數行（淺白） */
+}
+
+.table tbody tr:nth-child(even) {
+    background-color: #f8f9fa; /* 雙數行（灰白） */
+}
+
+th a{
+    color: #1F7183;
+}
+td a{
+    color: #1F7183;
+}
+/* 若該行有 hover 效果，維持 hover 優先權 */
+.table tbody tr:hover {
+    background-color: #f1f3f5 !important;
+    transform: scale(1.01);
+    transition: all 0.2s ease;
+}
+h1{
+    font-size: 32px;
+    color: #2E6695;
+    margin-bottom: 40px;
+    text-align: center;
+    font-weight: bold;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+}
+.table th {
+    background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+    font-weight: 600;
+    color: #333;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.table tbody tr:hover {
+    background-color: #f1f3f5;
+    transform: scale(1.01);
+    transition: all 0.2s ease;
+}
+
+.coin-logo {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    box-shadow: 0 0 4px rgba(0,0,0,0.15);
+}
+
+.favorite-icon {
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+    transition: transform 0.2s ease;
+}
+
+.favorite-icon:hover {
+    transform: scale(1.2);
+}
+/* 愛心 */
+.table tbody tr {
+    animation: fadeInUp 0.4s ease;
+}
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+

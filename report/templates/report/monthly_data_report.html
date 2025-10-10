@@ -11,9 +11,9 @@
 
 
 
-<div class="text-block">
-  <h1>📊 最近四個月金融及加密指標圖表</h1>
-</div>
+<div class="text-block summary">
+  <h2>📊 最近四個月金融及加密指標圖表</h2>
+
 <div id="tabs" class="tab-buttons"></div>
 <div class="chart-container">
   <div id="tabContents"></div>
@@ -21,7 +21,10 @@
 {% if long_term_analysis %}
   <div class="text-block mt-5">
     <h2>📈 長期趨勢分析</h2>
+     <div class="text-start" style="text-indent: 2em; padding: 5px 20px;">
     <p>{{ long_term_analysis|linebreaks }}</p>
+    </div>
+  </div>
   </div>
 {% endif %}
 

@@ -3,7 +3,7 @@
   font-family: "Noto Sans TC", "微軟正黑體", "Helvetica Neue", Helvetica, Arial, sans-serif;
   line-height: 1.6;
   color: #333;
-  max-width: 800px;
+  max-width: 1600px;
   margin: 20px auto;
   padding: 15px;
   background: #f9f9f9;
@@ -23,11 +23,13 @@
   box-shadow: 0 0 10px rgb(0 0 0 / 0.05);
   border-radius: 8px;
   overflow: hidden;
+  table-layout: fixed;  
 }
 
 .summary th,
 .summary td {
   padding: 14px 20px;
+  width: 50%;
   text-align: left;
   vertical-align: middle;
 }
@@ -68,23 +70,26 @@
 
 </style>
 <div class="summary">
+        <form action="{% url 'generate_weekly_report' %}" method="post">
+        {% csrf_token %}
+        <input type="hidden" name="year" value="{{ year }}">
+        <input type="hidden" name="week" value="{{ week }}">
+        <button type="submit" class="button-bu mt-4">重新生成第 {{ week }} 週報告</button>
+      </form>
   <div>
     <h2 class="text-xl font-bold mb-2">🧾 基本報告資訊</h2>
-    <div>
-      <strong>用戶名稱：</strong> {{ user.username }}
-    </div>
-    <div>
-      <strong>用戶 ID：</strong> {{ user.id }}
-    </div>
-    <div>
+    <div >
       <strong>報告生成日期：</strong> {{ created_at|date:"Y-m-d" }}
     </div>
     <div>
       <strong>週次：</strong> 第 {{ week }} 週（{{ start_date }} ~ {{ end_date }}）
     </div>
   </div>
-  <div class="text-block">
+  <hr>
+  <div class="text-block" >
     <h2>市場概況</h2>
-    <p>{{ summary|safe }}</p>
-  </div>
+      <div class="text-start" style="text-indent: 2em; padding: 5px 20px;"> 
+        <p>{{ summary|safe }}</p>
+      </div>
+    </div>
 </div>

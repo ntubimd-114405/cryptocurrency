@@ -3,10 +3,10 @@
 {% load static %}
 {% block title %}虛擬貨幣首頁{% endblock %}
 
-{% block content %}
+{% block main %}
 {% load humanize %}
 <link rel="stylesheet" href="{% static 'css/crypto_list.css' %}">
-<div class="container mt-4">
+<div class="container container1">
     <h1 class="text-center mb-4">虛擬貨幣價格列表</h1>
     <form method="get" class="mb-4">
         <div class="input-group">
@@ -95,7 +95,7 @@
                         {% endif %}
                     </a>
                 </th>                
-                <th style="width: 15%; text-align: center; vertical-align: middle;">
+                <th style="width: 10%; text-align: center; vertical-align: middle;">
                     <a href="?sort_by=volume_24h&sort_order={% if sort_by == 'volume_24h' and sort_order == 'asc' %}desc{% elif sort_by == 'volume_24h' and sort_order == 'desc' %}default{% else %}asc{% endif %}&page={{ page_obj.number }}">
                         24小時交易量
                         {% if sort_by == 'volume_24h' %}
@@ -119,7 +119,7 @@
                         {% endif %}
                     </a>
                 </th>
-                <th style="width: 15%; text-align: center; vertical-align: middle;">
+                <th style="width: 10%; text-align: center; vertical-align: middle;">
                     <a href="?sort_by=timestamp&sort_order={% if sort_by == 'timestamp' and sort_order == 'asc' %}desc{% elif sort_by == 'timestamp' and sort_order == 'desc' %}default{% else %}asc{% endif %}&page={{ page_obj.number }}">
                         時間戳
                         {% if sort_by == 'timestamp' %}
@@ -132,7 +132,7 @@
                     </a>
                 </th>
                 {% if user.is_authenticated %}
-                    <th style="width: 15%; text-align: center; vertical-align: middle;">最愛按鈕</th>
+                    <th style="width: 25%; text-align: center; vertical-align: middle;color: #1F7183;">最愛按鈕</th>
                 {% endif %}
             </tr>
         </thead>
