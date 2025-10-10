@@ -4,6 +4,7 @@
 {% block title %}進階新聞搜尋{% endblock %}
 {% block content %}
 <style>
+
     .container .card {
         max-width: 900px;
         margin: 40px auto;
@@ -87,13 +88,13 @@
         flex: 1;
     }
     .news-title {
-        font-size: 16px;
+        font-size: 20px;
         font-weight: 600;
         margin: 0 0 6px;
         color: #222;
     }
     .news-summary {
-        font-size: 14px;
+        font-size: 16px;
         color: #555;
         margin: 0;
     }
@@ -114,14 +115,14 @@
 
 <div class="container">
     <div class="card">
-        <h2>🔍 進階新聞搜尋</h2>
+        <h2 style="color: #2E6695;">🔍 進階新聞搜尋</h2>
         <div class="search-bar">
             <input type="text" id="question" placeholder="輸入關鍵字 (例如：BTC)">
             <input type="date" id="start_date">
             <input type="date" id="end_date">
             <button id="searchBtn">搜尋</button>
         </div>
-        <ul id="newsList"></ul>
+        <ul id="newsList" class="text-start"></ul>
     </div>
 </div>
 
@@ -155,16 +156,18 @@ document.addEventListener("DOMContentLoaded", function() {
 
                         // 圖片處理
                         const image = article.image_url 
-                            ? `<img src="${article.image_url}" alt="news" style="width:80px; height:80px; object-fit:cover; border-radius:12px;">`
-                            : `<img src="https://via.placeholder.com/80" alt="news">`;
+                            ? `<img src="${article.image_url}" alt="news" style="width:180px; height:180px; object-fit:cover; border-radius:12px;">`
+                            : `<img src="https://via.placeholder.com/80" alt="news" style="width:180px; height:180px; object-fit:cover; border-radius:12px;">`;
 
                         li.innerHTML = `
                                         ${image}
                                         <div class="news-content">
                                             <a href="/news/detail/${article.id}/" target="_blank" class="news-title">${article.title}</a>
+                                             <p style="display:flex; justify-content:space-between; font-size:16px; color:#666; margin:4px 0;">
+                                                <span>🕒 ${article.time || "未知時間"}</span>
+                                                <span>情緒：${getSentimentLabel(article.sentiment_score)}</span>
+                                            </p>
                                             <p class="news-summary">${article.summary || "（無摘要）"}</p>
-                                            <p style="font-size:12px; color:#666; margin:4px 0;">🕒 ${article.time || "未知時間"}</p>
-                                            <p style="font-size:13px; margin:4px 0;">情緒：${getSentimentLabel(article.sentiment_score)}</p>
                                         </div>
                                     `;
 
