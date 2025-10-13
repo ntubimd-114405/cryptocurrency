@@ -832,7 +832,7 @@ def coin_history_api(request):
     except Coin.DoesNotExist:
         return JsonResponse({'error': '查無此幣種'}, status=404)
 
-    thirty_days_ago = timezone.now().date() - timedelta(days=3)
+    thirty_days_ago = timezone.now().date() - timedelta(days=5)
 
     queryset = (
         CoinHistory.objects
@@ -851,6 +851,8 @@ def coin_history_api(request):
     for col in ['close_price', 'high_price', 'low_price', 'volume']:
         if col in df.columns:
             df[col] = df[col].astype(float)
+
+    
 
     if df.empty:
         return JsonResponse({'error': '此時間區間無資料'}, status=204)
@@ -887,6 +889,10 @@ def coin_history_api(request):
     df['atr'] = ta.volatility.AverageTrueRange(
         high=df['high_price'], low=df['low_price'], close=df['close_price'], window=14
     ).average_true_range()
+
+    interval = int(request.GET.get('interval', 60))  # 預設 60
+    if interval > 1:
+        df = df.iloc[::interval, :].reset_index(drop=True)
 
     import math
 
@@ -931,129 +937,276 @@ import joblib
 from django.http import JsonResponse
 from sklearn.ensemble import RandomForestClassifier
 
-# ----------- 特徵工程 -----------
-def add_features(df):
-    df = df.copy()
-    df["return"] = df["close_price"].pct_change()
-    df["ma5"] = df["close_price"].rolling(5).mean()
-    df["ma20"] = df["close_price"].rolling(20).mean()
-    # 標籤：明天漲跌（回測用，不影響已訓練模型）
-    df["label"] = (df["close_price"].shift(-1) > df["close_price"]).astype(int)
-    df["vol_ma5"] = df["volume"].rolling(5).mean()
-    df["vol_ratio"] = df["volume"] / (df["vol_ma5"] + 1e-6)
-    df = df.dropna().reset_index(drop=True)
+def strategy_ema_cross(df: pd.DataFrame) -> pd.DataFrame:
+    """短期 EMA10 追蹤中期 EMA20 的趨勢追蹤策略。"""
+    
+    # 買入/做多訊號 (1): EMA10 上穿 EMA20 (趨勢轉強)
+    condition_buy = (df['ema10'].shift(1) < df['ema20'].shift(1)) & \
+                    (df['ema10'] > df['ema20'])
+
+    # 賣出/平倉訊號 (-1): EMA10 跌破 EMA20 (趨勢轉弱)
+    condition_sell = (df['ema10'].shift(1) > df['ema20'].shift(1)) & \
+                     (df['ema10'] < df['ema20'])
+    
+    df.loc[condition_buy, 'pred'] = 1
+    df.loc[condition_sell, 'pred'] = -1 
+    
     return df
 
-# ----------- 使用已訓練模型回測 -----------
-def backtest_with_model(df, model):
-    df = add_features(df)
+def strategy_rsi_reversion(df: pd.DataFrame) -> pd.DataFrame:
+    """RSI 超買超賣反轉策略 (適用於盤整/震盪市場)。"""
+    
+    # 買入/做多訊號 (1): RSI < 30 (超賣區)
+    condition_buy = (df['rsi'] < 30)
 
-    # 與模型訓練一致的特徵
-    features = ["ma5", "ma20", "return", "vol_ratio"]
-    df = df.dropna(subset=features).reset_index(drop=True)
+    # 賣出/平倉訊號 (-1): RSI > 70 (超買區)
+    condition_sell = (df['rsi'] > 70)
+    
+    df.loc[condition_buy, 'pred'] = 1
+    df.loc[condition_sell, 'pred'] = -1 
+    
+    return df
 
-    # 模型預測
-    df["pred"] = model.predict(df[features])
+def strategy_macd_cross(df: pd.DataFrame) -> pd.DataFrame:
+    """MACD 趨勢策略：DIF 上穿 DEA → 做多；下穿 → 平倉。"""
+    # MACD 計算
+    ema12 = df['close_price'].ewm(span=12, adjust=False).mean()
+    ema26 = df['close_price'].ewm(span=26, adjust=False).mean()
+    df['macd_dif'] = ema12 - ema26
+    df['macd_dea'] = df['macd_dif'].ewm(span=9, adjust=False).mean()
+    
+    # 上穿做多、下穿平倉
+    condition_buy = (df['macd_dif'].shift(1) < df['macd_dea'].shift(1)) & (df['macd_dif'] > df['macd_dea'])
+    condition_sell = (df['macd_dif'].shift(1) > df['macd_dea'].shift(1)) & (df['macd_dif'] < df['macd_dea'])
+    
+    df.loc[condition_buy, 'pred'] = 1
+    df.loc[condition_sell, 'pred'] = -1
+    return df
+
+def strategy_donchian_breakout(df: pd.DataFrame, n: int = 20) -> pd.DataFrame:
+    """Donchian Channel 突破策略：突破過去 N 日高點買進，跌破低點賣出。"""
+    df['donchian_high'] = df['high_price'].rolling(n).max()
+    df['donchian_low'] = df['low_price'].rolling(n).min()
+
+    condition_buy = df['close_price'] > df['donchian_high'].shift(1)
+    condition_sell = df['close_price'] < df['donchian_low'].shift(1)
+
+    df.loc[condition_buy, 'pred'] = 1
+    df.loc[condition_sell, 'pred'] = -1
+    return df
+
+def strategy_roc_momentum(df: pd.DataFrame, n: int = 10) -> pd.DataFrame:
+    """ROC/Momentum 動能策略：動能轉強時做多。"""
+    df['roc'] = df['close_price'].pct_change(n)
+    condition_buy = df['roc'] > 0
+    condition_sell = df['roc'] < 0
+    df.loc[condition_buy, 'pred'] = 1
+    df.loc[condition_sell, 'pred'] = -1
+    return df
+
+def strategy_obv_trend(df: pd.DataFrame) -> pd.DataFrame:
+    """OBV 趨勢策略：OBV 上升 → 多方強勢。"""
+    df['obv'] = np.where(df['close_price'] > df['close_price'].shift(1),
+                         df['volume'], 
+                         np.where(df['close_price'] < df['close_price'].shift(1), -df['volume'], 0))
+    df['obv'] = df['obv'].cumsum()
+
+    condition_buy = df['obv'] > df['obv'].shift(1)
+    condition_sell = df['obv'] < df['obv'].shift(1)
+
+    df.loc[condition_buy, 'pred'] = 1
+    df.loc[condition_sell, 'pred'] = -1
+    return df
+
+
+# ====================================================================
+# 策略核心計算邏輯 (Strategy Dispatcher & Reward Calculation)
+# ====================================================================
+
+def calculate_strategy_performance(df: pd.DataFrame, strategy_name: str) -> pd.DataFrame:
+    """
+    安全版回測函數：
+    - 使用前一日訊號延續持倉
+    - 處理 NaN，不用 0 填充
+    - 計算累積報酬 cum_strategy / cum_buy_hold
+    """
+    # 初始化 pred 欄位
+    df['pred'] = 0
+
+    # 選擇策略
+    if strategy_name == 'EMA_CROSS':
+        df = strategy_ema_cross(df)
+    elif strategy_name == 'RSI_REVERSION':
+        df = strategy_rsi_reversion(df)
+    elif strategy_name == 'MACD_CROSS':
+        df = strategy_macd_cross(df)
+    elif strategy_name == 'DONCHIAN_BREAKOUT':
+        df = strategy_donchian_breakout(df)
+    elif strategy_name == 'ROC_MOMENTUM':
+        df = strategy_roc_momentum(df)
+    elif strategy_name == 'OBV_TREND':
+        df = strategy_obv_trend(df)
+    else:
+        raise ValueError(f"Strategy {strategy_name} not found.")
+
+    # -----------------------------
+    # 計算報酬
+    # -----------------------------
+    df['return'] = df['close_price'].pct_change().fillna(0)
+
+    # -----------------------------
+    # 持倉管理 (前一日訊號延續)
+    # -----------------------------
+    df['position'] = 0
+    for i in range(1, len(df)):
+        if df['pred'].iloc[i] == 1:       # 開多
+            df['position'].iloc[i] = 1
+        elif df['pred'].iloc[i] == -1:    # 平倉
+            df['position'].iloc[i] = 0
+        else:                             # 延續前一日持倉
+            df['position'].iloc[i] = df['position'].iloc[i-1]
+
+    # 隔日生效
+    df['position'] = df['position'].shift(1).fillna(0)
 
     # 策略報酬
-    df["strategy"] = df["pred"].shift(1) * df["return"]
-    df["strategy"].fillna(0, inplace=True)
-    df["cum_strategy"] = (1 + df["strategy"]).cumprod()
-    df["cum_buy_hold"] = (1 + df["return"]).cumprod()
+    df['strategy_return'] = df['position'] * df['return']
+
+    # 累積報酬
+    df['cum_strategy'] = (1 + df['strategy_return']).cumprod()
+    df['cum_buy_hold'] = (1 + df['return']).cumprod()
+
+    # 初始化第一個有效值為 1
+    first_valid_index = df['cum_strategy'].first_valid_index()
+    if first_valid_index is not None:
+        df.loc[first_valid_index, 'cum_strategy'] = 1.0
+        df.loc[first_valid_index, 'cum_buy_hold'] = 1.0
 
     return df
+
 
 def backtest_view(request):
     try:
-        current_dir = os.path.dirname(__file__)
-
-        # 取得 coin_id
+        # ... (省略 coin_id 獲取和錯誤檢查部分)
         coin_param = request.GET.get('coin_id')
         if not coin_param:
             return JsonResponse({'error': '缺少 coin_id 參數'}, status=400)
-
         try:
             coin_list = [int(c.strip()) for c in coin_param.split(',')]
         except ValueError:
-            return JsonResponse({'error': 'coin_id 格式錯誤'}, status=400)
+            return JsonResponse({'error': 'coin_id 格式錯誤，請傳入數字列表'}, status=400)
+        
+        print("💡 模型部分已移除，將使用自定義 RSI/EMA/BBANDS 策略替代。")
 
-        # 模型路徑
-        model_path = os.path.abspath(os.path.join(current_dir, "../data_analysis/backtest/BackTest0925-2.pkl"))
+        interval = int(request.GET.get('interval', 60))
+        # 獲取要回測的策略名稱，預設為 EMA_CROSS
+        strategy_to_test = request.GET.get('strategy', 'EMA_CROSS')
 
-        # 載入已訓練模型
-        if os.path.exists(model_path):
-            model = joblib.load(model_path)
-            print("已載入訓練好的模型")
-        else:
-            return JsonResponse({'error': '模型不存在'}, status=500)
+        strategies = [
+            'EMA_CROSS', 'RSI_REVERSION','MACD_CROSS', 
+            'DONCHIAN_BREAKOUT', 'ROC_MOMENTUM', 'OBV_TREND'
+        ]
 
         result_data = {}
-        thirty_days_ago = timezone.now().date() - timedelta(days=3)
+        # 數據長度設定：回測過去 7 天的數據
+        thirty_days_ago = timezone.now().date() - timedelta(days=7) 
 
         for coin_id in coin_list:
             try:
                 selected_coin = Coin.objects.get(id=coin_id)
             except Coin.DoesNotExist:
-                continue  # 找不到就跳過
+                continue
 
-            
-
+            # 查詢 CoinHistory 數據 (省略查詢細節)
             queryset = (
                 CoinHistory.objects
                 .filter(coin_id=coin_id, date__gte=thirty_days_ago)
                 .select_related('coin')
                 .order_by('date')
             )
-
             fields = ['date', 'close_price', 'high_price', 'low_price', 'volume']
             df = pd.DataFrame.from_records(queryset.values(*fields))
 
-            if df.empty:
-                continue  # 沒有資料就跳過
+            if df.empty or len(df) < 30:
+                print(f"Coin {coin_id}: 數據不足，跳過。")
+                continue
 
-            # 將 Decimal 欄位轉 float
+            # 將 Decimal 欄位轉 float (省略細節)
             for col in ['close_price', 'high_price', 'low_price', 'volume']:
-                df[col] = df[col].astype(float)
+                df[col] = pd.to_numeric(df[col], errors='coerce').astype(float) 
 
-            # 技術指標計算
+            # ========================================================
+            # ✅ 擴充技術指標計算，支援所有已定義的策略
+            # ========================================================
+            # EMA (用於 EMA_CROSS)
             df["ema20"] = df["close_price"].ewm(span=20, adjust=False).mean()
+            df["ema10"] = df["close_price"].ewm(span=10, adjust=False).mean()
 
+            # RSI (用於 RSI_REVERSION)
             delta = df["close_price"].diff()
             gain = np.where(delta > 0, delta, 0)
             loss = np.where(delta < 0, -delta, 0)
             avg_gain = pd.Series(gain).rolling(window=14).mean()
             avg_loss = pd.Series(loss).rolling(window=14).mean()
-            df["rsi"] = 100 - (100 / (1 + avg_gain / (avg_loss + 1e-10)))
+            with np.errstate(divide='ignore', invalid='ignore'):
+                 rs = avg_gain / (avg_loss + 1e-10) 
+            df["rsi"] = 100 - (100 / (1 + rs))
+            df['rsi'] = df['rsi'].fillna(0)
+            
+            # 🆕 Bollinger Bands (用於 BBANDS_REVERSION)
+            df["ma20"] = df["close_price"].rolling(20).mean()
+            df["std20"] = df["close_price"].rolling(20).std()
+            df["bb_upper"] = df["ma20"] + 2 * df["std20"]
+            df["bb_lower"] = df["ma20"] - 2 * df["std20"]
 
-            # 使用已訓練模型回測
-            g = backtest_with_model(df, model)
-            print(g)
-            print(g["pred"].value_counts())
-            print(g[["ma5","ma20","return","pred"]])
+            # ========================================================
 
-            # 計算策略績效（最後一天累積報酬）
-            strategy_final = g["cum_strategy"].iloc[-1]
-            buy_hold_final = g["cum_buy_hold"].iloc[-1]
+            if interval > 1:
+                df = df.iloc[::interval, :].reset_index(drop=True)
 
-            # 可以選擇用百分比表示
-            strategy_pct = (strategy_final - 1) * 100
-            buy_hold_pct = (buy_hold_final - 1) * 100
+            coin_result = {}
+
+            # ✅ 傳入選定的策略名稱
+            for strat in strategies:
+                g = calculate_strategy_performance(df.copy(), strat)  # ⚡ 注意要 copy 避免 df 被改
+                coin_result[strat] = {
+                    "dates": g["date"].dt.strftime("%Y-%m-%d").tolist(),
+                    "strategy": g["cum_strategy"].astype(float).tolist(),
+                    "buy_hold": g["cum_buy_hold"].astype(float).tolist(),
+                    # 其他指標欄位可以加
+                }
+            
+            # ... (省略結果處理和 GPT 分析部分，保持原有邏輯)
+            if g['cum_strategy'].empty:
+                print(f"Coin {coin_id}: 策略回測失敗。")
+                continue
+
+            g_final = coin_result[strategy_to_test]
+            strategy_pct = (g_final["strategy"][-1] - 1) * 100
+            buy_hold_pct = (g_final["buy_hold"][-1] - 1) * 100
+
+            df_plot = df.dropna(subset=["bb_upper", "bb_lower"]).reset_index(drop=True)
 
             result_data[coin_id] = {
                 "coin_name": selected_coin.coinname,
                 "dates": g["date"].dt.strftime("%Y-%m-%d").tolist(),
-                "strategy": g["cum_strategy"].astype(float).tolist(),
+                "strategy": coin_result, 
                 "buy_hold": g["cum_buy_hold"].astype(float).tolist(),
                 "close": g["close_price"].astype(float).tolist(),
                 "ema20": g["ema20"].astype(float).fillna(0).tolist(),
+                "ema10": g["ema10"].astype(float).fillna(0).tolist(),
                 "rsi": g["rsi"].astype(float).fillna(0).tolist(),
-                "strategy_final": strategy_final,          # ✅ 累積報酬數值
-                "buy_hold_final": buy_hold_final,          # ✅ 累積報酬數值
-                "strategy_pct": round(strategy_pct, 2),    # ✅ 百分比
-                "buy_hold_pct": round(buy_hold_pct, 2),    # ✅ 百分比
+                # 新增 BBands 輸出以便除錯
+                "bb_upper": df_plot["bb_upper"].tolist(),
+                "bb_lower": df_plot["bb_lower"].tolist(),
+                "strategy_pct": round(strategy_pct, 2), 
+                "buy_hold_pct": round(buy_hold_pct, 2), 
             }
 
-    # ============ 🔽 這裡加 GPT 分析 🔽 ============
+        # ... (省略 GPT 分析部分)
+        if not result_data:
+            return JsonResponse({'error': '無有效數據進行回測和分析'}, status=404)
+        
         summary_data = {
             coin_id: {
                 "coin_name": v["coin_name"],
@@ -1063,8 +1216,10 @@ def backtest_view(request):
             for coin_id, v in result_data.items()
         }
 
+        print(summary_data)
+
         analysis_prompt = f"""
-        以下是加密貨幣回測的摘要數據（單位：%）：
+        以下是加密貨幣在過去 7 天回測的摘要數據（單位：%）：
         {json.dumps(summary_data, ensure_ascii=False, indent=2)}
 
         請幫我做以下事情：
@@ -1075,10 +1230,9 @@ def backtest_view(request):
         請用中文回答，並條列重點。
         """
 
-
         url = "https://free.v36.cm/v1/chat/completions"
         headers = {
-            "Authorization": f"Bearer {api}",  # 你的 API KEY
+            "Authorization": f"Bearer {api}",
             "Content-Type": "application/json",
         }
         data = {
@@ -1088,18 +1242,21 @@ def backtest_view(request):
                 {"role": "user", "content": analysis_prompt}
             ]
         }
-
+        
         gpt_response = requests.post(url, headers=headers, json=data)
         gpt_response.raise_for_status()
-        gpt_result = gpt_response.json()
-        gpt_reply = gpt_result["choices"][0]["message"]["content"]
 
-        # ✅ 把 GPT 分析加進回傳
+        gpt_result = gpt_response.json()
+        gpt_reply = gpt_result.get("choices", [{}])[0].get("message", {}).get("content", "GPT 分析失敗或內容為空。")
+
         return JsonResponse({
             "result_data": result_data,
             "gpt_analysis": gpt_reply
         })
 
+    except requests.exceptions.HTTPError as http_err:
+        print(f"GPT API HTTP 錯誤: {http_err}")
+        return JsonResponse({"error": f"GPT API 錯誤: {http_err.response.text}"}, status=http_err.response.status_code)
     except Exception as e:
         print(traceback.format_exc())
         return JsonResponse({"error": str(e)}, status=500)
