@@ -1173,7 +1173,16 @@ def backtest_view(request):
                     "dates": g["date"].dt.strftime("%Y-%m-%d").tolist(),
                     "strategy": g["cum_strategy"].astype(float).tolist(),
                     "buy_hold": g["cum_buy_hold"].astype(float).tolist(),
-                    # 其他指標欄位可以加
+
+                    # 新增分析指標👇
+                    "final_strategy_return": float(g["cum_strategy"].iloc[-1]),   # 策略最終報酬率 (%)
+                    "final_buy_hold_return": float(g["cum_buy_hold"].iloc[-1]),   # Buy & Hold 報酬率 (%)
+                    "max_drawdown": float(((g["cum_strategy"] / g["cum_strategy"].cummax()) - 1).min() * 100),  # 最大回撤 (%)
+                    "win_rate": float((g["pred"] == 1).sum() / len(g["pred"]) * 100),  # 做多次數比例 (%)
+                    "trade_count": int(((g['pred'] != 0) & (g['pred'] != g['pred'].shift(1))).sum()),  # 交易次數
+                    "avg_gain_per_trade": float(g.loc[g['pred'] == 1, 'close_price'].pct_change().mean() * 100),  # 平均獲利 (%)
+                    "volatility": float(g['close_price'].pct_change().std() * np.sqrt(252) * 100),  # 年化波動率 (%)
+                    "sharpe_ratio": float((g['close_price'].pct_change().mean() / g['close_price'].pct_change().std()) * np.sqrt(252)),  # 夏普比率
                 }
             
             # ... (省略結果處理和 GPT 分析部分，保持原有邏輯)
@@ -1181,9 +1190,22 @@ def backtest_view(request):
                 print(f"Coin {coin_id}: 策略回測失敗。")
                 continue
 
-            g_final = coin_result[strategy_to_test]
-            strategy_pct = (g_final["strategy"][-1] - 1) * 100
-            buy_hold_pct = (g_final["buy_hold"][-1] - 1) * 100
+            # g_final = coin_result[strategy_to_test]
+            # strategy_pct = (g_final["strategy"][-1] - 1) * 100
+            # buy_hold_pct = (g_final["buy_hold"][-1] - 1) * 100
+
+            strategy_results = {}
+            for strat_name, strat_data in coin_result.items():
+                strategy_results[strat_name] = {
+                    "strategy_pct": (strat_data["strategy"][-1] - 1) * 100,
+                    "buy_hold_pct": (strat_data["buy_hold"][-1] - 1) * 100,
+                    "max_drawdown": strat_data["max_drawdown"],
+                    "sharpe_ratio": strat_data["sharpe_ratio"],
+                    "volatility": strat_data["volatility"],
+                    "win_rate": strat_data["win_rate"],
+                    "trade_count": strat_data["trade_count"],
+                    "avg_gain_per_trade": strat_data["avg_gain_per_trade"],
+                }
 
             df_plot = df.dropna(subset=["bb_upper", "bb_lower"]).reset_index(drop=True)
 
@@ -1199,8 +1221,7 @@ def backtest_view(request):
                 # 新增 BBands 輸出以便除錯
                 "bb_upper": df_plot["bb_upper"].tolist(),
                 "bb_lower": df_plot["bb_lower"].tolist(),
-                "strategy_pct": round(strategy_pct, 2), 
-                "buy_hold_pct": round(buy_hold_pct, 2), 
+                "strategies": strategy_results
             }
 
         # ... (省略 GPT 分析部分)
@@ -1210,8 +1231,19 @@ def backtest_view(request):
         summary_data = {
             coin_id: {
                 "coin_name": v["coin_name"],
-                "strategy_pct": v["strategy_pct"],
-                "buy_hold_pct": v["buy_hold_pct"]
+                "strategies": {
+                    strat_name: {
+                        "strategy_pct": round(s.get("strategy_pct", 0), 2),
+                        "buy_hold_pct": round(s.get("buy_hold_pct", 0), 2),
+                        "max_drawdown": round(s.get("max_drawdown", 0), 2),
+                        "sharpe_ratio": round(s.get("sharpe_ratio", 0), 2),
+                        "volatility": round(s.get("volatility", 0), 2),
+                        "win_rate": round(s.get("win_rate", 0), 2),
+                        "trade_count": int(s.get("trade_count", 0)),
+                        "avg_gain_per_trade": round(s.get("avg_gain_per_trade", 0), 2)
+                    }
+                    for strat_name, s in v["strategies"].items()
+                }
             }
             for coin_id, v in result_data.items()
         }
@@ -1219,16 +1251,25 @@ def backtest_view(request):
         print(summary_data)
 
         analysis_prompt = f"""
-        以下是加密貨幣在過去 7 天回測的摘要數據（單位：%）：
-        {json.dumps(summary_data, ensure_ascii=False, indent=2)}
+            以下是加密貨幣在過去 7 天回測的摘要數據（單位：%）：
+            {json.dumps(summary_data, ensure_ascii=False, indent=2)}
 
-        請幫我做以下事情：
-        1. 比較每個幣種策略 vs Buy&Hold 的最終報酬率。
-        2. 評估策略表現是否優於 Buy&Hold。
-        3. 指出哪個幣種的策略表現最佳，以及哪個最差。
-        4. 提供投資上的建議（例如：是否適合長期持有、需注意的風險）。
-        請用中文回答，並條列重點。
-        """
+            本次使用的策略包括：
+            {', '.join(strategies)}
+
+            請你根據以上資料，進行以下分析（請用中文、條列重點）：
+
+            各幣種「策略績效」與「Buy & Hold」的最終報酬率比較。  
+            評估每個幣種的策略表現是否優於 Buy & Hold（請指出差距百分比）。  
+            分析各策略在整體上的表現特徵（例如：哪種策略適合震盪盤、哪種在趨勢盤效果好）。  
+            指出「整體表現最佳」與「表現最差」的幣種與策略。  
+            提供投資建議，包括：  
+            - 是否建議持續使用該策略  
+            - 是否適合長期持有  
+            - 潛在風險或改進建議  
+
+            請用清晰、條列式方式回答，若有數據差異，請明確指出（例如：策略報酬率比 Buy & Hold 高 3.2%）。
+            """
 
         url = "https://free.v36.cm/v1/chat/completions"
         headers = {

@@ -141,7 +141,7 @@ function createAllStrategyCharts(data) {
             {
               label: 'Buy & Hold',
               data: stratData.buy_hold,
-              borderColor: getRandomColor(),
+              borderColor: '#00bfff',
               borderDash: [5,5],
               fill: false,
               tension: 0.1
@@ -184,7 +184,7 @@ async function init() {
         .replace(/^###\s*(\d+\.\s*.*)$/gm, '<div class="subtitle">$1</div>')
         .replace(/^##\s*(.*)$/gm, '<div class="section-title">$1</div>')
         .replace(/^#\s*(.*)$/gm, '<div class="main-title">$1</div>')
-        .replace(/(\d+(\.\d+)?%)/g, '<span class="percent">$1</span>');
+        .replace(/(-?\d+(\.\d+)?%)/g, '<span class="percent">$1</span>');
       document.getElementById('gptAnalysis').innerHTML = `<pre>${formatted}</pre>`;
     }
 
