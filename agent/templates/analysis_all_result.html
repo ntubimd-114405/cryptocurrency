@@ -14,6 +14,36 @@
     margin: 30px auto;
   }
 
+  #gptAnalysis .title {
+    margin: 10px 0 5px;
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #ff6600;
+  }
+  #gptAnalysis .main-title {
+    font-size: 1.6em;
+    font-weight: bold;
+    margin: 12px 0 6px;
+    color: #ff6600;
+    border-bottom: 2px solid #ddd;
+  }
+  #gptAnalysis .section-title {
+    font-size: 1.4em;
+    font-weight: bold;
+    margin: 10px 0 4px;
+    color: #007bff;
+  }
+  #gptAnalysis .subtitle {
+    font-size: 1.5em;
+    font-weight: bold;
+    margin: 8px 0 2px;
+    color: #28a745;
+  }
+  #gptAnalysis .percent {
+    color: #ff5722;
+    font-weight: bold;
+  }
+
   /* 淡入動畫 */
   @keyframes fadeIn {
     from {
@@ -131,7 +161,7 @@
   {% if analysis %}
   <div class="card shadow-sm mb-4 border-0 fade-in" style="animation-delay: 0.2s;">
     <div class="card-header bg-primary text-white fw-bold">分析摘要</div>
-    <div class="card-body" style="white-space: pre-wrap;">{{ analysis }}</div>
+    <div id="gptAnalysis" class="card-body" style="white-space: pre-wrap;">{{ analysis }}</div>
   </div>
   {% endif %}
 </div>
@@ -644,6 +674,23 @@
           }, 500);
         });
       });
+
+      document.addEventListener("DOMContentLoaded", () => {
+      const gptAnalysisDiv = document.getElementById("gptAnalysis");
+      if (gptAnalysisDiv) {
+        let gptAnalysis = gptAnalysisDiv.innerHTML;
+
+        // 格式化 Markdown-like 標題/強調文字
+        let formatted = gptAnalysis
+          .replace(/\*\*(.*?)\*\*/g, '<span class="title">$1</span>')
+          .replace(/^###\s*(\d+\.\s*.*)$/gm, '<div class="subtitle">$1</div>')
+          .replace(/^##\s*(.*)$/gm, '<div class="section-title">$1</div>')
+          .replace(/^#\s*(.*)$/gm, '<div class="main-title">$1</div>')
+          .replace(/(\d+(\.\d+)?%)/g, '<span class="percent">$1</span>');
+
+        gptAnalysisDiv.innerHTML = formatted;
+      }
+    });
 
     </script>
     {% endif %}

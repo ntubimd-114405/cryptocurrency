@@ -10,70 +10,59 @@
   .analysis-card {
     text-align: left;
   }
-
   h1 {
       text-align: center;
       font-size: 2.5em;
       color: #4CAF50;
       margin-bottom: 20px;
   }
-
   #gptAnalysis .title {
     margin: 10px 0 5px;
     font-size: 1.2em;
     font-weight: bold;
-    color: #ff6600;         /* 橘色 */
+    color: #ff6600;
   }
-
   #gptAnalysis .main-title {
     font-size: 1.6em;
     font-weight: bold;
     margin: 12px 0 6px;
-    color: #ff6600; /* 橘色 */
+    color: #ff6600;
     border-bottom: 2px solid #ddd;
   }
-
   #gptAnalysis .section-title {
     font-size: 1.4em;
     font-weight: bold;
     margin: 10px 0 4px;
-    color: #007bff; /* 藍色 */
+    color: #007bff;
   }
-
   #gptAnalysis .subtitle {
     font-size: 1.5em;
     font-weight: bold;
     margin: 8px 0 2px;
-    color: #28a745; /* 綠色 */
+    color: #28a745;
   }
-
   #gptAnalysis .percent {
     color: #ff5722;
     font-weight: bold;
   }
-
   #gptAnalysis {
     margin: 40px auto;
     padding: 40px;
     border-radius: 12px;
     box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
+  }
   #gptAnalysis:hover {
       transform: translateY(-10px);
       box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
   }
-  /* 响应式设计 */
   @media (max-width: 768px) {
       #gptAnalysis {
           padding: 20px;
       }
-
       h1 {
           font-size: 2em;
       }
-
       h2 {
           font-size: 1.5em;
       }
@@ -84,121 +73,118 @@
 
   <h1>GPT 分析報告</h1>
   <div id="gptAnalysis" class="analysis-card"></div>
-  <hr>
-  <h1>回測結果</h1>
-
-  <canvas id="backtestChart" width="1000" height="500"></canvas>
-
   
-  <script>
-  let backtestChart;
+  <hr>
 
-  const coinIds = {{ coin_id }};
-  console.log(coinIds);
+  <!-- 多圖動態插入區 -->
+  <div id="multiCharts"></div>
 
-  // 取得網址參數
-  function getQueryParam(param, defaultValue) {
-    const urlParams = new URLSearchParams(window.location.search);
-    return urlParams.get(param) || defaultValue;
-  }
+<script>
+const coinIds = {{ coin_id }}; // Django template 變數
+console.log(coinIds);
 
-  // 抓取 Django API
-  async function fetchBacktestData() {
-    const url = `/api/backtest/?coin_id=${coinIds}`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error("無法取得回測資料");
-    return res.json();
-  }
-
-  function renderBacktestChart(data) {
-    const ctx = document.getElementById('backtestChart').getContext('2d');
-    if (backtestChart) backtestChart.destroy();
-
-    const datasets = [];
-
-    for (const coinId of Object.keys(data)) {
-      const coinData = data[coinId];
-      const color = getRandomColor();  // 同一幣種共用顏色
-
-      datasets.push({
-        label: `${coinData.coin_name} (${coinIds}) - 策略績效`,
-        data: coinData.strategy,
-        borderColor: color,
-        fill: false,
-        tension: 0.1
-      });
-      datasets.push({
-        label: `${coinData.coin_name} (${coinIds}) - Buy & Hold`,
-        data: coinData.buy_hold,
-        borderColor: color,
-        borderDash: [5, 5],
-        fill: false,
-        tension: 0.1
-      });
-    }
-
-    const labels = Object.values(data)[0].dates;  // 取第一個幣種的日期
-
-    backtestChart = new Chart(ctx, {
-      type: 'line',
-      data: { labels, datasets },
-      options: {
-        responsive: true,
-        interaction: { mode: 'index', intersect: false },
-        plugins: {
-          title: { display: true, text: `多幣種回測結果` },
-          tooltip: { mode: 'index', intersect: false }
-        },
-        scales: {
-          x: { display: true, title: { display: true, text: '日期' } },
-          y: { display: true, title: { display: true, text: '累積報酬率' } }
-        }
-      }
-    });
-  }
-
-  function getRandomColor() {
-    const letters = '0123456789ABCDEF';
-    let color = '#';
-    for (let i = 0; i < 6; i++) {
-      color += letters[Math.floor(Math.random() * 16)];
-    }
-    return color;
-  }
-
-  async function fetchGptAnalysis() {
-    const url = `/api/backtest/?coin_id=${coinIds}`;
-    const res = await fetch(url);
-    if (!res.ok) throw new Error("無法取得 GPT 分析");
-    return res.json();
+async function fetchBacktestData() {
+  const url = `/api/backtest/?coin_id=${coinIds}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error("無法取得回測資料");
+  return res.json();
 }
 
+function getRandomColor() {
+  const letters = '0123456789ABCDEF';
+  let color = '#';
+  for (let i = 0; i < 6; i++) color += letters[Math.floor(Math.random() * 16)];
+  return color;
+}
+
+// 🔹 這裡改成完整 10 策略版本
+const strategies = [
+  'EMA_CROSS', 'RSI_REVERSION','MACD_CROSS', 
+  'DONCHIAN_BREAKOUT', 'ROC_MOMENTUM', 'OBV_TREND'
+];
+
+// ---------------------------
+// 產生每個幣種所有策略的圖表
+function createAllStrategyCharts(data) {
+  const container = document.getElementById("multiCharts");
+  container.innerHTML = ""; // 清空舊圖表
+
+  for (const coinId of Object.keys(data)) {
+    const coinData = data[coinId];
+    const section = document.createElement("div");
+    section.innerHTML = `<hr><h2>${coinData.coin_name}</h2>`;
+    container.appendChild(section);
+
+    strategies.forEach((strat, idx) => {
+      const stratData = coinData.strategy[strat];
+      if (!stratData) return; // 若該策略沒資料就跳過
+
+      const canvas = document.createElement("canvas");
+      canvas.id = `chart_${coinId}_${strat}`;
+      canvas.width = 900;
+      canvas.height = 400;
+      section.appendChild(canvas);
+
+      const ctx = canvas.getContext('2d');
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: stratData.dates,
+          datasets: [
+            {
+              label: `${strat} 策略績效`,
+              data: stratData.strategy,
+              borderColor: getRandomColor(),
+              fill: false,
+              tension: 0.1
+            },
+            {
+              label: 'Buy & Hold',
+              data: stratData.buy_hold,
+              borderColor: getRandomColor(),
+              borderDash: [5,5],
+              fill: false,
+              tension: 0.1
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: { 
+            title: { 
+              display: true, 
+              text: `${strat} vs Buy & Hold` 
+            } 
+          },
+          scales: { 
+            x: { title: { display: true, text: '日期' } }, 
+            y: { title: { display: true, text: '累積報酬率' } } 
+          }
+        }
+      });
+    });
+  }
+}
+
+// ---------------------------
+// 初始化
 async function init() {
   try {
-    const apiData = await fetchBacktestData(); // 從 Django API 取得 JSON
-    console.log("API 回傳資料:", apiData);
-
-    // ✅ 分成兩部分
+    const apiData = await fetchBacktestData();
     const data = apiData.result_data;
     const gptAnalysis = apiData.gpt_analysis;
 
-    // 先畫圖
-    renderBacktestChart(data);
+    // 所有策略圖表
+    createAllStrategyCharts(data);
 
-    // ✅ 顯示 GPT 分析
-    if (typeof gptAnalysis !== 'undefined' && gptAnalysis) {
+    // 顯示 GPT 分析
+    if (gptAnalysis) {
       let formatted = gptAnalysis
         .replace(/\*\*(.*?)\*\*/g, '<span class="title">$1</span>')
-        // 處理 ### 開頭的標題 (三級標題)
         .replace(/^###\s*(\d+\.\s*.*)$/gm, '<div class="subtitle">$1</div>')
-        // 處理 ## 開頭的標題 (二級標題)
         .replace(/^##\s*(.*)$/gm, '<div class="section-title">$1</div>')
-        // 處理 # 開頭的標題 (一級標題)
         .replace(/^#\s*(.*)$/gm, '<div class="main-title">$1</div>')
-        // 整數或小數
-        .replace(/(\d+(\.\d+)?%)/g, '<span class="percent">$1</span>')
-
-
+        .replace(/(\d+(\.\d+)?%)/g, '<span class="percent">$1</span>');
       document.getElementById('gptAnalysis').innerHTML = `<pre>${formatted}</pre>`;
     }
 
@@ -206,7 +192,9 @@ async function init() {
     alert('初始化失敗：' + err.message);
   }
 }
+
 init();
-  </script>
+</script>
+
 </body>
 </html>
