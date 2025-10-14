@@ -1062,9 +1062,10 @@ def classify_question_api(request):
 
             integration_prompt = f"""
             使用者問題：{user_input}
-            以下是多個不同來源的模塊輸出，請幫我整合成一段自然語言的回覆，
-            保留重要數據與事件，邏輯清晰，適合直接回覆使用者：
+            以下是多個不同來源的模塊輸出，請幫我整合成條列式的自然語言的回覆，
+            保留重要數據與事件，邏輯清晰，適合直接回覆使用者，並根據使用者問題總結回覆：
             {integration_prompt_content}
+            
             """
             integrated_summary = call_chatgpt("你是一個專業的資訊整合助理", integration_prompt)
         except Exception as e:
@@ -1076,7 +1077,7 @@ def classify_question_api(request):
         DialogEvaluation.objects.create(
             user_input=user_input,
             expected_intent="(人工)認為這句話應該屬於哪種意圖（標準答案）",  # 也可改成更精確的意圖
-            predicted_intent=", ".join(ordered_combined) + (f", date: {start_date} ~ {end_date}" if start_date and end_date else ", date:none"),
+            predicted_intent=", ".join(ordered_combined) + (f", {start_date} ~ {end_date}" if start_date and end_date else ""),
             expected_response="(人工)認為合適的機器人回應",
             generated_response=integrated_summary,
             analyze_data=json.dumps([fa.get("analyze", "") for fa in final_answers], ensure_ascii=False),  # 這一行存所有 analyze
@@ -1097,4 +1098,56 @@ def chat_view(request):
 
 
 
+@csrf_exempt
+@require_http_methods(["GET"])
+def get_module_suggestions_api(request):
+    """
+    根據使用者選擇的模組回傳推薦問題列表
+    """
+    selected_modules = request.GET.getlist("modules[]", [])
 
+    # 各模組對應建議
+    suggestions = {
+        "price": [
+            "目前比特幣價格分析",
+            "以太坊技術指標與走勢",
+            "加密貨幣市場漲跌原因",
+        ],
+        "news": [
+            "最近加密貨幣新聞重點",
+            "比特幣相關政策更新",
+            "最新市場公告與事件",
+        ],
+        "other": [
+            "台股與美股的相關性",
+            "美元指數對市場的影響",
+            "通膨數據與加密貨幣關係",
+        ],
+        "questionnaire": [
+            "請根據問卷結果給我投資建議",
+            "幫我推薦適合的投資標的",
+            "分析我目前的投資偏好",
+        ]
+    }
+
+    # ✅ 若使用者沒有勾選模組 → 給「綜合建議」
+    if not selected_modules:
+        merged_suggestions = [
+            "目前比特幣價格分析",
+            "給我九月的乙太坊價格，並給我新聞跟相關數據，並給我投資建議",
+            "最近加密貨幣新聞重點",
+        ]
+    else:
+        #測試使用，未來可以使用註解的版本
+        merged_suggestions = [ 
+            "目前比特幣價格分析",
+            "給我九月的乙太坊價格，並給我新聞跟相關數據，並給我投資建議",
+            "最近加密貨幣新聞重點",
+        ]
+        '''
+        # 整合使用者選擇模組的建議
+        merged_suggestions = []
+        for module in selected_modules:
+            merged_suggestions.extend(suggestions.get(module, []))
+        '''
+    return JsonResponse({"suggestions": merged_suggestions}, json_dumps_params={"ensure_ascii": False})

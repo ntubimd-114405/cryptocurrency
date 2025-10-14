@@ -7,4 +7,5 @@ urlpatterns = [
     path('<int:report_id>/', views.view_weekly_report_by_id, name='view_weekly_report_by_id'),
     path("chat/", views.chat_view, name="chat"),
     path("api/classify/", views.classify_question_api, name="classify_question_api"),
+    path("get_module_suggestions_api/", views.get_module_suggestions_api, name="get_module_suggestions_api"),
 ]

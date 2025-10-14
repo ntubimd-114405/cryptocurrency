@@ -23,7 +23,8 @@
   </div>
 
   <div class="chat-input">
-    <input type="text" class="userInput-page1" placeholder="輸入訊息..." />
+    <input list="preset-questions" class="userInput-page1" placeholder="輸入訊息或選擇問題..." />
+    <datalist id="preset-questions"></datalist>
     <button class="sendBtn-page1" type="button">送出 🚀</button>
   </div>
 </div>
@@ -123,7 +124,12 @@
   color: #4a148c;
   border: 1px solid #ce93d8;
 }
-
+.message.summary {
+  background: linear-gradient(135deg, #e4f4ff, #cdeeff);
+  color: #0b3954;
+  align-self: flex-start;
+  border: 1px solid #b3e5fc;
+}
 /* 出場動畫 */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(6px); }
@@ -212,12 +218,12 @@
   padding: 8px 14px;
   color: #0c4a6e;
 }
-.message.loading span {
-  animation: opacityPulse 1.5s infinite alternate;
+.message.loading .dot {
+  animation: blink 1s infinite alternate;
 }
-@keyframes opacityPulse {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 1; }
+@keyframes blink {
+  0% { opacity: 0.4; }
+  100% { opacity: 1; }
 }
 .module-tags span {
   background: #e0e0e0;
@@ -225,6 +231,133 @@
   padding: 2px 6px;
   margin-right: 3px;
   display: inline-block;
+}
+
+/* 模組選擇容器 */
+.module-select {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+/* 模組選項風格 */
+.module-option {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  cursor: pointer;
+  font-size: 14px;
+  transition: 0.2s;
+}
+
+.module-option input[type="checkbox"] {
+  margin-right: 6px;
+  accent-color: #4f9cff; /* checkbox 主色 */
+}
+
+.module-option:hover {
+  background: linear-gradient(135deg, #f0f8ff, #e0f0ff);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+  transform: translateY(-1px);
+}
+
+.userInput-page1 {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  outline: none;
+  transition: 0.2s;
+}
+
+.userInput-page1:focus {
+  border-color: #4f9cff;
+  box-shadow: 0 0 5px rgba(79,156,255,0.4);
+}
+
+/* 送出按鈕風格 */
+.sendBtn-page1 {
+  background: linear-gradient(135deg, #4f9cff, #007bff);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: 0.2s;
+}
+
+.sendBtn-page1:hover {
+  background: linear-gradient(135deg, #5fb3ff, #3399ff);
+  transform: translateY(-1px);
+}
+
+.sendBtn-page1:active {
+  transform: translateY(1px);
+}
+
+/* datalist 下拉選項的間距 */
+input[list]::-webkit-calendar-picker-indicator,
+input[list]::-webkit-inner-spin-button,
+input[list]::-webkit-clear-button {
+  display: none;
+}
+.analyze-content {
+  font-family: Inter, sans-serif;
+  line-height: 1.6;
+  color: #333;
+}
+
+.analyze-content .h1 { font-size: 1.8em; font-weight: 700; margin: 16px 0 8px; }
+.analyze-content .h2 { font-size: 1.5em; font-weight: 600; margin: 14px 0 6px; }
+.analyze-content .h3 { font-size: 1.3em; font-weight: 600; margin: 12px 0 6px; }
+.analyze-content .h4 { font-size: 1.1em; font-weight: 500; margin: 10px 0 4px; color: #333; }
+.analyze-content .h5,
+.analyze-content .h6 { font-size: 1em; font-weight: 500; color: #555; }
+
+.analyze-content .bold { font-weight: bold; }
+.analyze-content .italic { font-style: italic; }
+.analyze-content .percent { color: #007bff; font-weight: 600; }
+
+.analyze-content blockquote.quote {
+  border-left: 4px solid #007bff;
+  padding-left: 12px;
+  margin: 10px 0;
+  color: #555;
+  background: #f8f9fa;
+  border-radius: 4px;
+}
+
+.analyze-content .code-block {
+  background: #f5f5f5;
+  padding: 10px;
+  border-radius: 8px;
+  font-family: 'Fira Code', monospace;
+  overflow-x: auto;
+}
+
+.analyze-content .inline-code {
+  background: #eee;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-family: 'Fira Code', monospace;
+}
+
+.analyze-content ul,
+.analyze-content ol {
+  margin-left: 20px;
+  padding-left: 10px;
+}
+
+.analyze-content .divider {
+  border: none;
+  border-top: 2px solid #ddd;
+  margin: 12px 0;
 }
 </style>
 
@@ -292,10 +425,46 @@ function appendMessage(messagesContainer, text, sender, isTag=false, extraData=n
         div.appendChild(p2);
       }
       if (analyze) {
-        const p3 = document.createElement('p');
-        p3.innerHTML = analyze.replace(/&lt;br&gt;/g, "<br>"); // 保留換行
+        console.log(analyze)
+        const p3 = document.createElement('div'); // 改成 div，更好控制樣式
+        p3.classList.add("analyze-content");
+
+        let formatted = analyze
+          // 保留 <br>
+          .replace(/&lt;br&gt;/g, "<br>")
+          // 處理程式碼區塊 ```...```
+          .replace(/```([\s\S]*?)```/g, '<pre class="code-block"><code>$1</code></pre>')
+          // 行內程式碼 `...`
+          .replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>')
+          // 粗體文字 **文字**
+          .replace(/\*\*(.*?)\*\*/g, '<span class="bold">$1</span>')
+          // 斜體文字 *文字* 或 _文字_
+          .replace(/(\*|_)(.*?)\1/g, '<span class="italic">$2</span>')
+          // 處理 ###### ~ #
+          .replace(/(^|<br\s*\/?>)\s*######\s*(.*?)(?=<br|$)/g, '$1<div class="h6">$2</div>')
+          .replace(/(^|<br\s*\/?>)\s*#####\s*(.*?)(?=<br|$)/g, '$1<div class="h5">$2</div>')
+          .replace(/(^|<br\s*\/?>)\s*####\s*(.*?)(?=<br|$)/g, '$1<div class="h4">$2</div>')
+          .replace(/(^|<br\s*\/?>)\s*###\s*(.*?)(?=<br|$)/g, '$1<div class="h3">$2</div>')
+          .replace(/(^|<br\s*\/?>)\s*##\s*(.*?)(?=<br|$)/g, '$1<div class="h2">$2</div>')
+          .replace(/(^|<br\s*\/?>)\s*#\s*(.*?)(?=<br|$)/g, '$1<div class="h1">$2</div>')
+          // 處理引言
+          .replace(/^>\s*(.*)$/gm, '<blockquote class="quote">$1</blockquote>')
+          // 處理有序清單
+          .replace(/^\d+\.\s+(.*)$/gm, '<li>$1</li>')
+          .replace(/(<li>.*<\/li>)(?!(\s*<li>|\s*<\/ul>))/gm, '<ol>$1</ol>')
+          // 處理無序清單 (- 或 *)
+          .replace(/^[-*]\s+(.*)$/gm, '<li>$1</li>')
+          .replace(/(<li>.*<\/li>)(?!(\s*<li>|\s*<\/ul>))/gm, '<ul>$1</ul>')
+          // 處理水平線
+          .replace(/^(-{3,}|\*{3,})$/gm, '<hr class="divider">')
+          // 百分比數字
+          .replace(/(\d+(\.\d+)?%)/g, '<span class="percent">$1</span>');
+
+        // 填入 HTML
+        p3.innerHTML = formatted;
+
+        // 插入到目標區塊
         div.appendChild(p3);
-        console.log(analyze);
       }
   } else if (sender === "questionnaire") {
     if (text) {
@@ -352,6 +521,8 @@ function appendMessage(messagesContainer, text, sender, isTag=false, extraData=n
             type: 'line',
             data: { datasets },
             options: {
+              animation: false,
+              elements: { line: { tension: 0 } },
               responsive: true,
               plugins: {
                 legend: { display: true }
@@ -375,34 +546,98 @@ function appendMessage(messagesContainer, text, sender, isTag=false, extraData=n
         }
       });
     }
+    const p2 = document.createElement('div'); // 改成 div，更好控制樣式
+    p2.classList.add("analyze-content");
 
-    const p2 = document.createElement('p');
-    p2.innerHTML = analyze.replace(/&lt;br&gt;/g, "<br>");
+    let formatted = analyze
+      // 保留 <br>
+      .replace(/&lt;br&gt;/g, "<br>")
+      // 處理程式碼區塊 ```...```
+      .replace(/```([\s\S]*?)```/g, '<pre class="code-block"><code>$1</code></pre>')
+      // 行內程式碼 `...`
+      .replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>')
+      // 粗體文字 **文字**
+      .replace(/\*\*(.*?)\*\*/g, '<span class="bold">$1</span>')
+      // 斜體文字 *文字* 或 _文字_
+      .replace(/(\*|_)(.*?)\1/g, '<span class="italic">$2</span>')
+      // 處理 ###### ~ #
+      .replace(/(^|<br\s*\/?>)\s*######\s*(.*?)(?=<br|$)/g, '$1<div class="h6">$2</div>')
+      .replace(/(^|<br\s*\/?>)\s*#####\s*(.*?)(?=<br|$)/g, '$1<div class="h5">$2</div>')
+      .replace(/(^|<br\s*\/?>)\s*####\s*(.*?)(?=<br|$)/g, '$1<div class="h4">$2</div>')
+      .replace(/(^|<br\s*\/?>)\s*###\s*(.*?)(?=<br|$)/g, '$1<div class="h3">$2</div>')
+      .replace(/(^|<br\s*\/?>)\s*##\s*(.*?)(?=<br|$)/g, '$1<div class="h2">$2</div>')
+      .replace(/(^|<br\s*\/?>)\s*#\s*(.*?)(?=<br|$)/g, '$1<div class="h1">$2</div>')
+      // 處理引言
+      .replace(/^>\s*(.*)$/gm, '<blockquote class="quote">$1</blockquote>')
+      // 處理有序清單
+      .replace(/^\d+\.\s+(.*)$/gm, '<li>$1</li>')
+      .replace(/(<li>.*<\/li>)(?!(\s*<li>|\s*<\/ul>))/gm, '<ol>$1</ol>')
+      // 處理無序清單 (- 或 *)
+      .replace(/^[-*]\s+(.*)$/gm, '<li>$1</li>')
+      .replace(/(<li>.*<\/li>)(?!(\s*<li>|\s*<\/ul>))/gm, '<ul>$1</ul>')
+      // 處理水平線
+      .replace(/^(-{3,}|\*{3,})$/gm, '<hr class="divider">')
+      // 百分比數字
+      .replace(/(\d+(\.\d+)?%)/g, '<span class="percent">$1</span>');
+
+    // 填入 HTML
+    p2.innerHTML = formatted;
+
+    // 插入到目標區塊
     div.appendChild(p2);
 
+  } else if (sender === "summary") {
+    console.log("summary text:", text);
+    if (text) {
+      const p = document.createElement("p");
+      p.classList.add("analyze-content");
+
+      let formatted = text
+        // 標題 ###### ~ #
+        .replace(/######\s*(.*)/g, '<div class="h6">$1</div>')
+        .replace(/#####\s*(.*)/g, '<div class="h5">$1</div>')
+        .replace(/####\s*(.*)/g, '<div class="h4">$1</div>')
+        .replace(/###\s*(.*)/g, '<div class="h3">$1</div>')
+        .replace(/##\s*(.*)/g, '<div class="h2">$1</div>')
+        .replace(/#\s*(.*)/g, '<div class="h1">$1</div>')
+        // 粗體 **文字**
+        .replace(/\*\*(.*?)\*\*/g, '<span class="bold">$1</span>')
+        // 斜體 *文字* 或 _文字_
+        .replace(/(\*|_)(.*?)\1/g, '<span class="italic">$2</span>')
+        // 行內程式碼 `...`
+        .replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>')
+        // 百分比高亮
+        .replace(/(\d+(\.\d+)?%)/g, '<span class="percent">$1</span>')
+        // 引言 >
+        .replace(/^>\s*(.*)/gm, '<blockquote class="quote">$1</blockquote>');
+
+      // 有序清單
+      formatted = formatted.replace(/(^|\n)(\d+\..*(\n\d+\..*)*)/g, match => {
+        const items = match.trim().split(/\n/).map(line => line.replace(/^\d+\.\s+(.*)/, '<li>$1</li>')).join('');
+        return `<ol>${items}</ol>`;
+      });
+
+      // 無序清單
+      formatted = formatted.replace(/(^|\n)([-*]\s+.*(\n[-*]\s+.*)*)/g, match => {
+        const items = match.trim().split(/\n/).map(line => line.replace(/^[-*]\s+(.*)/, '<li>$1</li>')).join('');
+        return `<ul>${items}</ul>`;
+      });
+
+      // 移除多餘 <br>
+      formatted = formatted.replace(/(<\/(ul|ol|div|blockquote)>)<br>/g, "$1");
+
+      p.innerHTML = formatted;
+      div.appendChild(p);
+  }
   } else if (sender === "loding") {
     div.classList.add('message', 'loading');
-
-    // 文字部分
-    const spanText = document.createElement('span');
-    spanText.textContent = text;   // 例如 "生成中"
-    div.appendChild(spanText);
-
-    // 動態點點部分
-    const dotSpan = document.createElement('span');
-    dotSpan.className = 'dots';
-
-    // 建立三個 span，配合 CSS 跳動動畫
-    for (let i = 0; i < 3; i++) {
-      const dot = document.createElement('span');
-      dotSpan.appendChild(dot);
-    }
-
-    div.appendChild(dotSpan);
-
+    div.textContent = text || "生成中";
+    const dot = document.createElement('span');
+    dot.className = 'dot';
+    dot.textContent = '...';
+    div.appendChild(dot);
     messagesContainer.appendChild(div);
-
-    return div;  // 保存 div 方便後續刪除
+    return div;
 
   } else if (sender === "bot") {
     if (extraData && extraData.length) {
@@ -448,6 +683,8 @@ function appendMessage(messagesContainer, text, sender, isTag=false, extraData=n
           }]
         },
         options: {
+          animation: false,
+          elements: { line: { tension: 0 } },
           responsive: true,
           plugins: {
             legend: { display: true },
@@ -515,6 +752,8 @@ function appendMessage(messagesContainer, text, sender, isTag=false, extraData=n
           }]
         },
         options: {
+          animation: false,
+          elements: { line: { tension: 0 } },
           responsive: true,
           plugins: {
             tooltip: {
@@ -551,10 +790,45 @@ function appendMessage(messagesContainer, text, sender, isTag=false, extraData=n
       });
       
       window.chatCharts.push(volChart);
-      const p2 = document.createElement('p');
-      p2.innerHTML = analyze.replace(/&lt;br&gt;/g, "<br>");
+      const p2 = document.createElement('div'); // 改成 div，更好控制樣式
+      p2.classList.add("analyze-content");
+
+      let formatted = analyze
+        // 保留 <br>
+        .replace(/&lt;br&gt;/g, "<br>")
+        // 處理程式碼區塊 ```...```
+        .replace(/```([\s\S]*?)```/g, '<pre class="code-block"><code>$1</code></pre>')
+        // 行內程式碼 `...`
+        .replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>')
+        // 粗體文字 **文字**
+        .replace(/\*\*(.*?)\*\*/g, '<span class="bold">$1</span>')
+        // 斜體文字 *文字* 或 _文字_
+        .replace(/(\*|_)(.*?)\1/g, '<span class="italic">$2</span>')
+        // 處理 ###### ~ #
+        .replace(/(^|<br\s*\/?>)\s*######\s*(.*?)(?=<br|$)/g, '$1<div class="h6">$2</div>')
+        .replace(/(^|<br\s*\/?>)\s*#####\s*(.*?)(?=<br|$)/g, '$1<div class="h5">$2</div>')
+        .replace(/(^|<br\s*\/?>)\s*####\s*(.*?)(?=<br|$)/g, '$1<div class="h4">$2</div>')
+        .replace(/(^|<br\s*\/?>)\s*###\s*(.*?)(?=<br|$)/g, '$1<div class="h3">$2</div>')
+        .replace(/(^|<br\s*\/?>)\s*##\s*(.*?)(?=<br|$)/g, '$1<div class="h2">$2</div>')
+        .replace(/(^|<br\s*\/?>)\s*#\s*(.*?)(?=<br|$)/g, '$1<div class="h1">$2</div>')
+        // 處理引言
+        .replace(/^>\s*(.*)$/gm, '<blockquote class="quote">$1</blockquote>')
+        // 處理有序清單
+        .replace(/^\d+\.\s+(.*)$/gm, '<li>$1</li>')
+        .replace(/(<li>.*<\/li>)(?!(\s*<li>|\s*<\/ul>))/gm, '<ol>$1</ol>')
+        // 處理無序清單 (- 或 *)
+        .replace(/^[-*]\s+(.*)$/gm, '<li>$1</li>')
+        .replace(/(<li>.*<\/li>)(?!(\s*<li>|\s*<\/ul>))/gm, '<ul>$1</ul>')
+        // 處理水平線
+        .replace(/^(-{3,}|\*{3,})$/gm, '<hr class="divider">')
+        // 百分比數字
+        .replace(/(\d+(\.\d+)?%)/g, '<span class="percent">$1</span>');
+
+      // 填入 HTML
+      p2.innerHTML = formatted;
+
+      // 插入到目標區塊
       div.appendChild(p2);
-    
     } else {
 
       const p = document.createElement('p');
@@ -632,7 +906,7 @@ function appendMessage(messagesContainer, text, sender, isTag=false, extraData=n
         // 顯示整合回覆
         if (data.integrated_summary) {
 
-          appendMessage(messages, '整合回覆：' + data.integrated_summary, 'bot');
+          appendMessage(messages, '整合回覆：' + data.integrated_summary, 'summary');
         }
 
       } catch(err) { console.error('解析 SSE 訊息錯誤', err); }
@@ -654,6 +928,30 @@ function appendMessage(messagesContainer, text, sender, isTag=false, extraData=n
   input.addEventListener("keypress", e => { if(e.key==="Enter") sendMessage(); });
 
 })();
+
+const datalist = document.getElementById('preset-questions');
+
+// 定義更新 datalist 函式
+async function updateDatalist() {
+  const selectedModules = Array.from(document.querySelectorAll('.module-select input[type="checkbox"]:checked'))
+    .map(c => c.value);
+
+  const params = new URLSearchParams();
+  selectedModules.forEach(m => params.append("modules[]", m));
+
+  const response = await fetch(`/report/get_module_suggestions_api?${params.toString()}`);
+  const data = await response.json();
+
+  datalist.innerHTML = data.suggestions.map(q => `<option value="${q}">`).join("");
+}
+
+// 頁面一載入就更新一次
+updateDatalist();
+
+// checkbox 改變時也更新
+document.querySelectorAll('.module-select input[type="checkbox"]').forEach(checkbox => {
+  checkbox.addEventListener('change', updateDatalist);
+});
 </script>
 
 

@@ -184,9 +184,6 @@
     <button class="nav-link active" id="main-tab" data-bs-toggle="tab" data-bs-target="#main" type="button" role="tab">K線圖</button>
   </li>
   <li class="nav-item" role="presentation">
-    <button class="nav-link" id="info-tab" data-bs-toggle="tab" data-bs-target="#info" type="button" role="tab">基本資訊</button>
-  </li>
-  <li class="nav-item" role="presentation">
     <button class="nav-link" id="orderbook-tab" data-bs-toggle="tab" data-bs-target="#orderbook" type="button" role="tab">即時訂單簿</button>
   </li>
   <li class="nav-item" role="presentation">
@@ -209,11 +206,6 @@
   <!-- ✅ 預設主頁面：K 線圖（你的原始內容放這） -->
   <div class="tab-pane fade show active" id="main" role="tabpanel" aria-labelledby="main-tab">
     {% include 'cypto_detail/chart_tab.html' %}
-  </div>
-
-  <!-- 基本資訊 -->
-  <div class="tab-pane fade" id="info" role="tabpanel" aria-labelledby="info-tab">
-    {% include 'cypto_detail/coin_info.html' %}
   </div>
 
   <!-- 即時訂單簿 -->
