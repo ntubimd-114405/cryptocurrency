@@ -40,20 +40,28 @@ from django.views.decorators.http import require_http_methods
 
 
 
+
 # 1. K線、技術指標數據生成（K線 & TA）-----------
 def load_price_data_from_db(coin_id, start_date=None, end_date=None):
     queryset = CoinHistory.objects.filter(coin_id=coin_id)
     name = Coin.objects.get(id=1).coinname
+
     if start_date:
         queryset = queryset.filter(date__gte=start_date)
     if end_date:
         queryset = queryset.filter(date__lte=end_date)
 
+
     queryset = queryset.order_by('-date').values(
         'date', 'open_price', 'high_price', 'low_price', 'close_price', 'volume'
-    )[:60*24*120] #120天
+    )[:60*24*120]  # 120天
 
     df = pd.DataFrame.from_records(queryset)
+
+    if df.empty:
+        # 空結果時回傳空值
+        return "", pd.DataFrame()
+
     df.rename(columns={
         'date': 'Date',
         'open_price': 'Open',
@@ -77,10 +85,19 @@ def load_price_data_from_db(coin_id, start_date=None, end_date=None):
     for col in ['Open', 'High', 'Low', 'Close', 'Volume']:
         daily_df[col] = daily_df[col].astype(float)
 
-    return name,daily_df
+    return name, daily_df
 
 # 技術指標計算
 def add_technical_indicators(df):
+    if df.empty:
+        # 建立空 DataFrame，包含後續可能會使用的欄位（空型態）
+        empty_df = pd.DataFrame(columns=[
+            'rsi', 'macd', 'macd_signal', 'ma20', 'ma60', 
+            'Date', 'Date_str', 'Open', 'High', 'Low', 'Close',
+            'ohlc', 'rsi_point', 'macd_bar', 'macd_signal_line'
+        ])
+        return empty_df
+
     # 計算技術指標
     df['rsi'] = ta.momentum.RSIIndicator(df['Close'], window=14).rsi()
     macd = ta.trend.MACD(df['Close'])
@@ -92,7 +109,7 @@ def add_technical_indicators(df):
     # 將日期轉為字串格式供前端使用
     df['Date_str'] = df['Date'].dt.strftime('%Y-%m-%d')
 
-    # 建立畫 K 線圖用欄位格式（若你使用 plotly 或 Highcharts 等）
+    # 建立畫 K 線圖用欄位格式
     df['ohlc'] = df.apply(lambda row: {
         'x': row['Date_str'],
         'open': row['Open'],
@@ -177,12 +194,14 @@ def decimal_to_float(data_list):
     return [float(val) if isinstance(val, Decimal) else val for val in data_list]
 
 # 主視圖：weekly report
-def full_month_data_view():
-    today = timezone.now().date()
-    start_date = today - timedelta(days=120)
+def full_month_data_view(start_date=None, end_date=None):
+    if end_date is None:
+        end_date = timezone.now().date()
+    if start_date is None:
+        start_date = end_date - timedelta(days=120)
 
     # 📈 FinancialData 資料
-    financial_qs = FinancialData.objects.select_related('symbol').filter(date__range=(start_date, today))
+    financial_qs = FinancialData.objects.select_related('symbol').filter(date__range=(start_date, end_date))
     financial_df = pd.DataFrame(list(financial_qs.values(
         'symbol__symbol', 'symbol__name', 'date',
         'open_price', 'high_price', 'low_price', 'close_price', 'volume'
@@ -211,9 +230,9 @@ def full_month_data_view():
         all_rows.extend(sorted_rows)
 
     indicator_df = pd.DataFrame(all_rows)
-    
+
     # 🔗 BitcoinMetricData 資料
-    bitcoin_qs = BitcoinMetricData.objects.select_related('metric').filter(date__range=(start_date, today))
+    bitcoin_qs = BitcoinMetricData.objects.select_related('metric').filter(date__range=(start_date, end_date))
     bitcoin_df = pd.DataFrame(list(bitcoin_qs.values(
         'metric__name', 'metric__unit', 'metric__period', 'date', 'value'
     )))
@@ -229,8 +248,7 @@ def full_month_data_view():
 
 @login_required
 def report_list(request):
-    user = request.user
-    reports = WeeklyReport.objects.filter(user=user).order_by('-year', '-week')
+    reports = WeeklyReport.objects.order_by('-year', '-week')
 
     today = now().date()
     this_year, this_week, _ = today.isocalendar()
@@ -299,7 +317,7 @@ def generate_weekly_report(request):
     end_date = start_date + timedelta(days=6)
 
     # 重新計算資料
-    coin,df = load_price_data_from_db(1)  # 或 user.id，視你的邏輯
+    coin,df = load_price_data_from_db(1,start_date,end_date)  # 或 user.id，視你的邏輯
     
     df = add_technical_indicators(df).tail(30)
     ma20_data = decimal_to_float(df['ma20'].tolist())
@@ -549,6 +567,290 @@ def generate_weekly_report(request):
 
 
 
+def generate_weekly_report2(year, week):
+    today = now().date()
+    print(year, week)
+    # 根據 year 和 week 計算出 start_date（週一）與 end_date（週日）
+    start_date = date.fromisocalendar(year, week, 1)
+    end_date = start_date + timedelta(days=6)
+    # 如果 end_date 超過今天，改用今天
+    if end_date > today:
+        end_date = today
+
+    # 重新計算資料
+    coin,df = load_price_data_from_db(1,start_date,end_date)  
+    
+
+    df = add_technical_indicators(df).tail(30)
+    ma20_data = decimal_to_float(df['ma20'].tolist())
+    ma60_data = decimal_to_float(df['ma60'].tolist())
+
+
+    news_summary = search_news(
+        "BTC",# 目前寫死
+        start_date.strftime("%Y-%m-%d"),
+        end_date.strftime("%Y-%m-%d"),
+    )
+    news_summary_with_links = ""
+
+    # 先取出所有文章 id
+    article_ids = [article_data["id"] for article_data in news_summary]
+
+    # 從資料庫抓對應的 Article 物件
+    articles = Article.objects.filter(id__in=article_ids)
+    articles_dict = {article.id: article for article in articles}
+
+    # 依照 news_summary 的順序生成 HTML
+    for article_data in news_summary:
+        article_id = article_data["id"]
+        article = articles_dict.get(article_id)
+
+        if not article:
+            continue  # 如果資料庫沒有該文章就跳過
+
+        url = reverse('news_detail', kwargs={'article_id': article.id})
+        title_html = f'<a href="{url}" target="_blank">{escape(article.title)}</a>'
+        date_str = escape(article_data.get("date", ""))
+        summary_html = escape(article.summary or "")
+
+    news_summary_with_links = ""
+
+    # 先取出所有文章 id
+    article_ids = [int(article_data["id"]) for article_data in news_summary]
+
+    # 從資料庫抓對應的 Article 物件
+    articles = Article.objects.filter(id__in=article_ids)
+    articles_dict = {article.id: article for article in articles}
+
+    # 依照 news_summary 的順序生成 HTML 並累積文字
+    for article_data in news_summary:
+        article_id = int(article_data["id"])
+        article = articles_dict.get(article_id)
+        if not article:
+            continue
+
+        # 文章連結
+        url = reverse('news_detail', kwargs={'article_id': article.id})
+        title_html = f'<a href="{url}" target="_blank">{escape(article.title)}</a>'
+
+        # 日期
+        date_str = article.time.strftime("%Y-%m-%d %H:%M") if article.time else escape(article_data.get("date", ""))
+
+        # 文章圖片（小圖）
+        article_image_html = ""
+        if article.image_url:
+            article_image_html = f'<img src="{article.image_url}" alt="Article Image" class="article-image">'
+
+        # 文章摘要
+        summary_html = escape(article.summary or "")
+
+        # 情緒分數
+        sentiment_html = f'<div class="sentiment-score">情緒分數: {article.sentiment_score:.2f}</div>' if article.sentiment_score else ""
+
+        # 組成新聞卡片 HTML
+        news_summary_with_links += f'''
+        <div class="news-card">
+            <h3>{title_html}</h3>
+            <span class="news-date">{date_str}</span>
+            <div class="news-body">
+                {f'<div class="news-thumb">{article_image_html}</div>' if article_image_html else ''}
+                <p class="news-summary">{summary_html}</p>
+                {sentiment_html}
+            </div>
+        </div>
+        '''
+
+
+
+    # 從資料庫抓取這段時間的文章 content
+    start_datetime = datetime.combine(start_date, time.min)  # 00:00:00
+    end_datetime   = datetime.combine(end_date, time.max)    # 23:59:59.999999
+
+    # 從資料庫抓文章
+    articles_qs = Article.objects.filter(
+        time__range=(start_datetime, end_datetime)
+    ).values_list('content', flat=True)
+
+    # 過濾 None 或空字串
+    news_text_list = [content for content in articles_qs if content]
+
+    # 合併成單一字串給詞頻分析
+    news_text = "\n".join(news_text_list)
+
+    # 計算詞頻
+    word_freqs = process_word_frequency_sklearn(news_text)
+
+    # 統計有 sentiment_score 的文章數，分中立、正面、負面
+    sentiment_counts = {
+        'positive': 0,  # 例如 sentiment_score > 0.6
+        'neutral': 0,   # sentiment_score介於0.4~0.6
+        'negative': 0   # sentiment_score < 0.4
+    }
+
+    for article in articles_qs:
+        score = article['sentiment_score']
+        if score is not None:
+            if score > 0.1:
+                sentiment_counts['positive'] += 1
+            elif score < -0.1:
+                sentiment_counts['negative'] += 1
+            else:
+                sentiment_counts['neutral'] += 1
+
+    sentiment_counts_json = json.dumps(sentiment_counts, ensure_ascii=False)
+    data = {
+        "MA20": list(ma20_data[-7:]),
+        "MA60": list(ma60_data[-7:]),
+        "RSI": df['rsi_point'].dropna().tail(7).tolist(),
+        "MACD": df['macd_bar'].dropna().tail(7).tolist(),
+        "MACD_Signal": df['macd_signal_line'].dropna().tail(7).tolist(),
+        "OHLC": df['ohlc'].dropna().tail(7).tolist(),
+    }
+    formatted = json.dumps(data, ensure_ascii=False)
+
+
+    coin_analysis = call_chatgpt(
+        system="你是一位專業金融分析師，請用 HTML <div> 包裝你的技術分析評論。",
+        text=f"""請依據以下加密貨幣 {coin} 的技術分析資料進行簡潔評論，描述目前市場趨勢與可能的變化，避免逐筆說明，只需總體分析與解釋。請輸出為一段 HTML <div>...</div>，不要額外文字：
+        {formatted}
+        """
+    ).strip("```").strip("html")
+    
+
+    # 📊 中長期觀點資料整合
+    monthly_data = full_month_data_view(start_date,end_date)
+    financial_json = monthly_data['financial_data_json']
+    indicator_json = monthly_data['indicator_data_json']
+    bitcoin_json = monthly_data['bitcoin_data_json']
+
+    long_term_analysis = call_chatgpt(
+        system="你是一位金融市場研究員，請撰寫中長期觀察與趨勢預測。",
+        text=f"""
+        請你以金融分析師身份，根據以下三類資料，撰寫一段純文字格式的中長期市場觀察與趨勢預測分析。
+        請避免逐筆列舉資料，僅需從總體層面做出解釋與預測，語氣請保持客觀、專業，避免使用過多不確定詞。
+        請直接輸出文字，不要使用 HTML 格式與額外標記。
+        資料如下：
+        1. 金融價格資料（financial_data_json）：
+        {financial_json[:100]}
+
+        2. 宏觀指標資料（indicator_data_json）：
+        {indicator_json[:100]}
+
+        3. 比特幣鏈上指標資料（bitcoin_data_json）：
+        {bitcoin_json[:100]}
+        """
+    ).strip("```").strip("html").strip()
+
+    summary = call_chatgpt(
+        system="你是一位擅長撰寫財經總結的分析師。",
+        text=f"""
+        請你以專業金融分析師口吻，綜合以下兩部分內容，撰寫一段中文市場總結。  
+        請先用段落簡短介紹市場狀況，  
+        接著用 HTML 的 <table> 元素，建立一個兩欄的表格，  
+        左欄標題為「利多因素」，右欄標題為「利空因素」，  
+        整段內容用 <div> 包起來，且不要額外文字。
+
+        1. 技術分析評論：
+        {coin_analysis}
+
+        2. 近期新聞摘要：
+        {news_summary}
+
+        3. 近期新聞情緒分類數據：
+        {sentiment_counts}
+        
+        4. 長期市場觀察：
+        {long_term_analysis}
+        """
+    ).strip("```").strip("html").strip()
+# -----------3. 週報產生與多模組數據整合
+    from django.utils import timezone
+    import math
+    import pandas as pd
+
+    def clean_indicator(value, default=None):
+        """
+        將指標或資料清理成合法格式，避免 NaN 或 None 傳入 JSONField
+        - 可以處理單值 float/int
+        - list
+        - DataFrame Series
+        - list of dict (將 dict 內的 float NaN 轉成 default)
+        - dict
+        """
+        if default is None:
+            if isinstance(value, dict):
+                default = {}
+            elif isinstance(value, list):
+                default = []
+            else:
+                default = 0.0
+
+        if value is None:
+            return default
+
+        # DataFrame Series
+        if isinstance(value, pd.Series):
+            value = value.dropna().tolist()
+
+        # list 處理
+        if isinstance(value, list):
+            cleaned = []
+            for v in value:
+                if isinstance(v, dict):
+                    new_dict = {}
+                    for k, val in v.items():
+                        if isinstance(val, float) and math.isnan(val):
+                            new_dict[k] = default
+                        else:
+                            new_dict[k] = val
+                    cleaned.append(new_dict)
+                elif isinstance(v, float) and math.isnan(v):
+                    cleaned.append(default)
+                else:
+                    cleaned.append(v)
+            return cleaned
+
+        # dict 處理
+        if isinstance(value, dict):
+            new_dict = {}
+            for k, val in value.items():
+                if isinstance(val, float) and math.isnan(val):
+                    new_dict[k] = default
+                else:
+                    new_dict[k] = val
+            return new_dict
+
+        # 單一 float 處理
+        if isinstance(value, float) and math.isnan(value):
+            return default
+
+        return value
+
+    # 更新或新增 WeeklyReport
+    WeeklyReport.objects.update_or_create(
+        year=year,
+        week=week,
+        defaults={
+            'start_date': start_date or timezone.now().date(),
+            'end_date': end_date or timezone.now().date(),
+            'summary': summary or "",
+            'news_summary': news_summary_with_links or "",
+            'word_frequencies': clean_indicator(word_freqs, {}),
+            'ma20_data': clean_indicator(ma20_data, []),
+            'ma60_data': clean_indicator(ma60_data, []),
+            'ohlc_data': clean_indicator(df.get('ohlc', []), []),
+            'rsi_data': clean_indicator(df.get('rsi_point', []), []),
+            'macd_data': clean_indicator(df.get('macd_bar', []), []),
+            'macd_signal_data': clean_indicator(df.get('macd_signal_line', []), []),
+            'coin_analysis': coin_analysis or "",
+            'financial_data_json': clean_indicator(financial_json, {}),
+            'indicator_data_json': clean_indicator(indicator_json, {}),
+            'bitcoin_data_json': clean_indicator(bitcoin_json, {}),
+            'long_term_analysis': long_term_analysis or "",
+            'sentiment_counts_json': sentiment_counts_json,  # 新增欄位存JSON
+        }
+    )
+
 
 
 
@@ -585,7 +887,7 @@ def my_favorite_coins_view(request):
 
 @login_required
 def view_weekly_report_by_id(request, report_id):
-    report = get_object_or_404(WeeklyReport, id=report_id, user=request.user)
+    report = get_object_or_404(WeeklyReport, id=report_id)
 
     context = {
         'summary': report.summary,
@@ -602,7 +904,7 @@ def view_weekly_report_by_id(request, report_id):
         'indicator_data_json': report.indicator_data_json,
         'bitcoin_data_json': report.bitcoin_data_json,
         'long_term_analysis': report.long_term_analysis,
-        'user': report.user,
+        'sentiment_counts_json': json.dumps(report.sentiment_counts_json),
         'year': report.year,
         'week': report.week,
         'start_date': report.start_date,
@@ -1063,7 +1365,7 @@ def classify_question_api(request):
             integration_prompt = f"""
             使用者問題：{user_input}
             以下是多個不同來源的模塊輸出，請幫我整合成條列式的自然語言的回覆，
-            保留重要數據與事件，邏輯清晰，適合直接回覆使用者，並根據使用者問題總結回覆：
+            保留重要數據與事件，邏輯清晰，適合直接回覆使用者，並在最後回答使用者的問題：
             {integration_prompt_content}
             
             """

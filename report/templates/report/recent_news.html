@@ -66,3 +66,73 @@ h3 a:hover {
   <h2>📢 相關新聞</h2>
     {{ news_summary|safe }}
 </div>
+
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="sentiment-chart-container" style="max-width: 500px; margin: auto;">
+    <h3>情緒分類統計</h3>
+    <canvas id="sentimentChart"></canvas>
+</div>
+
+<script>
+    // 解析 Django 傳入的 JSON 字串到 JavaScript 物件
+    const sentimentData = JSON.parse('{{ sentiment_counts_json|escapejs }}');
+
+    // 取得情緒分類的標籤和數值
+    const values = Object.values(sentimentData);
+
+    const labelMap = {
+    'strong_positive': '強正面',
+    'positive': '正面',
+    'neutral': '中立',
+    'negative': '負面',
+    'strong_negative': '強負面'
+    };
+
+    const labels = Object.keys(sentimentData).map(k => labelMap[k] || k);
+    // 配色，可依需要調整
+    const backgroundColors = [
+        '#16a34a', // 綠色 - 正面
+        '#a3e635', // 淺綠 - 輕正面
+        '#fbbf24', // 黃色 - 中立
+        '#f87171', // 淺紅 - 輕負面
+        '#dc2626'  // 紅色 - 負面
+    ];
+
+    const ctx = document.getElementById('sentimentChart').getContext('2d');
+    const sentimentChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: '文章數量',
+                data: values,
+                backgroundColor: backgroundColors.slice(0, labels.length),
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.parsed.y} 篇`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: { stepSize: 1 },
+                    title: { display: true, text: '文章數量' }
+                },
+                x: {
+                    title: { display: true, text: '情緒分類' }
+                }
+            }
+        }
+    });
+</script>

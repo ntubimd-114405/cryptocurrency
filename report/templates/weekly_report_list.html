@@ -3,8 +3,8 @@
 {% block title %}週報紀錄{% endblock %}
 {% block content %}
 
-<h1>{{ request.user.first_name|default:request.user.username }} 的週報記錄</h1>
-<form action="{% url 'generate_weekly_report' %}" method="post" class="mb-3">
+<h1>週報記錄</h1>
+<!-- <form action="{% url 'generate_weekly_report' %}" method="post" class="mb-3">
   {% csrf_token %}
   <div class="row g-2 align-items-center">
     <div class="col-auto">
@@ -23,7 +23,6 @@
     </div>
     <div class="col-auto">
       <select id="weekSelect" name="week" class="form-select">
-        <!-- 週數選項將由 JS 動態產生 -->
       </select>
     </div>
 
@@ -31,7 +30,7 @@
       <button type="submit" class="btn btn-success">產生該週報告</button>
     </div>
   </div>
-</form>
+</form> -->
 
 <table class="table table-bordered align-middle text-center">
   <thead class="table-light">

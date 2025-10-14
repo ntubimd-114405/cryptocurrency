@@ -2,7 +2,7 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <title>加密貨幣K線圖 - 動態時間區間查詢</title>
+  <title>加密貨幣K線圖</title>
   <style>
     #chartdiv { width: 100%; height: 600px; }
     #controls { margin-bottom: 10px; }
@@ -148,6 +148,7 @@ am5.ready(function() {
     url.searchParams.append("end", end.toISOString());
     const resp = await fetch(url);
     if (resp.status === 204) return [];
+    console.log(url)
     if (!resp.ok) throw new Error("API 請求失敗：" + resp.status);
     const json = await resp.json();
     return json.data;
@@ -159,8 +160,18 @@ am5.ready(function() {
       const data = await fetchCoinHistory(coinId, start, end);
       if (!data || data.length === 0) {
         document.getElementById('loadingText').textContent = "查無資料，請選擇其他時間區間";
-        candleSeries.data.setAll([]);
-        volumeSeries.data.setAll([]);
+
+        const emptyData = [{
+            date: new Date(),
+            open: null,
+            high: null,
+            low: null,
+            close: null,
+            volume: 0
+        }];
+
+        candleSeries.data.setAll(emptyData);
+        volumeSeries.data.setAll(emptyData);
         return;
       }
       candleSeries.data.setAll(data);
@@ -189,29 +200,6 @@ am5.ready(function() {
   const startInputEl = document.getElementById('startDate');
   const endInputEl = document.getElementById('endDate');
 
-  let isProgrammaticChange = false;
-
-  startInputEl.addEventListener('change', () => {
-    if (isProgrammaticChange) return;
-    if (startInputEl.value) {
-      const start = new Date(startInputEl.value);
-      const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
-      isProgrammaticChange = true;
-      endInputEl.value = toDatetimeLocalString(end);
-      isProgrammaticChange = false;
-    }
-  });
-
-  endInputEl.addEventListener('change', () => {
-    if (isProgrammaticChange) return;
-    if (endInputEl.value) {
-      const end = new Date(endInputEl.value);
-      const start = new Date(end.getTime() - 24 * 60 * 60 * 1000);
-      isProgrammaticChange = true;
-      startInputEl.value = toDatetimeLocalString(start);
-      isProgrammaticChange = false;
-    }
-  });
 
   document.getElementById('btnQuery').addEventListener('click', () => {
     const startInput = document.getElementById('startDate').value;

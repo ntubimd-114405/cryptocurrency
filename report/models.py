@@ -2,7 +2,6 @@ from django.db import models
 from django.contrib.auth.models import User
 
 class WeeklyReport(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
     year = models.IntegerField()
     week = models.IntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
@@ -23,12 +22,13 @@ class WeeklyReport(models.Model):
     indicator_data_json = models.JSONField(null=True, blank=True)
     bitcoin_data_json = models.JSONField(null=True, blank=True)
     long_term_analysis = models.TextField(null=True, blank=True)
+    sentiment_counts_json = models.JSONField(null=True, blank=True)
 
     class Meta:
-        unique_together = ('user', 'year', 'week')
+        unique_together = ('year', 'week')
 
     def __str__(self):
-        return f'{self.user.username} - {self.year} W{self.week}'
+        return f'{self.year} W{self.week}'
 
 
 class DialogEvaluation(models.Model):
