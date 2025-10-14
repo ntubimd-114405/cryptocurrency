@@ -20,7 +20,7 @@ load_dotenv(dotenv_path=env_path)
 def fetch_coin_history(coin_id):
     from .models import Coin, CoinHistory
     from django.db.models import Max
-    
+    from django.db import transaction
 
     coin = Coin.objects.get(id=coin_id)
 
@@ -29,7 +29,7 @@ def fetch_coin_history(coin_id):
     latest_date = latest_history['latest_date']
     
     if latest_date is None:
-        latest_date = datetime(2025, 7, 1, 0, 0)
+        latest_date = datetime(2025, 4, 17, 0, 0)
     else:
         latest_date = latest_date + timedelta(minutes=1)
 # 3-3 CryptoHistoryFetcher類別ccxt抓取部分
@@ -38,26 +38,116 @@ def fetch_coin_history(coin_id):
 
 # 3-4 取得數據格式轉換與資料庫存儲部分
     if data:
+        # 先把資料轉成要插入的物件
+        objs = []
+        dates_to_insert = set()
+
         for history_data in data:
             date = datetime.strptime(history_data[0], '%Y-%m-%d %H:%M:%S')
             date = str(date) + "+00:00"
             open_price, high_price, low_price, close_price, volume = history_data[1:6]
 
-            CoinHistory.objects.get_or_create(
-                coin=coin,
-                date=date,
-                defaults={
-                    "open_price": open_price,
-                    "high_price": high_price,
-                    "low_price": low_price,
-                    "close_price": close_price,
-                    "volume": volume,
-                }
+            # 避免同一批次資料重複
+            if date in dates_to_insert:
+                continue
+            dates_to_insert.add(date)
+
+            objs.append(
+                CoinHistory(
+                    coin=coin,
+                    date=date,
+                    open_price=open_price,
+                    high_price=high_price,
+                    low_price=low_price,
+                    close_price=close_price,
+                    volume=volume
+                )
             )
-# 3-5成功或無數據日誌輸出
-        print(f"成功存入資料庫 {len(data)} 筆：{c.coin} {data[-1][0]}")
+
+        # 只查詢已有的資料日期
+        existing_dates = set(
+            CoinHistory.objects.filter(coin=coin, date__in=dates_to_insert)
+            .values_list('date', flat=True)
+        )
+
+        # 過濾已存在的日期
+        objs_to_create = [obj for obj in objs if obj.date not in existing_dates]
+
+        if objs_to_create:
+            with transaction.atomic():
+                CoinHistory.objects.bulk_create(objs_to_create)
+            print(f"成功存入資料庫 {len(objs_to_create)} 筆：{c.coin} {data[-1][0]}")
+        else:
+            print(f"資料已存在，無新資料存入：{c.coin} {data[-1][0]}")
+
     else:
         print(f"沒有資料存入資料庫：{c.coin} {c.starttime}")
+
+def fetch_all_coins_history_1day():
+    from .models import Coin, CoinHistory
+    from django.db.models import Max
+    from django.db import transaction
+    # 排除 id 1~10 的幣種
+    coins = Coin.objects.exclude(id__in=range(1, 11))
+
+    for coin in coins:
+        print(f"正在處理 {coin.abbreviation} (id={coin.id})...")
+
+        latest_history = CoinHistory.objects.filter(coin=coin).aggregate(latest_date=Max('date'))
+        latest_date = latest_history['latest_date']
+
+        if latest_date is None:
+            latest_date = datetime(2025, 4, 17, 0, 0)
+        else:
+            latest_date = latest_date + timedelta(minutes=1)
+
+        c = CryptoHistoryFetcher(coin.abbreviation, latest_date,"1d")
+        data = c.get_history()
+
+        if not data:
+            print(f"⚠️ 沒有資料存入資料庫：{c.coin} {c.starttime}")
+            continue
+
+        objs = []
+        dates_to_insert = set()
+
+        for history_data in data:
+            date = datetime.strptime(history_data[0], '%Y-%m-%d %H:%M:%S')
+            date_str = str(date) + "+00:00"
+            open_price, high_price, low_price, close_price, volume = history_data[1:6]
+
+            if date_str in dates_to_insert:
+                continue
+            dates_to_insert.add(date_str)
+
+            objs.append(
+                CoinHistory(
+                    coin=coin,
+                    date=date_str,
+                    open_price=open_price,
+                    high_price=high_price,
+                    low_price=low_price,
+                    close_price=close_price,
+                    volume=volume
+                )
+            )
+
+        # 查詢資料庫中已存在的日期，避免重複插入
+        existing_dates = set(
+            CoinHistory.objects.filter(coin=coin, date__in=dates_to_insert)
+            .values_list('date', flat=True)
+        )
+
+        objs_to_create = [obj for obj in objs if obj.date not in existing_dates]
+
+        if objs_to_create:
+            with transaction.atomic():
+                CoinHistory.objects.bulk_create(objs_to_create)
+            print(f"✅ 成功存入資料庫 {len(objs_to_create)} 筆：{c.coin} {data[-1][0]}")
+        else:
+            print(f"ℹ️ 資料已存在，無新資料存入：{c.coin} {data[-1][0]}")
+
+    print("🎯 所有幣種歷史資料更新完成！")
 
 # 3-1 Celery任務調度程式碼編輯器介面
 @shared_task

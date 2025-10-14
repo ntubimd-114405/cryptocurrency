@@ -23,8 +23,10 @@
     {% include 'report/report_market_overview.html' %}
     {% include 'report/report_technical_indicators.html' %}
     {% include 'report/report_coin_analysis.html' %}
-    {% include 'report/recent_news.html' %}
-    {% include 'report/report_wordcloud.html' %}  
+    <div class="text-block summary">
+        {% include 'report/recent_news.html' %}
+        {% include 'report/report_wordcloud.html' %}  
+    </div>
     {% include 'report/monthly_data_report.html' %}
 </div>
 

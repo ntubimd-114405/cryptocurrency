@@ -533,6 +533,7 @@ import pytz
 def coin_history(request, coin_id):
     start_str = request.GET.get('start')
     end_str = request.GET.get('end')
+    limit = 1500  # 新增 limit 參數，預設取 500 筆
 
     if not start_str or not end_str:
         return JsonResponse({'error': '缺少 start 或 end 參數'}, status=400)
@@ -546,27 +547,35 @@ def coin_history(request, coin_id):
     if start >= end:
         return JsonResponse({'error': 'start 需早於 end'}, status=400)
 
-    # 查詢資料，注意這裡假設 date 存的是 UTC 時間
-    qs = CoinHistory.objects.filter(
-        coin_id=coin_id,
-        date__gte=start,
-        date__lte=end
-    ).order_by('date')
-
-    data = []
-    for item in qs:
-        # amCharts 需要 timestamp (毫秒)
-        timestamp = int(item.date.timestamp() * 1000)
-        data.append({
-            "date": timestamp,
+    # 查詢資料並限制筆數
+    qs = (
+        CoinHistory.objects.filter(
+            coin_id=coin_id,
+            date__gte=start,
+            date__lte=end
+        )
+        .order_by('-date')[:limit]  # 取最新 N 筆
+    )
+    records = list(qs)[::-1]
+    data = [
+        {
+            "date": int(item.date.timestamp() * 1000),  # amCharts 需要毫秒時間戳
             "open": float(item.open_price),
             "high": float(item.high_price),
             "low": float(item.low_price),
             "close": float(item.close_price),
-            "volume": float(item.volume)
-        })
+            "volume": float(item.volume),
+        }
+        for item in records
+    ]
 
-    return JsonResponse({"data": data})
+
+    if 1 <= coin_id <= 10:
+        interval = "minute"
+    else:
+        interval = "day"
+    
+    return JsonResponse({"data": data, "interval": interval})
 
 @login_required
 def delete_account(request):
