@@ -1,51 +1,68 @@
 {% extends 'administrator/base.html' %}
 {% block content %}
 <style>
-  input[readonly], textarea[readonly], input[disabled] {
-    background-color: #e9ecef !important;
+  textarea {
+    min-height: 180px !important;
+    font-size: 1rem;
+  }
+
+  input[readonly],
+  textarea[readonly],
+  input[disabled] {
+    background-color: #f1f3f5 !important;
     color: #6c757d !important;
     cursor: not-allowed;
   }
+
+  .card {
+    border-radius: 16px;
+  }
+
+  .form-label {
+    font-weight: 600;
+  }
 </style>
+
 <div class="container mt-4">
-  <div class="card shadow p-4" style="border-radius: 16px;">
+  <div class="card shadow p-4">
     <h2 class="mb-4">🧠 Dialog Evaluation Detail — ID: {{ eval_obj.id }}</h2>
 
     <form method="post">
       {% csrf_token %}
 
-      <!-- User Input (readonly display) -->
+      <!-- 使用者輸入 -->
       <div class="mb-3">
-        <label class="form-label fw-bold">📝 使用者輸入 (User Input)</label>
-        <pre class="form-control" style="height:auto; white-space: pre-wrap;">{{ eval_obj.user_input }}</pre>
+        <label class="form-label">📝 使用者輸入 (User Input)</label>
+        {{ form.user_input }}
       </div>
 
-      <!-- Intent -->
+      <!-- 意圖 -->
+      <div class="row">
+        <div class="col-md-6 mb-3">
+          <label class="form-label">🔍 預期意圖 (Expected Intent)</label>
+          {{ form.expected_intent }}
+        </div>
+        <div class="col-md-6 mb-3">
+          <label class="form-label">🤖 預測意圖 (Predicted Intent)</label>
+          {{ form.predicted_intent }}
+        </div>
+      </div>
+
+      <!-- 回應 -->
       <div class="mb-3">
-        <label class="form-label fw-bold">🔍 預期意圖 (Expected Intent)</label>
-        <input type="text" class="form-control" name="expected_intent" value="{{ form.expected_intent.value }}">
+        <label class="form-label">✅ 預期回應 (Expected Response)</label>
+        {{ form.expected_response }}
       </div>
 
       <div class="mb-3">
-        <label class="form-label fw-bold">🤖 預測意圖 (Predicted Intent)</label>
-        <input type="text" class="form-control" value="{{ form.predicted_intent.value }}" readonly>
+        <label class="form-label">💬 生成回應 (Generated Response)</label>
+        {{ form.generated_response }}
       </div>
 
-      <!-- Response fields -->
-      <div class="mb-3">
-        <label class="form-label fw-bold">✅ 預期回應 (Expected Response)</label>
-        <textarea name="expected_response" class="form-control" rows="4">{{ form.expected_response.value }}</textarea>
-      </div>
-
-      <div class="mb-3">
-        <label class="form-label fw-bold">💬 生成回應 (Generated Response)</label>
-        <textarea class="form-control" rows="4" readonly>{{ form.generated_response.value }}</textarea>
-      </div>
-
-      <!-- Task success (readonly checkbox) -->
-      <div class="mb-3">
-        <label class="form-label fw-bold">🎯 任務成功 (Task Success)</label>
-        <input type="checkbox" class="form-check-input" {% if form.task_success.value %} checked {% endif %} disabled>
+      <!-- 任務成功 -->
+      <div class="form-check mb-3">
+        <input type="checkbox" class="form-check-input" {% if form.instance.task_success %}checked{% endif %} disabled>
+        <label class="form-check-label fw-bold">🎯 任務成功 (Task Success)</label>
       </div>
 
       <!-- Buttons -->
@@ -56,5 +73,4 @@
     </form>
   </div>
 </div>
-
 {% endblock %}

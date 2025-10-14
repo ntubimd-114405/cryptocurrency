@@ -129,10 +129,22 @@ class DialogEvaluationForm(forms.ModelForm):
         model = DialogEvaluation
         fields = '__all__'
         widgets = {
-            'user_input': forms.Textarea(attrs={'rows':3}),
-            'expected_response': forms.Textarea(attrs={'rows':3}),
-            'generated_response': forms.Textarea(attrs={'rows':5}),
-            'analyze_data': forms.Textarea(attrs={'rows':5}),
+            'user_input': forms.Textarea(attrs={
+                'rows': 5, 'class': 'form-control', 'readonly': True
+            }),
+            'expected_intent': forms.TextInput(attrs={
+                'class': 'form-control', 'placeholder': '請輸入預期意圖'
+            }),
+            'predicted_intent': forms.TextInput(attrs={
+                'class': 'form-control', 'readonly': True
+            }),
+            'expected_response': forms.Textarea(attrs={
+                'rows': 6, 'class': 'form-control', 'placeholder': '請輸入預期回應'
+            }),
+            'generated_response': forms.Textarea(attrs={
+                'rows': 6, 'class': 'form-control', 'readonly': True
+            }),
+            'analyze_data': forms.Textarea(attrs={'rows': 5, 'class': 'form-control'}),
         }
 
 def dialog_evaluation_detail(request, pk):
