@@ -3,7 +3,102 @@
 {% block title %}週報紀錄{% endblock %}
 {% block content %}
 
-<h1>週報記錄</h1>
+<style>
+  body {
+    background: linear-gradient(135deg, #e9f0ff 0%, #f9fbff 100%);
+    font-family: 'Inter', 'Noto Sans TC', sans-serif;
+  }
+
+  h1 {
+    text-align: center;
+    font-weight: 600;
+    margin-bottom: 2rem;
+    color: #2b4c7e;
+  }
+
+  .report-card {
+    background: #fff;
+    border-radius: 24px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    padding: 2rem;
+    max-width: 1000px;
+    margin: 0 auto;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .report-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  thead {
+    background: #f1f5ff;
+  }
+
+  th {
+    color: #2b4c7e;
+    font-weight: 600;
+    padding: 1rem;
+  }
+
+  td {
+    padding: 1rem;
+    color: #333;
+    vertical-align: middle;
+  }
+
+  tr {
+    transition: background-color 0.2s ease;
+  }
+
+  tr:hover {
+    background-color: #f7faff;
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+    border: none;
+    border-radius: 12px;
+    padding: 6px 14px;
+    font-weight: 500;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.4);
+    transition: all 0.2s ease;
+  }
+
+  .btn-primary:hover {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    transform: scale(1.05);
+    box-shadow: 0 4px 10px rgba(37, 99, 235, 0.5);
+  }
+
+  .empty-row {
+    color: #888;
+    text-align: center;
+    font-style: italic;
+    padding: 1.5rem 0;
+  }
+
+  /* 響應式 */
+  @media (max-width: 768px) {
+    .report-card {
+      padding: 1.2rem;
+    }
+
+    table th, table td {
+      font-size: 0.9rem;
+      padding: 0.7rem;
+    }
+  }
+</style>
+
+
+<h1>📘 週報紀錄</h1>
 <!-- <form action="{% url 'generate_weekly_report' %}" method="post" class="mb-3">
   {% csrf_token %}
   <div class="row g-2 align-items-center">
@@ -32,31 +127,40 @@
   </div>
 </form> -->
 
-<table class="table table-bordered align-middle text-center">
-  <thead class="table-light">
-    <tr>
-      <th>年份</th>
-      <th>週數</th>
-      <th>建立時間</th>
-      <th>操作</th>
-    </tr>
-  </thead>
-  {% for report in reports %}
-  <tr>
-    <td>{{ report.year }}</td>
-    <td>{{ report.week }}</td>
-    <td>{{ report.created_at|date:"Y-m-d H:i" }}</td>
-    <td>
-      <a class="btn btn-sm btn-primary" href="{% url 'view_weekly_report_by_id' report.id %}">查看</a>
-    </td>
-  </tr>
-  {% empty %}
-  <tr><td colspan="4">尚未產生任何報告</td></tr>
-  {% endfor %}
-</table>
 
+
+
+<div class="report-card">
+  <table class="table align-middle text-center">
+    <thead>
+      <tr>
+        <th>年份</th>
+        <th>週數</th>
+        <th>時間範圍</th>
+        <th>操作</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for report in reports %}
+      <tr>
+        <td>{{ report.year }}</td>
+        <td>{{ report.week }}</td>
+        <td>{{ report.start_date|date:"Y-m-d" }} ~ {{ report.end_date|date:"Y-m-d" }}</td>
+        <td>
+          <a class="btn btn-sm btn-primary" href="{% url 'view_weekly_report_by_id' report.id %}">查看</a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="4" class="empty-row">尚未產生任何報告 🕒</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<br><br><br><br><br>
 <script>
-  // 從後端傳入的 weeks_by_year 物件，確保它是有效的 JSON
+  // 年份與週數的初始化邏輯（保留原功能）
   const weeksByYear = {{ weeks_by_year|safe }};
   const yearSelect = document.getElementById('yearSelect');
   const weekSelect = document.getElementById('weekSelect');
@@ -70,19 +174,20 @@
       const option = document.createElement('option');
       option.value = w;
       option.textContent = `第 ${w} 週`;
-      if(selectedYear == initialYear && w == initialWeek){
+      if (selectedYear == initialYear && w == initialWeek) {
         option.selected = true;
       }
       weekSelect.appendChild(option);
     });
   }
 
-  yearSelect.addEventListener('change', () => {
-    updateWeekOptions(yearSelect.value);
-  });
-
-  // 初次載入時設定當前年份週數選項
-  updateWeekOptions(initialYear);
+  if (yearSelect && weekSelect) {
+    yearSelect.addEventListener('change', () => {
+      updateWeekOptions(yearSelect.value);
+    });
+    updateWeekOptions(initialYear);
+  }
 </script>
 
 {% endblock %}
+

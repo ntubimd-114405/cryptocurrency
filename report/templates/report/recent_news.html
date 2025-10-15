@@ -67,72 +67,74 @@ h3 a:hover {
     {{ news_summary|safe }}
 </div>
 
-<!-- Chart.js CDN -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<div class="sentiment-chart-container" style="max-width: 500px; margin: auto;">
-    <h3>情緒分類統計</h3>
-    <canvas id="sentimentChart"></canvas>
+
+<div class="sentiment-chart-container">
+  <h3>每日情緒走勢</h3>
+  <canvas id="sentimentChart"></canvas>
 </div>
 
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    // 解析 Django 傳入的 JSON 字串到 JavaScript 物件
-    const sentimentData = JSON.parse('{{ sentiment_counts_json|escapejs }}');
+window.addEventListener('DOMContentLoaded', () => {
+  // 後端傳過來的是 JSON 字串 (有多一層引號)
+  const raw = '{{ sentiment_counts_json|escapejs }}';
+  
+  // 先解析成 JS 物件
+  const sentimentTrend = JSON.parse(JSON.parse(raw));
 
-    // 取得情緒分類的標籤和數值
-    const values = Object.values(sentimentData);
-
-    const labelMap = {
-    'strong_positive': '強正面',
-    'positive': '正面',
-    'neutral': '中立',
-    'negative': '負面',
-    'strong_negative': '強負面'
-    };
-
-    const labels = Object.keys(sentimentData).map(k => labelMap[k] || k);
-    // 配色，可依需要調整
-    const backgroundColors = [
-        '#16a34a', // 綠色 - 正面
-        '#a3e635', // 淺綠 - 輕正面
-        '#fbbf24', // 黃色 - 中立
-        '#f87171', // 淺紅 - 輕負面
-        '#dc2626'  // 紅色 - 負面
-    ];
-
-    const ctx = document.getElementById('sentimentChart').getContext('2d');
-    const sentimentChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: '文章數量',
-                data: values,
-                backgroundColor: backgroundColors.slice(0, labels.length),
-            }]
+  const ctx = document.getElementById('sentimentChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: sentimentTrend.dates,
+      datasets: [
+        {
+          label: '正面',
+          data: sentimentTrend.positive,
+          borderColor: '#16a34a',
+          backgroundColor: 'rgba(22, 163, 74, 0.15)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 4
         },
-        options: {
-            responsive: true,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            return `${context.parsed.y} 篇`;
-                        }
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: { stepSize: 1 },
-                    title: { display: true, text: '文章數量' }
-                },
-                x: {
-                    title: { display: true, text: '情緒分類' }
-                }
-            }
+        {
+          label: '中立',
+          data: sentimentTrend.neutral,
+          borderColor: '#fbbf24',
+          backgroundColor: 'rgba(251, 191, 36, 0.15)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 4
+        },
+        {
+          label: '負面',
+          data: sentimentTrend.negative,
+          borderColor: '#dc2626',
+          backgroundColor: 'rgba(220, 38, 38, 0.15)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 4
         }
-    });
+      ]
+    },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'top' },
+        tooltip: {
+          callbacks: {
+            label: (context) => `${context.dataset.label}: ${context.parsed.y} 篇`
+          }
+        }
+      },
+      scales: {
+        x: { title: { display: true, text: '日期' } },
+        y: { beginAtZero: true, title: { display: true, text: '文章數量' }, ticks: { stepSize: 1 } }
+      }
+    }
+  });
+});
 </script>

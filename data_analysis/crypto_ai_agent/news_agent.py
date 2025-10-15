@@ -37,7 +37,7 @@ def initialize_news_vector_store(
 
     # 找最新的新聞
     articles = Article.objects.filter(
-        summary__isnull=False, content__isnull=False
+        summary__isnull=False, content__isnull=False, time__isnull=False
     ).order_by("-time")[:max_docs]
 
     documents, ids = [], []
