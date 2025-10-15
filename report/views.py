@@ -5,7 +5,7 @@ from collections import Counter,defaultdict
 from decimal import Decimal
 from datetime import date,datetime,timedelta, time
 
-
+import math
 import numpy as np
 import pandas as pd
 import ta
@@ -20,12 +20,11 @@ from django.contrib.auth.decorators import login_required
 from django.utils.timezone import now
 from django.utils.html import escape
 from django.db import IntegrityError
-from django.db.models import Min, Max, Sum, DateField
+from django.db.models import Min, Max, Sum, DateField, F, Func, Count, Q, CharField
 from django.db.models.functions import Cast
 from django.urls import reverse
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-
 from .models import WeeklyReport,DialogEvaluation
 from main.models import CoinHistory,Coin,UserProfile, BitcoinPrice
 from news.models import Article
@@ -37,7 +36,8 @@ from data_analysis.crypto_ai_agent.news_agent import search_news
 from django.http import StreamingHttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
-
+from django.db.models import Count, Q
+from django.db.models.functions import TruncDate
 
 
 
@@ -47,14 +47,15 @@ def load_price_data_from_db(coin_id, start_date=None, end_date=None):
     name = Coin.objects.get(id=1).coinname
 
     if start_date:
-        queryset = queryset.filter(date__gte=start_date)
+        history_start_date = start_date - timedelta(days=120)
+        queryset = queryset.filter(date__gte=history_start_date)
     if end_date:
         queryset = queryset.filter(date__lte=end_date)
 
-
+    # 預設抓最多 120 天資料
     queryset = queryset.order_by('-date').values(
         'date', 'open_price', 'high_price', 'low_price', 'close_price', 'volume'
-    )[:60*24*120]  # 120天
+    )[:60*24*120]
 
     df = pd.DataFrame.from_records(queryset)
 
@@ -585,7 +586,6 @@ def generate_weekly_report2(year, week):
     ma20_data = decimal_to_float(df['ma20'].tolist())
     ma60_data = decimal_to_float(df['ma60'].tolist())
 
-
     news_summary = search_news(
         "BTC",# 目前寫死
         start_date.strftime("%Y-%m-%d"),
@@ -680,24 +680,36 @@ def generate_weekly_report2(year, week):
     # 計算詞頻
     word_freqs = process_word_frequency_sklearn(news_text)
 
-    # 統計有 sentiment_score 的文章數，分中立、正面、負面
-    sentiment_counts = {
-        'positive': 0,  # 例如 sentiment_score > 0.6
-        'neutral': 0,   # sentiment_score介於0.4~0.6
-        'negative': 0   # sentiment_score < 0.4
+    start_datetime = timezone.make_aware(datetime.combine(start_date, time.min))
+    end_datetime   = timezone.make_aware(datetime.combine(end_date, time.max))
+
+    # 篩選文章（含情緒分數）
+    articles_qs = (
+        Article.objects.filter(
+            time__isnull=False,
+            time__range=(start_datetime, end_datetime)
+        )
+        # 用 Cast 轉成字串，避免 ORM 嘗試轉 datetime 時區
+        .annotate(date_str=Cast(Func(F('time'), function='DATE'), CharField()))
+        .values('date_str')
+        .annotate(
+            positive=Count('id', filter=Q(sentiment_score__gt=0.1)),
+            neutral=Count('id', filter=Q(sentiment_score__gte=-0.1, sentiment_score__lte=0.1)),
+            negative=Count('id', filter=Q(sentiment_score__lt=-0.1)),
+        )
+        .exclude(date_str=None)
+        .order_by('date_str')
+    )
+
+    # 直接生成 JSON，不迭代 datetime.date
+    sentiment_trend = {
+        "dates": [item["date_str"] for item in articles_qs],
+        "positive": [item["positive"] for item in articles_qs],
+        "neutral": [item["neutral"] for item in articles_qs],
+        "negative": [item["negative"] for item in articles_qs],
     }
 
-    for article in articles_qs:
-        score = article['sentiment_score']
-        if score is not None:
-            if score > 0.1:
-                sentiment_counts['positive'] += 1
-            elif score < -0.1:
-                sentiment_counts['negative'] += 1
-            else:
-                sentiment_counts['neutral'] += 1
-
-    sentiment_counts_json = json.dumps(sentiment_counts, ensure_ascii=False)
+    sentiment_trend_json = json.dumps(sentiment_trend, ensure_ascii=False)
     data = {
         "MA20": list(ma20_data[-7:]),
         "MA60": list(ma60_data[-7:]),
@@ -757,16 +769,14 @@ def generate_weekly_report2(year, week):
         {news_summary}
 
         3. 近期新聞情緒分類數據：
-        {sentiment_counts}
+        {sentiment_trend_json}
         
         4. 長期市場觀察：
         {long_term_analysis}
         """
     ).strip("```").strip("html").strip()
 # -----------3. 週報產生與多模組數據整合
-    from django.utils import timezone
-    import math
-    import pandas as pd
+
 
     def clean_indicator(value, default=None):
         """
@@ -847,7 +857,7 @@ def generate_weekly_report2(year, week):
             'indicator_data_json': clean_indicator(indicator_json, {}),
             'bitcoin_data_json': clean_indicator(bitcoin_json, {}),
             'long_term_analysis': long_term_analysis or "",
-            'sentiment_counts_json': sentiment_counts_json,  # 新增欄位存JSON
+            'sentiment_counts_json': sentiment_trend_json,  # 新增欄位存JSON
         }
     )
 
@@ -1435,16 +1445,12 @@ def get_module_suggestions_api(request):
     # ✅ 若使用者沒有勾選模組 → 給「綜合建議」
     if not selected_modules:
         merged_suggestions = [
-            "目前比特幣價格分析",
             "給我九月的乙太坊價格，並給我新聞跟相關數據，並給我投資建議",
-            "最近加密貨幣新聞重點",
         ]
     else:
         #測試使用，未來可以使用註解的版本
         merged_suggestions = [ 
-            "目前比特幣價格分析",
             "給我九月的乙太坊價格，並給我新聞跟相關數據，並給我投資建議",
-            "最近加密貨幣新聞重點",
         ]
         '''
         # 整合使用者選擇模組的建議
