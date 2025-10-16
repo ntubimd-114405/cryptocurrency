@@ -11,9 +11,9 @@ from main.models import Coin  # 從 main app import Coin
 
 # ✅ 載入 .env
 load_dotenv()
-API_KEY = os.getenv("API_KEY")  # 你的 GPT API Key
+API_KEY = os.getenv("OPENAI_API_KEY")  # 你的 GPT API Key
 CMC_API_KEY = os.getenv("coinmarketcap_api")
-API_URL = 'https://free.v36.cm/v1/chat/completions'
+API_URL = 'https://api.openai.com/v1/chat/completions'
 
 
 # ✅ 前端頁面

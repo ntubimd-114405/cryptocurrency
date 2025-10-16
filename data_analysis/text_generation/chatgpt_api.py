@@ -6,8 +6,10 @@ import requests
 env_path = Path(__file__).resolve().parents[2] / '.env'
 load_dotenv(dotenv_path=env_path)
 
-api = os.getenv('API_KEY')
-api2 = os.getenv('API_KEY2')
+# api = os.getenv('API_KEY')
+# api2 = os.getenv('API_KEY2')
+api = os.getenv('OPENAI_API')
+api2 = os.getenv('OPENAI_API_KEY')
 
 
 def call_chatgpt(system, text):
@@ -19,7 +21,7 @@ def call_chatgpt(system, text):
     """
 
     # --- 第一個主要 API (ChatAnywhere) ---
-    url1 = "https://api.chatanywhere.org/v1/chat/completions"
+    url1 = "https://api.openai.com/v1/chat/completions"
     headers1 = {
         "Authorization": f"Bearer {api2}",
         "Content-Type": "application/json",
@@ -33,7 +35,7 @@ def call_chatgpt(system, text):
     }
 
     # --- 備用 API (free.v36.cm) ---
-    url2 = "https://free.v36.cm/v1/chat/completions"
+    url2 = 'https://free.v36.cm/v1/chat/completions'
     headers2 = {
         "Authorization": f"Bearer {api}",
         "Content-Type": "application/json",
