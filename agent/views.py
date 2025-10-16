@@ -24,7 +24,7 @@ env_path = Path(__file__).resolve().parents[2] / '.env'
 # 加載 .env 檔案
 load_dotenv(dotenv_path=env_path)
 
-api = os.getenv('OPEN_API')
+api = os.getenv('OPENAI_API_KEY')
 
 def call_free_chatgpt_api(request):
     
@@ -279,7 +279,7 @@ def get_total_analysis(user):
     )
 
 
-    url = 'https://free.v36.cm/v1/chat/completions'
+    url = 'https://api.openai.com/v1/chat/completions'
     headers = {
         'Authorization': f'Bearer {api}',
         'Content-Type': 'application/json',

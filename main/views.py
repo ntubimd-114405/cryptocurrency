@@ -33,7 +33,7 @@ env_path = Path(__file__).resolve().parents[2] / '.env'
 # 加載 .env 檔案
 load_dotenv(dotenv_path=env_path)
 
-api = os.getenv('OPEN_API')
+api = os.getenv('OPENAI_API_KEY')
 
 def home(request):
     try:
@@ -1280,7 +1280,7 @@ def backtest_view(request):
             請用清晰、條列式方式回答，若有數據差異，請明確指出（例如：策略報酬率比 Buy & Hold 高 3.2%）。
             """
 
-        url = "https://free.v36.cm/v1/chat/completions"
+        url = 'https://api.openai.com/v1/chat/completions'
         headers = {
             "Authorization": f"Bearer {api}",
             "Content-Type": "application/json",
