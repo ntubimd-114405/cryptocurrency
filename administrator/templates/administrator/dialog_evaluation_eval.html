@@ -14,7 +14,6 @@
     <div class="alert alert-info" role="alert">
       📊 共 {{ total_count }} 筆對話資料，其中 {{ analyzed_count }} 筆參與分析，
       剩下的未完成人工分析已自動略過。
-
     </div>
   {% endif %}
 
@@ -41,6 +40,50 @@
         </ul>
 
       </div>
+    </div>
+
+    <!-- 說明文字 -->
+    <div class="card p-3 mb-4" style="border-radius:16px; background-color:#f8f9fa;">
+      <h5 class="mb-3 text-secondary">指標說明與計算方式</h5>
+      <ul class="mb-0">
+        <li>
+          <strong>Intent Accuracy</strong>：意圖判斷正確率，計算方式為：
+          <br>
+          只有當 AI 預測的意圖集合與標準意圖集合完全一致時，才算正確（F1=1），否則算錯：
+          <br>
+          <code>match = 1 if predicted == expected else 0</code>
+          <br>
+          最後取所有對話的平均值。
+        </li>
+        <li>
+          <strong>Intent F1-score</strong>：意圖判斷 F1 分數，綜合精確率與召回率：
+          <br>
+          對每筆對話：
+          <br>
+          <code>precision = |predicted ∩ expected| / |predicted|</code>
+          <br>
+          <code>recall = |predicted ∩ expected| / |expected|</code>
+          <br>
+          <code>F1 = 2 * precision * recall / (precision + recall)</code>
+          <br>
+          最後取所有對話的平均值作為整體 F1-score。
+        </li>
+        <li>
+          <strong>Avg BLEU Score</strong>：回應生成的 BLEU 分數，衡量 AI 生成文字與標準回應的相似度：
+          <br>
+          使用 NLTK 的 sentence_bleu，先對中文文本做斷詞，然後計算 n-gram 相似度，取所有對話的平均值。
+        </li>
+        <li>
+          <strong>Avg ROUGE-L Score</strong>：回應生成的 ROUGE-L 分數，衡量 AI 回應與標準回應的長度與順序匹配度：
+          <br>
+          對中文文本先斷詞，使用 ROUGE-L 計算 longest common subsequence（LCS）比率，最後取平均。
+        </li>
+        <li>
+          <strong>Overall Score (Weighted)</strong>：加權總分，綜合上述各項指標，計算方式：
+          <br>
+          <code>overall_score = 0.5 * Intent F1-score + 0.25 * Avg BLEU Score + 0.25 * Avg ROUGE-L Score</code>
+        </li>
+      </ul>
     </div>
   {% endif %}
 

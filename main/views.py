@@ -554,9 +554,9 @@ def coin_history(request, coin_id):
             date__gte=start,
             date__lte=end
         )
-        .order_by('-date')[:limit]  # 取最新 N 筆
+        .order_by('date')[:limit]  # 取最新 N 筆
     )
-    records = list(qs)[::-1]
+    records = list(qs)
     data = [
         {
             "date": int(item.date.timestamp() * 1000),  # amCharts 需要毫秒時間戳
