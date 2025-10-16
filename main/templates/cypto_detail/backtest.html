@@ -67,6 +67,66 @@
           font-size: 1.5em;
       }
   }
+
+.strategy-card {
+  border-radius: 24px;
+  padding: 24px 32px;
+  margin-top: 24px;
+  background: #ffffff;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+  font-family: 'Inter', sans-serif;
+  text-align: left; /* 置左 */
+}
+
+.strategy-card h5 {
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: #1a1a1a;
+  margin-bottom: 16px;
+  border-bottom: 2px solid #0d6efd; /* 小裝飾線條 */
+  padding-bottom: 6px;
+  display: inline-block;
+}
+
+.strategy-card ul {
+  list-style-type: none; /* 去掉預設圓點 */
+  padding-left: 0;
+  margin: 0;
+}
+
+.strategy-card ul li {
+  position: relative;
+  margin-bottom: 14px;
+  padding-left: 22px;
+  line-height: 1.7;
+  font-size: 0.95rem;
+  color: #333333;
+}
+
+/* 自訂圓點 */
+.strategy-card ul li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: #0d6efd; /* 藍色圓點 */
+  font-weight: bold;
+}
+
+.strategy-card .signal-buy {
+  color: #0d6efd;
+  font-weight: 600;
+}
+
+.strategy-card .signal-sell {
+  color: #dc3545;
+  font-weight: 600;
+}
+
+/* 卡片互動效果 */
+.strategy-card:hover {
+  box-shadow: 0 12px 28px rgba(0,0,0,0.12);
+  transition: all 0.3s ease;
+}
 </style>
 
 <body>
@@ -78,6 +138,19 @@
 
   <!-- 多圖動態插入區 -->
   <div id="multiCharts"></div>
+
+  <!-- 策略說明區 -->
+<div class="strategy-card">
+  <h5>📈 策略說明</h5>
+  <ul>
+    <li><strong>EMA 趨勢交叉策略 (EMA Cross)</strong>：短期 EMA10 上穿中期 EMA20 形成 <span class="signal-buy">買入訊號</span>；下穿則 <span class="signal-sell">賣出</span>，追蹤趨勢轉折。</li>
+    <li><strong>RSI 反轉策略 (RSI Reversion)</strong>：RSI &lt; 30 為 <span class="signal-buy">超賣買入</span>，RSI &gt; 70 為 <span class="signal-sell">超買賣出</span>，適合盤整市場。</li>
+    <li><strong>MACD 趨勢策略 (MACD Cross)</strong>：DIF 線上穿 DEA 線 <span class="signal-buy">做多</span>，下穿 <span class="signal-sell">平倉</span>，捕捉趨勢轉向。</li>
+    <li><strong>Donchian 突破策略 (Donchian Breakout)</strong>：價格突破過去 N 日高點 <span class="signal-buy">買入</span>，跌破低點 <span class="signal-sell">賣出</span>，追蹤突破行情。</li>
+    <li><strong>ROC 動能策略 (ROC Momentum)</strong>：價格動能為正時 <span class="signal-buy">買入</span>，負時 <span class="signal-sell">賣出</span>，適合趨勢市場。</li>
+    <li><strong>OBV 趨勢策略 (OBV Trend)</strong>：OBV 累計上升表示 <span class="signal-buy">多方強勢</span>，下降表示 <span class="signal-sell">賣出</span>，追蹤資金流向。</li>
+  </ul>
+</div>
 
 <script>
 const coinIds = {{ coin_id }}; // Django template 變數

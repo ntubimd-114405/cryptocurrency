@@ -197,29 +197,50 @@ def evaluate_dialogs(request):
             'analyzed_count': analyzed_count
         })
 
-    # Intent Accuracy & F1
-    intent_acc = accuracy_score(filtered_df['expected_intent'], filtered_df['predicted_intent'])
-    intent_f1 = f1_score(filtered_df['expected_intent'], filtered_df['predicted_intent'], average='weighted')
+    # -------- 多標籤 Intent 計分 --------
+    def multi_intent_f1(expected, predicted):
+        expected_set = set([x.strip() for x in expected.split(',') if x.strip()])
+        predicted_set = set([x.strip() for x in predicted.split(',') if x.strip()])
 
-    # BLEU & ROUGE
+        if not expected_set and not predicted_set:
+            return 1.0, 1.0, 1.0
+        if not expected_set or not predicted_set:
+            return 0.0, 0.0, 0.0
+
+        tp = len(expected_set & predicted_set)
+        precision = tp / len(predicted_set) if predicted_set else 0.0
+        recall = tp / len(expected_set) if expected_set else 0.0
+        f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
+        return precision, recall, f1
+
+    prec_list, rec_list, f1_list = [], [], []
+
+    for _, row in filtered_df.iterrows():
+        p, r, f = multi_intent_f1(row['expected_intent'], row['predicted_intent'])
+        prec_list.append(p)
+        rec_list.append(r)
+        f1_list.append(f)
+
+    # 完全匹配才算正確
+    intent_acc = sum([1 if f == 1 else 0 for f in f1_list]) / len(f1_list)
+    intent_f1 = sum(f1_list) / len(f1_list)
+
+    # -------- BLEU & ROUGE --------
     bleu_scores, rouge_scores = [], []
     rouge = Rouge()
     smooth_fn = SmoothingFunction().method1
 
     for _, row in filtered_df.iterrows():
-        expected = str(row['expected_response']).strip() or " "
-        generated = str(row['generated_response']).strip() or " "
+        expected_cut = " ".join(jieba.lcut(str(row['expected_response']).strip() or " "))
+        generated_cut = " ".join(jieba.lcut(str(row['generated_response']).strip() or " "))
 
-        # BLEU：逐字計算
-        ref = [list(expected)]
-        hyp = list(generated)
+        # BLEU
+        ref = [expected_cut.split()]
+        hyp = generated_cut.split()
         bleu = sentence_bleu(ref, hyp, smoothing_function=smooth_fn)
         bleu_scores.append(bleu)
 
-        # 中文斷詞後計算 ROUGE-L
-        expected_cut = " ".join(jieba.lcut(expected))
-        generated_cut = " ".join(jieba.lcut(generated))
-
+        # ROUGE-L
         rouge_scores_val = rouge.get_scores(generated_cut, expected_cut)
         rouge_score = rouge_scores_val[0]['rouge-l']['f']
         rouge_scores.append(rouge_score)
@@ -227,23 +248,22 @@ def evaluate_dialogs(request):
     # 平均分數
     avg_bleu = sum(bleu_scores) / len(bleu_scores)
     avg_rouge = sum(rouge_scores) / len(rouge_scores)
-    task_success_rate = filtered_df['task_success'].mean()
-    overall_score = 0.4 * intent_acc + 0.3 * task_success_rate + 0.3 * avg_bleu
+    task_success_rate = filtered_df['task_success'].astype(float).mean()
 
+    overall_score = 0.5 * intent_f1 + 0.25 * avg_bleu + 0.25 * avg_rouge
     # 結構化報告
     structured_report = [
         ("Intent Accuracy", f"{intent_acc:.3f}", intent_acc),
         ("Intent F1-score", f"{intent_f1:.3f}", intent_f1),
         ("Avg BLEU Score", f"{avg_bleu:.3f}", avg_bleu),
         ("Avg ROUGE-L Score", f"{avg_rouge:.3f}", avg_rouge),
-        ("Task Success Rate", f"{task_success_rate:.3f}", task_success_rate),
         ("Overall Score (Weighted)", f"{overall_score:.3f}", overall_score),
     ]
 
     # 儲存 CSV
     filtered_df['BLEU'] = bleu_scores
     filtered_df['ROUGE-L'] = rouge_scores
-    filtered_df.to_csv("dialog_eval_results.csv", index=False, encoding="utf-8-sig")
+    #filtered_df.to_csv("dialog_eval_results.csv", index=False, encoding="utf-8-sig")
 
     return render(
         request,

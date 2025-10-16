@@ -1119,12 +1119,13 @@ def run_other_agent(user, user_input, start_date=None, end_date=None):
 
     # IndicatorValue - 折線圖用 value
     indicator_data_sample = []
-    indicators = Indicator.objects.all()[:1]
-    for indicator in indicators:
+    indicator = Indicator.objects.filter(id=11).first()
+
+    if indicator:
         data_qs = IndicatorValue.objects.filter(
             indicator=indicator,
             date__lte=end_date
-        ).order_by('-date')[:7]
+        ).order_by('-date')[:7]  # 取最近 7 筆
         for d in data_qs:
             indicator_data_sample.append({
                 "indicator": indicator.name,
@@ -1389,7 +1390,7 @@ def classify_question_api(request):
         DialogEvaluation.objects.create(
             user_input=user_input,
             expected_intent="(人工)認為這句話應該屬於哪種意圖（標準答案）",  # 也可改成更精確的意圖
-            predicted_intent=", ".join(ordered_combined) + (f", {start_date} ~ {end_date}" if start_date and end_date else ""),
+            predicted_intent=", ".join(ordered_combined),
             expected_response="(人工)認為合適的機器人回應",
             generated_response=integrated_summary,
             analyze_data=json.dumps([fa.get("analyze", "") for fa in final_answers], ensure_ascii=False),  # 這一行存所有 analyze
