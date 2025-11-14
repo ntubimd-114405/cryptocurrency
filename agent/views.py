@@ -508,3 +508,6 @@ def knowledge_chat_view(request):
         answer = ask_knowledge_agent(question)
         return JsonResponse({"answer": answer})
     return JsonResponse({"error": "只接受 POST 請求"}, status=405)
+
+def invest_view(request):
+    return render(request, "invest.html") 

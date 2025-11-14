@@ -72,6 +72,9 @@
                         <li class="nav-item">
                             <a href="{% url 'weekly_report_list' %}" class="nav-link text-white">AI週報</a>
                         </li>
+                        <li class="nav-item">
+                            <a href="{% url 'agent:invest_view' %}" class="nav-link text-white">策略參考</a>
+                        </li>
                     {% if user.is_superuser %}
                         <li class="nav-item">
                             <a href="{% url 'administrator:administrator_dashboard' %}" class="nav-link text-white">進入後台</a>
