@@ -1,0 +1,311 @@
+{% extends "base.html" %}
+
+{% block title %}策略詳細頁面{% endblock %}
+
+{% block content %}
+
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <title>加密貨幣 K 線圖 - EMA 詳情</title>
+  <style>
+    /* === 修改 1: CSS 改回淺色系 === */
+    body {
+        background-color: #f5f5f5; /* 整個網頁背景淺灰 */
+        color: #333;
+        font-family: sans-serif;
+    }
+    #chartdiv { 
+        width: 100%; 
+        height: 600px; 
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    #controls { 
+        margin-bottom: 20px; 
+        padding: 15px; 
+        border-radius: 8px; 
+        display: flex; 
+        gap: 15px; 
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        color: #333; /* 文字深色 */
+    }
+    label { font-weight: bold; }
+    /* 輸入框樣式調整為標準淺色 */
+    input { 
+        padding: 8px; 
+        border: 1px solid #ccc; 
+        border-radius: 4px; 
+        background: #fff; 
+        color: #333;
+    }
+    button { 
+        padding: 8px 15px;
+        border-radius: 4px;
+        background-color: #2962FF; 
+        color: white; 
+        border: none; 
+        cursor: pointer; 
+    }
+    button:hover { background-color: #1e4bb5; }
+  </style>
+  <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/stock.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+</head>
+<body>
+
+<div id="controls">
+  <label>開始時間：
+    <input type="datetime-local" id="startDate" />
+  </label>
+  <label>結束時間：
+    <input type="datetime-local" id="endDate" />
+  </label>
+  <button id="btnQuery">查詢區間</button>
+  <span id="loadingText" style="margin-left: 10px; color: #666;"></span>
+</div>
+
+<div id="chartdiv"></div>
+
+<script>
+const initialData = {{ chart_data|safe }};
+const coinId = {{ coin_id }};
+
+function toDatetimeLocalString(date) {
+  const offset = date.getTimezoneOffset();
+  const local = new Date(date.getTime() - offset * 60000);
+  return local.toISOString().slice(0, 16);
+}
+
+function initDateInputs() {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(end.getDate() - 30);
+    document.getElementById('startDate').value = toDatetimeLocalString(start);
+    document.getElementById('endDate').value = toDatetimeLocalString(end);
+}
+
+// ============================================
+//  數學邏輯區 (保持不變)
+// ============================================
+
+function calculateEMA(data, period) {
+    let k = 2 / (period + 1);
+    let emaData = [];
+    if (data.length > 0) {
+        let ema = data[0].close; 
+        for (let i = 0; i < data.length; i++) {
+            let close = data[i].close;
+            ema = close * k + ema * (1 - k);
+            emaData.push({
+                date: data[i].date,
+                value: ema,
+                close: close 
+            });
+        }
+    }
+    return emaData;
+}
+
+function calculateCrossovers(shortEmaData, longEmaData) {
+    let signals = [];
+    let len = Math.min(shortEmaData.length, longEmaData.length);
+    for (let i = 1; i < len; i++) {
+        let prevShort = shortEmaData[i-1].value;
+        let prevLong = longEmaData[i-1].value;
+        let currShort = shortEmaData[i].value;
+        let currLong = longEmaData[i].value;
+        
+        if (prevShort <= prevLong && currShort > currLong) {
+            signals.push({
+                date: shortEmaData[i].date,
+                value: shortEmaData[i].close,
+                signalType: "buy",
+                description: "黃金交叉 (買入)"
+            });
+        }
+        else if (prevShort >= prevLong && currShort < currLong) {
+            signals.push({
+                date: shortEmaData[i].date,
+                value: shortEmaData[i].close,
+                signalType: "sell",
+                description: "死亡交叉 (賣出)"
+            });
+        }
+    }
+    return signals;
+}
+
+
+am5.ready(function() {
+  var root = am5.Root.new("chartdiv");
+  root.setThemes([am5themes_Animated.new(root)]);
+
+  var stockChart = root.container.children.push(am5stock.StockChart.new(root, {}));
+
+  var mainPanel = stockChart.panels.push(am5stock.StockPanel.new(root, {
+    wheelX: "panX",
+    wheelY: "zoomX",
+    height: am5.percent(70),
+    layout: root.verticalLayout
+  }));
+
+  var dateAxisMain = mainPanel.xAxes.push(am5xy.DateAxis.new(root, {
+    baseInterval: { timeUnit: "minute", count: 1 },
+    renderer: am5xy.AxisRendererX.new(root, {}),
+    tooltip: am5.Tooltip.new(root, {})
+  }));
+
+  var valueAxis = mainPanel.yAxes.push(am5xy.ValueAxis.new(root, {
+    renderer: am5xy.AxisRendererY.new(root, { pan: "zoom" }),
+    tooltip: am5.Tooltip.new(root, {})
+  }));
+
+  var candleSeries = mainPanel.series.push(am5xy.CandlestickSeries.new(root, {
+    name: "價格",
+    clustered: false,
+    openValueYField: "open",
+    highValueYField: "high",
+    lowValueYField: "low",
+    valueYField: "close",
+    valueXField: "date",
+    xAxis: dateAxisMain,
+    yAxis: valueAxis
+  }));
+
+  // === 修改 2: 補回拉桿 (Scrollbar) ===
+  // 在主面板下方加入水平捲動軸
+  mainPanel.set("scrollbarX", am5.Scrollbar.new(root, {
+    orientation: "horizontal"
+  }));
+
+  // EMA 20
+  var emaShortSeries = mainPanel.series.push(am5xy.LineSeries.new(root, {
+      name: "EMA 20",
+      valueYField: "value",
+      valueXField: "date",
+      xAxis: dateAxisMain,
+      yAxis: valueAxis,
+      stroke: am5.color(0xff9900), // 改稍微深一點的橘黃，白底較清楚
+      strokeWidth: 2
+  }));
+
+  // EMA 50
+  var emaLongSeries = mainPanel.series.push(am5xy.LineSeries.new(root, {
+      name: "EMA 50",
+      valueYField: "value",
+      valueXField: "date",
+      xAxis: dateAxisMain,
+      yAxis: valueAxis,
+      stroke: am5.color(0x2962FF), // 改深藍色，白底較清楚
+      strokeWidth: 2
+  }));
+
+  // 策略訊號
+  var signalSeries = mainPanel.series.push(am5xy.LineSeries.new(root, {
+      name: "策略訊號",
+      valueYField: "value",
+      valueXField: "date",
+      xAxis: dateAxisMain,
+      yAxis: valueAxis,
+      stroke: undefined 
+  }));
+
+  signalSeries.bullets.push(function (root, series, dataItem) {
+      var context = dataItem.dataContext;
+      if (context.signalType === "buy") {
+          return am5.Bullet.new(root, {
+              sprite: am5.Triangle.new(root, {
+                  fill: am5.color(0x00aa00), // 深綠
+                  stroke: am5.color(0xffffff),
+                  width: 15, height: 15, rotation: 0,
+                  centerY: am5.p50, centerX: am5.p50
+              })
+          });
+      } else if (context.signalType === "sell") {
+          return am5.Bullet.new(root, {
+              sprite: am5.Triangle.new(root, {
+                  fill: am5.color(0xcc0000), // 深紅
+                  stroke: am5.color(0xffffff),
+                  width: 15, height: 15, rotation: 180,
+                  centerY: am5.p50, centerX: am5.p50
+              })
+          });
+      }
+  });
+
+  // 成交量部分
+  var volumePanel = stockChart.panels.push(am5stock.StockPanel.new(root, {
+    wheelX: "panX",
+    height: am5.percent(30),
+    layout: root.verticalLayout
+  }));
+  var volumeAxis = volumePanel.yAxes.push(am5xy.ValueAxis.new(root, { renderer: am5xy.AxisRendererY.new(root, { inside: true }) }));
+  var dateAxisVolume = volumePanel.xAxes.push(am5xy.DateAxis.new(root, { baseInterval: { timeUnit: "minute", count: 1 }, renderer: am5xy.AxisRendererX.new(root, { visible: false }) }));
+  var volumeSeries = volumePanel.series.push(am5xy.ColumnSeries.new(root, {
+    valueXField: "date", valueYField: "volume", xAxis: dateAxisVolume, yAxis: volumeAxis
+  }));
+  
+  // 確保 K 線跌時成交量也是綠色/紅色正確對應
+  volumeSeries.columns.template.adapters.add("fill", function(fill, target) {
+    var dataItem = target.dataItem;
+    if (dataItem) { 
+        // 漲紅跌綠 (台灣習慣)，若要國際版 (漲綠跌紅) 請自行交換顏色
+        return dataItem.dataContext.close > dataItem.dataContext.open ? am5.color(0xff0000) : am5.color(0x00aa00); 
+    }
+    return fill;
+  });
+
+  // 資料更新函數
+  function updateChartData(data) {
+      if (!data || data.length === 0) { alert("無資料"); return; }
+      
+      candleSeries.data.setAll(data);
+      volumeSeries.data.setAll(data);
+
+      let emaShortData = calculateEMA(data, 20);
+      let emaLongData = calculateEMA(data, 50);
+
+      emaShortSeries.data.setAll(emaShortData);
+      emaLongSeries.data.setAll(emaLongData);
+
+      let signals = calculateCrossovers(emaShortData, emaLongData);
+      signalSeries.data.setAll(signals);
+  }
+
+  async function fetchCoinHistory(coinId, start, end) {
+    const url = new URL(`/coin-history/${coinId}/`, window.location.origin);
+    url.searchParams.append("start", start.toISOString());
+    url.searchParams.append("end", end.toISOString());
+    try {
+        document.getElementById('loadingText').textContent = "載入中...";
+        const resp = await fetch(url);
+        const json = await resp.json();
+        document.getElementById('loadingText').textContent = "";
+        return json.data;
+    } catch (e) {
+        console.error(e);
+        return [];
+    }
+  }
+
+  if (initialData && initialData.length > 0) { updateChartData(initialData); }
+  initDateInputs();
+  document.getElementById('btnQuery').addEventListener('click', async () => {
+    const start = new Date(document.getElementById('startDate').value);
+    const end = new Date(document.getElementById('endDate').value);
+    const newData = await fetchCoinHistory(coinId, start, end);
+    updateChartData(newData);
+  });
+
+});
+</script>
+</body>
+</html>
+{% endblock %}

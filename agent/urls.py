@@ -13,5 +13,6 @@ urlpatterns = [
     path("chat/", views.chat_page, name="chat_page"),
     path("ask/", views.knowledge_chat_view, name="knowledge_chat"),
     path("invest/", views.invest_view, name="invest_view"),
+    path("ema_detail/", views.ema_detail, name="ema_detail"),
 ]
 
