@@ -18,6 +18,7 @@ from django.db import connection
 from django.conf import settings
 from main.models import CoinHistory, Coin
 from decimal import Decimal
+from django.utils.dateparse import parse_datetime
 
 env_path = Path(__file__).resolve().parents[2] / '.env'
 
@@ -510,4 +511,90 @@ def knowledge_chat_view(request):
     return JsonResponse({"error": "只接受 POST 請求"}, status=405)
 
 def invest_view(request):
-    return render(request, "invest.html") 
+    # 定義你要展示的策略清單 (對應你後端代碼中的 strategy_name)
+    strategies = [
+        {
+            "id": "EMA_CROSS",
+            "title": "EMA Cross Strategy",
+            "description": "短期 EMA10 與中期 EMA20 黃金交叉/死亡交叉策略，適用於趨勢追蹤。",
+            "tags": ["Trend", "Moving Average"],
+            "color": "#2962FF"
+        },
+        # {
+        #     "id": "RSI_REVERSION",
+        #     "title": "RSI Mean Reversion",
+        #     "description": "利用 RSI 超買(>70)與超賣(<30)進行反向操作，適用於震盪盤整市場。",
+        #     "tags": ["Oscillator", "Reversal"],
+        #     "color": "#E91E63"
+        # },
+        # {
+        #     "id": "BBANDS_REVERSION", 
+        #     "title": "Bollinger Bands Strategy",
+        #     "description": "布林通道突破與回歸策略，捕捉波動率變化。",
+        #     "tags": ["Volatility", "Bands"],
+        #     "color": "#FF9800"
+        # },
+        # {
+        #     "id": "MACD_CROSS",
+        #     "title": "MACD Momentum",
+        #     "description": "經典的指數平滑異同移動平均線策略，判斷動能強弱。",
+        #     "tags": ["Momentum", "MACD"],
+        #     "color": "#00BCD4"
+        # },
+        # 你可以繼續添加你的其他策略...
+    ]
+
+    context = {
+        "strategies": strategies,
+        # 預設顯示的幣種 ID，你可以根據需要傳入
+        "default_coin_id": 1 
+    }
+    return render(request, 'invest.html', context)
+
+def ema_detail(request):
+    
+    coin_id = 1 
+    
+    # 設定預設時間範圍 (例如：過去 30 天)
+    end = timezone.now()
+    start = end - timedelta(days=30)
+
+    # 如果網址有帶參數 (?coin_id=2)，也可以優先使用
+    if request.GET.get('coin_id'):
+        try:
+            coin_id = int(request.GET.get('coin_id'))
+        except ValueError:
+            pass
+
+    qs = (
+        CoinHistory.objects.filter(
+            coin_id=coin_id,
+            date__gte=start,
+            date__lte=end
+        )
+        .order_by('date')
+        # 這裡可以決定要不要限制筆數，例如 [:1500]
+    )
+    
+    records = list(qs)
+    
+    # 轉成列表字典 (這是你要的 data 格式)
+    raw_data = [
+        {
+            "date": int(item.date.timestamp() * 1000),
+            "open": float(item.open_price),
+            "high": float(item.high_price),
+            "low": float(item.low_price),
+            "close": float(item.close_price),
+            "volume": float(item.volume),
+        }
+        for item in records
+    ]
+
+    context = {
+        # 為了讓 JavaScript 能讀取，這裡要用 json.dumps 轉成字串
+        "chart_data": json.dumps(raw_data),
+        "coin_id": coin_id,
+    }
+    
+    return render(request, 'ema_detail.html', context)

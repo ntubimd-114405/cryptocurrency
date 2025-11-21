@@ -1,7 +1,133 @@
 {% extends "base.html" %}
-{% block title %}投資大師策略{% endblock %}
 
-<h1>首頁</h1>
+{% block title %}策略{% endblock %}
+{% load static %}
 
 {% block content %}
+
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>量化策略回測看板</title>
+    <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+    <style>
+        /* === CSS 樣式區：模擬 TradingView 深色模式 === */
+        :root {
+            --bg-color: #131722;
+            --card-bg: #1e222d;
+            
+            /* 修改 1: 讓主要文字接近純白，但帶一點冷色調，提升銳利度 */
+            --text-primary: #EAECEF;  /* 原本是 #d1d4dc */
+            
+            /* 修改 2: 讓次要文字更亮一點，避免融入背景 */
+            --text-secondary: #A3A6AF; /* 原本是 #787b86 */
+            
+            --border-color: #2a2e39;
+        }
+        
+        h1 { font-weight: 700; margin-bottom: 30px; }
+
+        /* 格狀佈局：自動適應螢幕寬度 */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+        }
+
+        /* 卡片本體 */
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+            border-color: #4c525e;
+        }
+
+        /* 圖表區塊 */
+        .chart-area {
+            height: 180px;
+            width: 100%;
+            position: relative;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .chart-area .image img {
+            width: 100%;      
+            height: auto;     
+            display: block;   
+        }
+
+        .loading-msg {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            font-size: 0.9rem; color: var(--text-secondary);
+        }
+
+        /* 文字內容區 */
+        .card-body { padding: 16px; display: flex; flex-direction: column; flex-grow: 1; }
+        
+        .card-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .strategy-title { font-size: 1.1rem; font-weight: 600; margin: 0; color: #EAECEF;}
+        
+        .tags { display: flex; gap: 5px; margin-bottom: 10px; }
+        .tag { font-size: 0.7rem; padding: 3px 8px; border-radius: 4px; background: #2a2e39; color: var(--text-secondary); }
+        
+        .desc { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4; margin-bottom: 15px; flex-grow: 1; }
+
+        /* 底部數據列 */
+        .stats-row {
+            display: flex; justify-content: space-between; 
+            border-top: 1px solid var(--border-color); 
+            padding-top: 12px; margin-top: auto;
+        }
+        .stat-item { display: flex; flex-direction: column; }
+        .stat-label { font-size: 0.7rem; color: var(--text-secondary); }
+        .stat-val { font-size: 0.9rem; font-weight: 600; margin-top: 2px; }
+        
+        .green { color: #089981; }
+        .red { color: #f23645; }
+    </style>
+</head>
+<body>
+
+    <h1>指標和策略</h1>
+
+    <a href="{% url 'agent:ema_detail' %}">
+        <div class="grid-container">
+            {% for strategy in strategies %}
+            <div class="card">
+                <div class="chart-area" id="chart-{{ strategy.id }}">
+                    <div class="image">
+                        <img src="{% static 'images/picture.png' %}" alt="">
+                    </div>
+                </div>
+
+                <div class="card-body">
+                    <div class="card-header">
+                        <h2 class="strategy-title">{{ strategy.title }}</h2>
+                    </div>
+                    <div class="tags">
+                        {% for tag in strategy.tags %}
+                        <span class="tag">{{ tag }}</span>
+                        {% endfor %}
+                    </div>
+                    <p class="desc">{{ strategy.description }}</p>
+                    
+                    
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </a>
+
+</body>
+</html>
 {% endblock %}

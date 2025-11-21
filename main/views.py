@@ -35,6 +35,36 @@ load_dotenv(dotenv_path=env_path)
 
 api = os.getenv('OPENAI_API_KEY')
 
+def process_indicators(df):
+    # 將 Decimal 欄位轉 float (省略細節)
+    for col in ['close_price', 'high_price', 'low_price', 'volume']:
+        df[col] = pd.to_numeric(df[col], errors='coerce').astype(float) 
+
+        # ========================================================
+        # ✅ 擴充技術指標計算，支援所有已定義的策略
+        # ========================================================
+        # EMA (用於 EMA_CROSS)
+        df["ema20"] = df["close_price"].ewm(span=20, adjust=False).mean()
+        df["ema10"] = df["close_price"].ewm(span=10, adjust=False).mean()
+
+        # RSI (用於 RSI_REVERSION)
+        delta = df["close_price"].diff()
+        gain = np.where(delta > 0, delta, 0)
+        loss = np.where(delta < 0, -delta, 0)
+        avg_gain = pd.Series(gain).rolling(window=14).mean()
+        avg_loss = pd.Series(loss).rolling(window=14).mean()
+        with np.errstate(divide='ignore', invalid='ignore'):
+                rs = avg_gain / (avg_loss + 1e-10) 
+        df["rsi"] = 100 - (100 / (1 + rs))
+        df['rsi'] = df['rsi'].fillna(0)
+        
+        # 🆕 Bollinger Bands (用於 BBANDS_REVERSION)
+        df["ma20"] = df["close_price"].rolling(20).mean()
+        df["std20"] = df["close_price"].rolling(20).std()
+        df["bb_upper"] = df["ma20"] + 2 * df["std20"]
+        df["bb_lower"] = df["ma20"] - 2 * df["std20"]
+    return df
+
 def home(request):
     try:
         today = timezone.now().date()
@@ -577,6 +607,7 @@ def coin_history(request, coin_id):
     
     return JsonResponse({"data": data, "interval": interval})
 
+
 @login_required
 def delete_account(request):
     if request.method == "POST":
@@ -841,7 +872,7 @@ def coin_history_api(request):
     except Coin.DoesNotExist:
         return JsonResponse({'error': '查無此幣種'}, status=404)
 
-    thirty_days_ago = timezone.now().date() - timedelta(days=5)
+    thirty_days_ago = timezone.now().date() - timedelta(days=60)
 
     queryset = (
         CoinHistory.objects
@@ -1094,6 +1125,8 @@ def calculate_strategy_performance(df: pd.DataFrame, strategy_name: str) -> pd.D
     return df
 
 
+
+
 def backtest_view(request):
     try:
         # ... (省略 coin_id 獲取和錯誤檢查部分)
@@ -1118,7 +1151,7 @@ def backtest_view(request):
 
         result_data = {}
         # 數據長度設定：回測過去 7 天的數據
-        thirty_days_ago = timezone.now().date() - timedelta(days=7) 
+        thirty_days_ago = timezone.now().date() - timedelta(days=40) 
 
         for coin_id in coin_list:
             try:
@@ -1140,33 +1173,8 @@ def backtest_view(request):
                 print(f"Coin {coin_id}: 數據不足，跳過。")
                 continue
 
-            # 將 Decimal 欄位轉 float (省略細節)
-            for col in ['close_price', 'high_price', 'low_price', 'volume']:
-                df[col] = pd.to_numeric(df[col], errors='coerce').astype(float) 
-
-            # ========================================================
-            # ✅ 擴充技術指標計算，支援所有已定義的策略
-            # ========================================================
-            # EMA (用於 EMA_CROSS)
-            df["ema20"] = df["close_price"].ewm(span=20, adjust=False).mean()
-            df["ema10"] = df["close_price"].ewm(span=10, adjust=False).mean()
-
-            # RSI (用於 RSI_REVERSION)
-            delta = df["close_price"].diff()
-            gain = np.where(delta > 0, delta, 0)
-            loss = np.where(delta < 0, -delta, 0)
-            avg_gain = pd.Series(gain).rolling(window=14).mean()
-            avg_loss = pd.Series(loss).rolling(window=14).mean()
-            with np.errstate(divide='ignore', invalid='ignore'):
-                 rs = avg_gain / (avg_loss + 1e-10) 
-            df["rsi"] = 100 - (100 / (1 + rs))
-            df['rsi'] = df['rsi'].fillna(0)
-            
-            # 🆕 Bollinger Bands (用於 BBANDS_REVERSION)
-            df["ma20"] = df["close_price"].rolling(20).mean()
-            df["std20"] = df["close_price"].rolling(20).std()
-            df["bb_upper"] = df["ma20"] + 2 * df["std20"]
-            df["bb_lower"] = df["ma20"] - 2 * df["std20"]
+            # ✅ 原本一大串邏輯，現在只要這一行！
+            df = process_indicators(df)
 
             # ========================================================
 
