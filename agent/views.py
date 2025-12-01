@@ -518,15 +518,25 @@ def invest_view(request):
             "title": "EMA Cross Strategy",
             "description": "短期 EMA10 與中期 EMA20 黃金交叉/死亡交叉策略，適用於趨勢追蹤。",
             "tags": ["Trend", "Moving Average"],
-            "color": "#2962FF"
+            "color": "#2962FF",
+            "url_name": "agent:ema_detail"
         },
-        # {
-        #     "id": "RSI_REVERSION",
-        #     "title": "RSI Mean Reversion",
-        #     "description": "利用 RSI 超買(>70)與超賣(<30)進行反向操作，適用於震盪盤整市場。",
-        #     "tags": ["Oscillator", "Reversal"],
-        #     "color": "#E91E63"
-        # },
+        {
+            "id": "RSI_REVERSION",
+            "title": "RSI Mean Reversion",
+            "description": "利用 RSI 超買(>70)與超賣(<30)進行反向操作，適用於震盪盤整市場。",
+            "tags": ["Oscillator", "Reversal"],
+            "color": "#E91E63",
+            "url_name": "agent:rsi_detail"
+        },
+        {
+            "id": "MACD_CROSS",
+            "title": "MACD Momentum",
+            "description": "結合趨勢跟隨與動能分析的經典指標，利用快慢線交叉識別買賣訊號，並透過柱狀圖變化判斷市場多空力道強弱。",
+            "tags": ["Momentum", "MACD"],
+            "color": "#00BCD4",
+            "url_name": "agent:macd_detail"
+        },
         # {
         #     "id": "BBANDS_REVERSION", 
         #     "title": "Bollinger Bands Strategy",
@@ -534,13 +544,7 @@ def invest_view(request):
         #     "tags": ["Volatility", "Bands"],
         #     "color": "#FF9800"
         # },
-        # {
-        #     "id": "MACD_CROSS",
-        #     "title": "MACD Momentum",
-        #     "description": "經典的指數平滑異同移動平均線策略，判斷動能強弱。",
-        #     "tags": ["Momentum", "MACD"],
-        #     "color": "#00BCD4"
-        # },
+        
         # 你可以繼續添加你的其他策略...
     ]
 
@@ -551,13 +555,74 @@ def invest_view(request):
     }
     return render(request, 'invest.html', context)
 
+def get_ai_strategy_analysis(short_ma=20, long_ma=50):
+    print("--- [Step 1] 開始呼叫 OpenAI API ---")
+    """
+    使用 ChatGPT API 生成 EMA 策略分析與大師觀點
+    """
+    
+    # 1. 構建 Prompt：這是核心，決定了 AI 輸出的品質
+    # 我們要求 AI 扮演「資深量化分析師」，並明確要求包含「策略原理」與「大師哲學」
+    prompt = f"""
+    你是一位資深的加密貨幣量化交易分析師。請針對「EMA 雙均線交叉策略」生成一份專業的分析報告。
+    
+    【策略參數】
+    - 短期均線：EMA {short_ma}
+    - 長期均線：EMA {long_ma}
+    - 交易邏輯：短線上穿長線為買入（黃金交叉），短線下穿長線為賣出（死亡交叉）。
+
+    【請回答以下兩點，並使用繁體中文】：
+    
+    1. **策略深度解析**：
+       請用簡練但專業的語言解釋此策略的核心邏輯。請不要只說「交叉就買」，請解釋這背後代表的「趨勢動能」與「市場平均成本」的變化。請提及 EMA 相較於 SMA (簡單移動平均) 對近期價格更敏感的優勢。
+
+    2. **投資大師哲學連結**：
+       請舉例說明哪位著名的傳奇交易員或投資大師（例如：Stan Weinstein 史丹·温斯坦、Paul Tudor Jones 保羅·都鐸·瓊斯、或是 Ed Seykota 艾德·斯科塔）的交易哲學與「趨勢跟隨 (Trend Following)」或「移動平均線」有異曲同工之妙？
+       請引用他們的經典名言或核心概念（例如「階段分析」或「200日均線法則」），並解釋為何這個 EMA 策略符合該大師的邏輯。
+
+    【格式要求】：
+    - 請使用 HTML 標籤進行排版（使用 <h3>, <p>, <ul>, <li>, <strong>）。
+    - 語氣要客觀、理性、具備教育意義。
+    - 總字數控制在 400 字以內。
+    """
+
+    # 2. 設定 API 參數
+    url = 'https://api.openai.com/v1/chat/completions'
+    headers = {
+        'Authorization': f'Bearer {api}',
+        'Content-Type': 'application/json',
+    }
+    
+    # 3. 呼叫模型 (使用 gpt-4o-mini 以節省成本且速度快)
+    data = {
+        "model": "gpt-4o-mini", 
+        "messages": [
+            {"role": "system", "content": "你是一位專業的金融科技與量化交易專家，擅長用淺顯易懂的方式解釋複雜的交易策略。"},
+            {"role": "user", "content": prompt}
+        ],
+    }
+
+    try:
+        response = requests.post(url, headers=headers, json=data, timeout=30)
+        print(f"--- [Step 2] API 回應狀態碼: {response.status_code} ---")
+        response.raise_for_status()
+        content = response.json()['choices'][0]['message']['content']
+        return content
+    except Exception as e:
+        print(f"OpenAI API Error: {e}")
+        # 如果失敗，回傳一個備用的靜態描述，避免頁面壞掉
+        return """
+        <h3>策略分析暫時無法載入</h3>
+        <p>目前無法連接至 AI 分析伺服器，請稍後再試。EMA 策略是一種經典的趨勢跟隨系統，利用短期與長期均線的交叉來捕捉市場的主要波段。</p>
+        """
+
 def ema_detail(request):
     
     coin_id = 1 
     
     # 設定預設時間範圍 (例如：過去 30 天)
     end = timezone.now()
-    start = end - timedelta(days=30)
+    start = end - timedelta(days=1)
 
     # 如果網址有帶參數 (?coin_id=2)，也可以優先使用
     if request.GET.get('coin_id'):
@@ -591,10 +656,253 @@ def ema_detail(request):
         for item in records
     ]
 
+    ai_analysis_html = get_ai_strategy_analysis(short_ma=20, long_ma=50)
+
     context = {
         # 為了讓 JavaScript 能讀取，這裡要用 json.dumps 轉成字串
         "chart_data": json.dumps(raw_data),
         "coin_id": coin_id,
+        'ai_analysis': ai_analysis_html  # 傳遞給 Template
     }
     
     return render(request, 'ema_detail.html', context)
+
+def get_ai_strategy_rsi_analysis(period=14, overbought=70, oversold=30):
+    print("--- [Step 1] 開始呼叫 OpenAI API (RSI 策略) ---")
+    """
+    使用 ChatGPT API 生成 RSI 策略分析與大師觀點
+    """
+    
+    # 1. 構建 Prompt：針對 RSI 策略進行客製化
+    # 我們要求 AI 解釋「動能指標」與「均值回歸」的概念
+    prompt = f"""
+    你是一位資深的加密貨幣量化交易分析師。請針對「RSI 相對強弱指標策略 (Relative Strength Index)」生成一份專業的分析報告。
+    
+    【策略參數】
+    - RSI 計算週期：{period}
+    - 超買閾值 (Overbought)：{overbought}
+    - 超賣閾值 (Oversold)：{oversold}
+    - 交易邏輯：當 RSI 低於 {oversold} 時視為超賣（潛在買點）；當 RSI 高於 {overbought} 時視為超買（潛在賣點）。
+
+    【請回答以下兩點，並使用繁體中文】：
+    
+    1. **策略深度解析**：
+       請用簡練但專業的語言解釋 RSI 作為「動能震盪指標」的核心邏輯。
+       請解釋「超買」代表買盤力道過熱可能有回調風險，而「超賣」代表非理性拋售可能有反彈機會。請提及此策略捕捉「均值回歸 (Mean Reversion)」行情的優勢。
+
+    2. **投資大師哲學連結**：
+       請連結到技術分析大師 **J. Welles Wilder Jr. (RSI 的發明者)** 的交易哲學。
+       或是引用其他擅長「逆勢交易 (Contrarian Trading)」的大師觀點（如巴菲特的「別人恐懼我貪婪」概念在技術面上的體現）。
+       請解釋為何 RSI 指標能幫助交易者克服追高殺低的人性弱點。
+
+    【格式要求】：
+    - 請使用 HTML 標籤進行排版（使用 <h3>, <p>, <ul>, <li>, <strong>）。
+    - 語氣要客觀、理性、具備教育意義。
+    - 總字數控制在 400 字以內。
+    """
+
+    # 2. 設定 API 參數
+    url = 'https://api.openai.com/v1/chat/completions'
+    headers = {
+        'Authorization': f'Bearer {api}', # 確保這裡傳入正確的 API Key 變數
+        'Content-Type': 'application/json',
+    }
+    
+    # 3. 呼叫模型
+    data = {
+        "model": "gpt-4o-mini", 
+        "messages": [
+            {"role": "system", "content": "你是一位專業的金融科技與量化交易專家，擅長用淺顯易懂的方式解釋震盪指標與逆勢策略。"},
+            {"role": "user", "content": prompt}
+        ],
+    }
+
+    try:
+        response = requests.post(url, headers=headers, json=data, timeout=30)
+        print(f"--- [Step 2] API 回應狀態碼: {response.status_code} ---")
+        response.raise_for_status()
+        content = response.json()['choices'][0]['message']['content']
+        return content
+    
+    except Exception as e:
+        print(f"OpenAI API Error: {e}")
+        # 4. 錯誤處理：回傳 RSI 專用的備用靜態描述
+        return f"""
+        <h3>RSI 策略分析暫時無法載入</h3>
+        <p>目前無法連接至 AI 分析伺服器。<strong>RSI (相對強弱指標)</strong> 是一種動能震盪指標，主要用於評估價格變動的速度與變化。</p>
+        <ul>
+            <li><strong>超買區 (> {overbought})</strong>：暗示行情可能過熱，隨時有回調風險。</li>
+            <li><strong>超賣區 (< {oversold})</strong>：暗示行情可能過度拋售，存在反彈機會。</li>
+        </ul>
+        """
+
+def rsi_detail(request):
+    
+    coin_id = 2 
+    
+    # 設定預設時間範圍 (例如：過去 30 天)
+    end = timezone.now()
+    start = end - timedelta(days=1)
+
+    # 如果網址有帶參數 (?coin_id=2)，也可以優先使用
+    if request.GET.get('coin_id'):
+        try:
+            coin_id = int(request.GET.get('coin_id'))
+        except ValueError:
+            pass
+
+    qs = (
+        CoinHistory.objects.filter(
+            coin_id=coin_id,
+            date__gte=start,
+            date__lte=end
+        )
+        .order_by('date')
+        # 這裡可以決定要不要限制筆數，例如 [:1500]
+    )
+    
+    records = list(qs)
+    
+    # 轉成列表字典 (這是你要的 data 格式)
+    raw_data = [
+        {
+            "date": int(item.date.timestamp() * 1000),
+            "open": float(item.open_price),
+            "high": float(item.high_price),
+            "low": float(item.low_price),
+            "close": float(item.close_price),
+            "volume": float(item.volume),
+        }
+        for item in records
+    ]
+
+    ai_analysis_html = get_ai_strategy_rsi_analysis(period=14, overbought=70, oversold=30)
+
+    context = {
+        # 為了讓 JavaScript 能讀取，這裡要用 json.dumps 轉成字串
+        "chart_data": json.dumps(raw_data),
+        "coin_id": coin_id,
+        'ai_analysis': ai_analysis_html  # 傳遞給 Template
+    }
+    
+    return render(request, 'rsi_detail.html', context)
+
+def get_ai_strategy_macd_analysis(fast_period=12, slow_period=26, signal_period=9):
+    print("--- [Step 1] 開始呼叫 OpenAI API (MACD 策略) ---")
+    """
+    使用 ChatGPT API 生成 MACD 策略分析與大師觀點
+    """
+    
+    # 1. 構建 Prompt：針對 MACD 策略進行客製化
+    # MACD 是趨勢與動能的結合，Prompt 重點在於「趨勢確認」與「動能變化」
+    prompt = f"""
+    你是一位資深的加密貨幣量化交易分析師。請針對「MACD 指數平滑異同移動平均線策略 (Moving Average Convergence Divergence)」生成一份專業的分析報告。
+    
+    【策略參數】
+    - 快線 (Fast EMA)：{fast_period}
+    - 慢線 (Slow EMA)：{slow_period}
+    - 訊號線 (Signal EMA)：{signal_period}
+    - 交易邏輯：當 DIF (快慢線差) 向上突破 DEM (訊號線) 為買入訊號（黃金交叉）；當 DIF 向下跌破 DEM 為賣出訊號（死亡交叉）。
+
+    【請回答以下兩點，並使用繁體中文】：
+    
+    1. **策略深度解析**：
+       請用簡練但專業的語言解釋 MACD 如何同時捕捉「趨勢方向」與「動能強弱」。
+       請解釋「柱狀圖 (Histogram)」擴大與縮小代表的市場心理變化（例如：柱狀圖由負轉正代表空頭力道衰竭，多頭動能轉強）。
+
+    2. **投資大師哲學連結**：
+       請連結到 MACD 的發明者 **Gerald Appel (傑拉德·阿佩爾)** 的交易哲學。
+       或是引用 **Alexander Elder (亞歷山大·艾爾德)** 在《操作生涯不是夢》中提到的「三重濾網系統」，解釋 MACD 在其中扮演的角色（通常用於判斷動能）。
+       請解釋為何 MACD 比單純的移動平均線更能過濾雜訊。
+
+    【格式要求】：
+    - 請使用 HTML 標籤進行排版（使用 <h3>, <p>, <ul>, <li>, <strong>）。
+    - 語氣要客觀、理性、具備教育意義。
+    - 總字數控制在 400 字以內。
+    """
+
+    # 2. 設定 API 參數
+    url = 'https://api.openai.com/v1/chat/completions'
+    headers = {
+        'Authorization': f'Bearer {api}', # 確保這裡傳入正確的 API Key
+        'Content-Type': 'application/json',
+    }
+    
+    # 3. 呼叫模型
+    data = {
+        "model": "gpt-4o-mini", 
+        "messages": [
+            {"role": "system", "content": "你是一位專業的金融科技與量化交易專家，擅長用淺顯易懂的方式解釋趨勢跟隨與動能策略。"},
+            {"role": "user", "content": prompt}
+        ],
+    }
+
+    try:
+        response = requests.post(url, headers=headers, json=data, timeout=30)
+        print(f"--- [Step 2] API 回應狀態碼: {response.status_code} ---")
+        response.raise_for_status()
+        content = response.json()['choices'][0]['message']['content']
+        return content
+    
+    except Exception as e:
+        print(f"OpenAI API Error: {e}")
+        # 4. 錯誤處理：回傳 MACD 專用的備用靜態描述
+        return f"""
+        <h3>MACD 策略分析暫時無法載入</h3>
+        <p>目前無法連接至 AI 分析伺服器。<strong>MACD (指數平滑異同移動平均線)</strong> 是一種結合趨勢與動能的經典指標。</p>
+        <ul>
+            <li><strong>黃金交叉 (買入)</strong>：當 DIF 快線由下往上穿越 MACD 訊號線，且柱狀圖由負轉正。</li>
+            <li><strong>死亡交叉 (賣出)</strong>：當 DIF 快線由上往下穿越 MACD 訊號線，且柱狀圖由正轉負。</li>
+        </ul>
+        """
+
+def macd_detail(request):
+    
+    coin_id = 4 
+    
+    # 設定預設時間範圍 (例如：過去 30 天)
+    end = timezone.now()
+    start = end - timedelta(days=1)
+
+    # 如果網址有帶參數 (?coin_id=2)，也可以優先使用
+    if request.GET.get('coin_id'):
+        try:
+            coin_id = int(request.GET.get('coin_id'))
+        except ValueError:
+            pass
+
+    qs = (
+        CoinHistory.objects.filter(
+            coin_id=coin_id,
+            date__gte=start,
+            date__lte=end
+        )
+        .order_by('date')
+        # 這裡可以決定要不要限制筆數，例如 [:1500]
+    )
+    
+    records = list(qs)
+    
+    # 轉成列表字典 (這是你要的 data 格式)
+    raw_data = [
+        {
+            "date": int(item.date.timestamp() * 1000),
+            "open": float(item.open_price),
+            "high": float(item.high_price),
+            "low": float(item.low_price),
+            "close": float(item.close_price),
+            "volume": float(item.volume),
+        }
+        for item in records
+    ]
+
+    ai_analysis_html = get_ai_strategy_macd_analysis(fast_period=12, slow_period=26, signal_period=9)
+
+    context = {
+        # 為了讓 JavaScript 能讀取，這裡要用 json.dumps 轉成字串
+        "chart_data": json.dumps(raw_data),
+        "coin_id": coin_id,
+        'ai_analysis': ai_analysis_html  # 傳遞給 Template
+    }
+    
+    return render(request, 'macd_detail.html', context)

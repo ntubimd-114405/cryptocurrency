@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}策略詳細頁面{% endblock %}
+{% block title %}MACD 策略詳細頁面{% endblock %}
 
 {% block content %}
 
@@ -8,17 +8,17 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <title>加密貨幣 K 線圖 - EMA 詳情</title>
+  <title>加密貨幣 K 線圖 - MACD 詳情</title>
   <style>
-    /* === 修改 1: CSS 改回淺色系 === */
+    /* === 全域樣式設定 === */
     body {
-        background-color: #f5f5f5; /* 整個網頁背景淺灰 */
+        background-color: #f5f5f5;
         color: #333;
         font-family: sans-serif;
     }
     #chartdiv { 
         width: 100%; 
-        height: 600px; 
+        height: 800px; /* 加高高度以容納 MACD 面板 */
         border-radius: 8px;
         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         margin-bottom: 20px;
@@ -32,10 +32,9 @@
         align-items: center;
         justify-content: center;
         box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        color: #333; /* 文字深色 */
+        color: #333;
     }
     label { font-weight: bold; }
-    /* 輸入框樣式調整為標準淺色 */
     input { 
         padding: 8px; 
         border: 1px solid #ccc; 
@@ -52,6 +51,8 @@
         cursor: pointer; 
     }
     button:hover { background-color: #1e4bb5; }
+    
+    /* === 策略資訊面板樣式 === */
     .strategy-panel {
       background: #fff;
       margin: 0 0 20px 0;
@@ -59,7 +60,7 @@
       border-radius: 8px;
       box-shadow: 0 2px 5px rgba(0,0,0,0.05);
       display: flex;
-      justify-content: space-between; /* 左右分佈 */
+      justify-content: space-between;
       flex-wrap: wrap;
       gap: 20px;
     }
@@ -119,26 +120,31 @@
       border-radius: 2px;
     }
 
-    /* 圖例顏色對應您的 JS 設定 */
-    .bg-ema20 { background-color: #ff9900; }
-    .bg-ema50 { background-color: #2962FF; }
+    /* MACD 圖例顏色 */
+    .bg-dif { background-color: #2962FF; } /* 快線藍色 */
+    .bg-dem { background-color: #FF6D00; } /* 訊號線橘色 */
+    .bg-hist-pos { background-color: #00C853; }
+    .bg-hist-neg { background-color: #D50000; }
+
     .icon-buy { 
       width: 0; height: 0; 
       border-left: 6px solid transparent;
       border-right: 6px solid transparent;
-      border-bottom: 10px solid #00C853; /* 綠色向上三角形 */
+      border-bottom: 10px solid #00C853; 
       margin-right: 8px;
     }
     .icon-sell { 
       width: 0; height: 0; 
       border-left: 6px solid transparent;
       border-right: 6px solid transparent;
-      border-top: 10px solid #D50000; /* 紅色向下三角形 */
+      border-top: 10px solid #D50000; 
       margin-right: 8px;
     }
+
+    /* AI 分析區塊 */
     .ai-insight-box {
       background: linear-gradient(to right, #f8f9fa, #ffffff);
-      border-left: 5px solid #2962FF; /* 深藍色邊框呼應 EMA */
+      border-left: 5px solid #673AB7; /* MACD 用紫色系區隔 */
       padding: 20px;
       margin-bottom: 20px;
       border-radius: 4px;
@@ -148,14 +154,13 @@
       text-align: left;
     }
     
-    /* 針對 AI 輸出的 HTML 標籤做簡單樣式 */
     .ai-insight-box h3 {
       margin-top: 0;
       color: #2c3e50;
       font-size: 1.3rem;
     }
     .ai-insight-box strong {
-      color: #d35400; /* 強調文字用深橘色 */
+      color: #673AB7; 
     }
   </style>
   <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
@@ -165,35 +170,39 @@
 </head>
 <body>
 
-
-
 <div class="strategy-panel">
   <div class="strategy-info">
-    <h3>策略邏輯：EMA 雙均線交叉</h3>
+    <h3>策略邏輯：MACD 趨勢動能指標</h3>
     <ul class="strategy-rules">
       <li>
-        <strong>核心概念：</strong> 利用短期與長期趨勢線的交叉來判斷市場轉折。
+        <strong>參數設定：</strong> 快線 Fast EMA (12)、慢線 Slow EMA (26)、訊號線 Signal (9)。
       </li>
       <li>
         <span class="highlight-buy">買入訊號 (黃金交叉)：</span> 
-        當 <span style="color:#ff9900; font-weight:bold;">EMA 20 (短線)</span> 
-        向上突破 <span style="color:#2962FF; font-weight:bold;">EMA 50 (長線)</span> 時，視為上漲趨勢開始。
+        當 <span style="color:#2962FF; font-weight:bold;">DIF 快線</span> 
+        向上突破 <span style="color:#FF6D00; font-weight:bold;">DEM 訊號線</span>，且柱狀圖由負轉正。
       </li>
       <li>
         <span class="highlight-sell">賣出訊號 (死亡交叉)：</span> 
-        當 <span style="color:#ff9900; font-weight:bold;">EMA 20 (短線)</span> 
-        向下跌破 <span style="color:#2962FF; font-weight:bold;">EMA 50 (長線)</span> 時，視為下跌趨勢開始。
+        當 <span style="color:#2962FF; font-weight:bold;">DIF 快線</span> 
+        向下跌破 <span style="color:#FF6D00; font-weight:bold;">DEM 訊號線</span>，且柱狀圖由正轉負。
       </li>
     </ul>
   </div>
 
   <div class="chart-legend">
-    <div style="font-weight:bold; margin-bottom:10px;">圖表圖例</div>
+    <div style="font-weight:bold; margin-bottom:10px;">MACD 圖例</div>
     <div class="legend-item">
-      <span class="legend-color bg-ema20"></span> EMA 20 (短期均線)
+      <span class="legend-color bg-dif"></span> DIF (快慢線差)
     </div>
     <div class="legend-item">
-      <span class="legend-color bg-ema50"></span> EMA 50 (長期均線)
+      <span class="legend-color bg-dem"></span> DEM (訊號線)
+    </div>
+    <div class="legend-item">
+      <span class="legend-color bg-hist-pos"></span> 柱狀圖 (多頭)
+    </div>
+    <div class="legend-item">
+      <span class="legend-color bg-hist-neg"></span> 柱狀圖 (空頭)
     </div>
     <div class="legend-item">
       <span class="icon-buy"></span> 買入訊號
@@ -240,50 +249,105 @@ function initDateInputs() {
 }
 
 // ============================================
-//  數學邏輯區 (保持不變)
+//  MACD 數學邏輯區
 // ============================================
 
-function calculateEMA(data, period) {
+// 通用的 EMA 計算函數
+// data: 原始陣列
+// period: 週期
+// field: 要計算的欄位名稱 (例如 'close' 或 'dif')
+function calculateEMAGeneric(data, period, field) {
     let k = 2 / (period + 1);
-    let emaData = [];
+    let emaArray = []; // 儲存單純數值
+    let resultData = []; // 儲存完整物件
+    
     if (data.length > 0) {
-        let ema = data[0].close; 
+        // 初始值通常用 SMA 或第一筆數據，這裡簡化用第一筆
+        let firstVal = data[0][field]; 
+        if(firstVal === undefined) firstVal = 0;
+
+        let ema = firstVal;
+        
         for (let i = 0; i < data.length; i++) {
-            let close = data[i].close;
-            ema = close * k + ema * (1 - k);
-            emaData.push({
+            let val = data[i][field];
+            if(val !== undefined && val !== null) {
+                ema = val * k + ema * (1 - k);
+            }
+            emaArray.push(ema);
+            resultData.push({
                 date: data[i].date,
-                value: ema,
-                close: close 
+                value: ema
             });
         }
     }
-    return emaData;
+    return { values: emaArray, data: resultData };
 }
 
-function calculateCrossovers(shortEmaData, longEmaData) {
-    let signals = [];
-    let len = Math.min(shortEmaData.length, longEmaData.length);
-    for (let i = 1; i < len; i++) {
-        let prevShort = shortEmaData[i-1].value;
-        let prevLong = longEmaData[i-1].value;
-        let currShort = shortEmaData[i].value;
-        let currLong = longEmaData[i].value;
+// 計算 MACD
+function calculateMACD(data, fastPeriod=12, slowPeriod=26, signalPeriod=9) {
+    // 1. 計算 Fast EMA (12)
+    const fastEMA = calculateEMAGeneric(data, fastPeriod, "close").values;
+    // 2. 計算 Slow EMA (26)
+    const slowEMA = calculateEMAGeneric(data, slowPeriod, "close").values;
+    
+    // 3. 計算 DIF = Fast - Slow
+    let difData = [];
+    for(let i=0; i<data.length; i++){
+        let dif = fastEMA[i] - slowEMA[i];
+        difData.push({
+            date: data[i].date,
+            dif: dif,       // 給下一步計算 EMA 用
+            close: data[i].close // 保留收盤價供參考
+        });
+    }
+
+    // 4. 計算 DEM (Signal Line) = EMA(DIF, 9)
+    const demValues = calculateEMAGeneric(difData, signalPeriod, "dif").values;
+
+    // 5. 組合最終資料 (含 Histogram)
+    let macdResult = [];
+    for(let i=0; i<data.length; i++){
+        let dif = difData[i].dif;
+        let dem = demValues[i];
+        let hist = dif - dem;
         
-        if (prevShort <= prevLong && currShort > currLong) {
+        macdResult.push({
+            date: data[i].date,
+            dif: dif,
+            dem: dem,
+            histogram: hist,
+            close: data[i].close
+        });
+    }
+    return macdResult;
+}
+
+// 計算交叉訊號 (根據 MACD 結果)
+function calculateMACDCrossovers(macdData) {
+    let signals = [];
+    // 從第 26 筆之後開始判斷較準確，避免初期 EMA 不穩，但這裡簡單從 1 開始
+    for (let i = 1; i < macdData.length; i++) {
+        let prevDif = macdData[i-1].dif;
+        let prevDem = macdData[i-1].dem;
+        let currDif = macdData[i].dif;
+        let currDem = macdData[i].dem;
+        
+        // 黃金交叉: DIF 向上突破 DEM
+        if (prevDif <= prevDem && currDif > currDem) {
             signals.push({
-                date: shortEmaData[i].date,
-                value: shortEmaData[i].close,
+                date: macdData[i].date,
+                value: macdData[i].close, // 訊號畫在 K 線收盤價上
                 signalType: "buy",
-                description: "黃金交叉 (買入)"
+                description: "MACD 黃金交叉"
             });
         }
-        else if (prevShort >= prevLong && currShort < currLong) {
+        // 死亡交叉: DIF 向下跌破 DEM
+        else if (prevDif >= prevDem && currDif < currDem) {
             signals.push({
-                date: shortEmaData[i].date,
-                value: shortEmaData[i].close,
+                date: macdData[i].date,
+                value: macdData[i].close,
                 signalType: "sell",
-                description: "死亡交叉 (賣出)"
+                description: "MACD 死亡交叉"
             });
         }
     }
@@ -297,10 +361,13 @@ am5.ready(function() {
 
   var stockChart = root.container.children.push(am5stock.StockChart.new(root, {}));
 
+  // =================================
+  // 1. 主面板 (K線圖)
+  // =================================
   var mainPanel = stockChart.panels.push(am5stock.StockPanel.new(root, {
     wheelX: "panX",
     wheelY: "zoomX",
-    height: am5.percent(70),
+    height: am5.percent(50), // 調整比例，留空間給 MACD
     layout: root.verticalLayout
   }));
 
@@ -327,37 +394,14 @@ am5.ready(function() {
     yAxis: valueAxis
   }));
 
-  // === 修改 2: 補回拉桿 (Scrollbar) ===
-  // 在主面板下方加入水平捲動軸
+  // 捲動軸
   mainPanel.set("scrollbarX", am5.Scrollbar.new(root, {
     orientation: "horizontal"
   }));
 
-  // EMA 20
-  var emaShortSeries = mainPanel.series.push(am5xy.LineSeries.new(root, {
-      name: "EMA 20",
-      valueYField: "value",
-      valueXField: "date",
-      xAxis: dateAxisMain,
-      yAxis: valueAxis,
-      stroke: am5.color(0xff9900), // 改稍微深一點的橘黃，白底較清楚
-      strokeWidth: 2
-  }));
-
-  // EMA 50
-  var emaLongSeries = mainPanel.series.push(am5xy.LineSeries.new(root, {
-      name: "EMA 50",
-      valueYField: "value",
-      valueXField: "date",
-      xAxis: dateAxisMain,
-      yAxis: valueAxis,
-      stroke: am5.color(0x2962FF), // 改深藍色，白底較清楚
-      strokeWidth: 2
-  }));
-
-  // 策略訊號
+  // 訊號圖層 (畫在主圖上)
   var signalSeries = mainPanel.series.push(am5xy.LineSeries.new(root, {
-      name: "策略訊號",
+      name: "MACD 訊號",
       valueYField: "value",
       valueXField: "date",
       xAxis: dateAxisMain,
@@ -365,19 +409,17 @@ am5.ready(function() {
       stroke: undefined 
   }));
 
-  // ▼▼▼▼▼▼ 修改開始 ▼▼▼▼▼▼
+  // 設定訊號圖示
   signalSeries.bullets.push(function (root, series, dataItem) {
       var context = dataItem.dataContext;
-      
-      // 設定共用的樣式變數，方便調整
-      var arrowSize = 30; // 尺寸：從 15 改為 30，非常大且明顯
-      var strokeColor = am5.color(0xffffff); // 邊框：白色
-      var strokeWidth = 2; // 邊框粗細
+      var arrowSize = 30;
+      var strokeColor = am5.color(0xffffff);
+      var strokeWidth = 2;
 
       if (context.signalType === "buy") {
           return am5.Bullet.new(root, {
               sprite: am5.Triangle.new(root, {
-                  fill: am5.color(0x00E676), // 亮綠色 (更螢光一點)
+                  fill: am5.color(0x00E676), 
                   stroke: strokeColor,
                   strokeWidth: strokeWidth,
                   width: arrowSize, 
@@ -385,13 +427,13 @@ am5.ready(function() {
                   rotation: 0,
                   centerY: am5.p50, 
                   centerX: am5.p50,
-                  tooltipText: "買入訊號" // 滑鼠移上去顯示文字
+                  tooltipText: "MACD 黃金交叉 (買入)"
               })
           });
       } else if (context.signalType === "sell") {
           return am5.Bullet.new(root, {
               sprite: am5.Triangle.new(root, {
-                  fill: am5.color(0xFF1744), // 亮紅色 (更螢光一點)
+                  fill: am5.color(0xFF1744),
                   stroke: strokeColor,
                   strokeWidth: strokeWidth,
                   width: arrowSize, 
@@ -399,17 +441,85 @@ am5.ready(function() {
                   rotation: 180,
                   centerY: am5.p50, 
                   centerX: am5.p50,
-                  tooltipText: "賣出訊號" // 滑鼠移上去顯示文字
+                  tooltipText: "MACD 死亡交叉 (賣出)"
               })
           });
       }
   });
-  // ▲▲▲▲▲▲ 修改結束 ▲▲▲▲▲▲
 
-  // 成交量部分
+  // =================================
+  // 2. MACD 面板 (獨立)
+  // =================================
+  var macdPanel = stockChart.panels.push(am5stock.StockPanel.new(root, {
+    wheelX: "panX",
+    height: am5.percent(30), // 佔 30% 高度
+    layout: root.verticalLayout
+  }));
+
+  var valueAxisMacd = macdPanel.yAxes.push(am5xy.ValueAxis.new(root, {
+    renderer: am5xy.AxisRendererY.new(root, { pan: "zoom" })
+  }));
+
+  var dateAxisMacd = macdPanel.xAxes.push(am5xy.DateAxis.new(root, {
+    baseInterval: { timeUnit: "minute", count: 1 },
+    renderer: am5xy.AxisRendererX.new(root, { visible: false }), // 隱藏 X 軸文字，共用主圖的時間軸
+    tooltip: am5.Tooltip.new(root, {})
+  }));
+
+  // 柱狀圖 (Histogram)
+  var histSeries = macdPanel.series.push(am5xy.ColumnSeries.new(root, {
+    name: "Histogram",
+    valueYField: "histogram",
+    valueXField: "date",
+    xAxis: dateAxisMacd,
+    yAxis: valueAxisMacd,
+    clustered: false
+  }));
+
+  // 柱狀圖顏色 (正綠負紅)
+  histSeries.columns.template.adapters.add("fill", function(fill, target) {
+    var dataItem = target.dataItem;
+    if (dataItem) {
+      return dataItem.get("valueY") >= 0 ? am5.color(0x00C853) : am5.color(0xD50000);
+    }
+    return fill;
+  });
+  histSeries.columns.template.adapters.add("stroke", function(fill, target) {
+    var dataItem = target.dataItem;
+    if (dataItem) {
+      return dataItem.get("valueY") >= 0 ? am5.color(0x00C853) : am5.color(0xD50000);
+    }
+    return fill;
+  });
+
+  // DIF 快線 (藍色)
+  var difSeries = macdPanel.series.push(am5xy.LineSeries.new(root, {
+      name: "DIF",
+      valueYField: "dif",
+      valueXField: "date",
+      xAxis: dateAxisMacd,
+      yAxis: valueAxisMacd,
+      stroke: am5.color(0x2962FF),
+      strokeWidth: 2
+  }));
+
+  // DEM 訊號線 (橘色)
+  var demSeries = macdPanel.series.push(am5xy.LineSeries.new(root, {
+      name: "DEM",
+      valueYField: "dem",
+      valueXField: "date",
+      xAxis: dateAxisMacd,
+      yAxis: valueAxisMacd,
+      stroke: am5.color(0xFF6D00),
+      strokeWidth: 2
+  }));
+
+  // =================================
+  // 3. 成交量面板
+  // =================================
   var volumePanel = stockChart.panels.push(am5stock.StockPanel.new(root, {
     wheelX: "panX",
-    height: am5.percent(30),
+    height: am5.percent(20), // 佔 20% 高度
     layout: root.verticalLayout
   }));
   var volumeAxis = volumePanel.yAxes.push(am5xy.ValueAxis.new(root, { renderer: am5xy.AxisRendererY.new(root, { inside: true }) }));
@@ -418,30 +528,34 @@ am5.ready(function() {
     valueXField: "date", valueYField: "volume", xAxis: dateAxisVolume, yAxis: volumeAxis
   }));
   
-  // 確保 K 線跌時成交量也是綠色/紅色正確對應
   volumeSeries.columns.template.adapters.add("fill", function(fill, target) {
     var dataItem = target.dataItem;
     if (dataItem) { 
-        // 漲紅跌綠 (台灣習慣)，若要國際版 (漲綠跌紅) 請自行交換顏色
         return dataItem.dataContext.close > dataItem.dataContext.open ? am5.color(0xff0000) : am5.color(0x00aa00); 
     }
     return fill;
   });
 
-  // 資料更新函數
+  // =================================
+  // 資料更新與 API 串接
+  // =================================
   function updateChartData(data) {
       if (!data || data.length === 0) { alert("無資料"); return; }
       
+      // 1. 設定 K 線與成交量
       candleSeries.data.setAll(data);
       volumeSeries.data.setAll(data);
 
-      let emaShortData = calculateEMA(data, 20);
-      let emaLongData = calculateEMA(data, 50);
+      // 2. 計算 MACD
+      let macdData = calculateMACD(data, 12, 26, 9);
+      
+      // 3. 設定 MACD 面板資料
+      difSeries.data.setAll(macdData);
+      demSeries.data.setAll(macdData);
+      histSeries.data.setAll(macdData);
 
-      emaShortSeries.data.setAll(emaShortData);
-      emaLongSeries.data.setAll(emaLongData);
-
-      let signals = calculateCrossovers(emaShortData, emaLongData);
+      // 4. 計算並設定交叉訊號
+      let signals = calculateMACDCrossovers(macdData);
       signalSeries.data.setAll(signals);
   }
 

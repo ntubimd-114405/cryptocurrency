@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}策略詳細頁面{% endblock %}
+{% block title %}RSI 策略詳細頁面{% endblock %}
 
 {% block content %}
 
@@ -8,20 +8,21 @@
 <html lang="zh-TW">
 <head>
   <meta charset="UTF-8" />
-  <title>加密貨幣 K 線圖 - EMA 詳情</title>
+  <title>加密貨幣 K 線圖 - RSI 詳情</title>
   <style>
-    /* === 修改 1: CSS 改回淺色系 === */
+    /* === 全局樣式 === */
     body {
-        background-color: #f5f5f5; /* 整個網頁背景淺灰 */
+        background-color: #f5f5f5;
         color: #333;
         font-family: sans-serif;
     }
     #chartdiv { 
         width: 100%; 
-        height: 600px; 
+        height: 800px; /* 增加高度以容納 RSI 面板 */
         border-radius: 8px;
         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         margin-bottom: 20px;
+        background: #fff;
     }
     #controls { 
         margin-bottom: 20px; 
@@ -32,10 +33,9 @@
         align-items: center;
         justify-content: center;
         box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-        color: #333; /* 文字深色 */
+        color: #333;
     }
     label { font-weight: bold; }
-    /* 輸入框樣式調整為標準淺色 */
     input { 
         padding: 8px; 
         border: 1px solid #ccc; 
@@ -46,12 +46,13 @@
     button { 
         padding: 8px 15px;
         border-radius: 4px;
-        background-color: #2962FF; 
+        background-color: #673AB7; /* RSI 主題色改為紫色 */
         color: white; 
         border: none; 
         cursor: pointer; 
     }
-    button:hover { background-color: #1e4bb5; }
+    button:hover { background-color: #512DA8; }
+    
     .strategy-panel {
       background: #fff;
       margin: 0 0 20px 0;
@@ -59,7 +60,7 @@
       border-radius: 8px;
       box-shadow: 0 2px 5px rgba(0,0,0,0.05);
       display: flex;
-      justify-content: space-between; /* 左右分佈 */
+      justify-content: space-between;
       flex-wrap: wrap;
       gap: 20px;
     }
@@ -119,26 +120,28 @@
       border-radius: 2px;
     }
 
-    /* 圖例顏色對應您的 JS 設定 */
-    .bg-ema20 { background-color: #ff9900; }
-    .bg-ema50 { background-color: #2962FF; }
+    /* RSI 圖例顏色 */
+    .bg-rsi { background-color: #673AB7; } /* 紫色 */
+    .bg-overbought { background-color: #e57373; opacity: 0.5; }
+    .bg-oversold { background-color: #81c784; opacity: 0.5; }
+
     .icon-buy { 
       width: 0; height: 0; 
       border-left: 6px solid transparent;
       border-right: 6px solid transparent;
-      border-bottom: 10px solid #00C853; /* 綠色向上三角形 */
+      border-bottom: 10px solid #00C853; 
       margin-right: 8px;
     }
     .icon-sell { 
       width: 0; height: 0; 
       border-left: 6px solid transparent;
       border-right: 6px solid transparent;
-      border-top: 10px solid #D50000; /* 紅色向下三角形 */
+      border-top: 10px solid #D50000; 
       margin-right: 8px;
     }
     .ai-insight-box {
       background: linear-gradient(to right, #f8f9fa, #ffffff);
-      border-left: 5px solid #2962FF; /* 深藍色邊框呼應 EMA */
+      border-left: 5px solid #673AB7; /* 紫色邊框呼應 RSI */
       padding: 20px;
       margin-bottom: 20px;
       border-radius: 4px;
@@ -148,14 +151,13 @@
       text-align: left;
     }
     
-    /* 針對 AI 輸出的 HTML 標籤做簡單樣式 */
     .ai-insight-box h3 {
       margin-top: 0;
       color: #2c3e50;
       font-size: 1.3rem;
     }
     .ai-insight-box strong {
-      color: #d35400; /* 強調文字用深橘色 */
+      color: #d35400; 
     }
   </style>
   <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
@@ -165,24 +167,20 @@
 </head>
 <body>
 
-
-
 <div class="strategy-panel">
   <div class="strategy-info">
-    <h3>策略邏輯：EMA 雙均線交叉</h3>
+    <h3>策略邏輯：RSI 相對強弱指標 (Mean Reversion)</h3>
     <ul class="strategy-rules">
       <li>
-        <strong>核心概念：</strong> 利用短期與長期趨勢線的交叉來判斷市場轉折。
+        <strong>核心概念：</strong> 利用動能震盪指標捕捉市場的「超買」與「超賣」狀態，進行均值回歸交易。
       </li>
       <li>
-        <span class="highlight-buy">買入訊號 (黃金交叉)：</span> 
-        當 <span style="color:#ff9900; font-weight:bold;">EMA 20 (短線)</span> 
-        向上突破 <span style="color:#2962FF; font-weight:bold;">EMA 50 (長線)</span> 時，視為上漲趨勢開始。
+        <span class="highlight-buy">買入訊號 (反彈)：</span> 
+        當 RSI 進入 <span style="color:#2e7d32; font-weight:bold;">超賣區 (&lt; 30)</span> 並向上穿越時，視為非理性拋售結束，可能反彈。
       </li>
       <li>
-        <span class="highlight-sell">賣出訊號 (死亡交叉)：</span> 
-        當 <span style="color:#ff9900; font-weight:bold;">EMA 20 (短線)</span> 
-        向下跌破 <span style="color:#2962FF; font-weight:bold;">EMA 50 (長線)</span> 時，視為下跌趨勢開始。
+        <span class="highlight-sell">賣出訊號 (回調)：</span> 
+        當 RSI 進入 <span style="color:#c62828; font-weight:bold;">超買區 (&gt; 70)</span> 並向下穿越時，視為買盤過熱，可能回調。
       </li>
     </ul>
   </div>
@@ -190,16 +188,19 @@
   <div class="chart-legend">
     <div style="font-weight:bold; margin-bottom:10px;">圖表圖例</div>
     <div class="legend-item">
-      <span class="legend-color bg-ema20"></span> EMA 20 (短期均線)
+      <span class="legend-color bg-rsi"></span> RSI (14) 指標線
     </div>
     <div class="legend-item">
-      <span class="legend-color bg-ema50"></span> EMA 50 (長期均線)
+      <span class="legend-color bg-overbought"></span> 超買線 (70)
     </div>
     <div class="legend-item">
-      <span class="icon-buy"></span> 買入訊號
+      <span class="legend-color bg-oversold"></span> 超賣線 (30)
     </div>
     <div class="legend-item">
-      <span class="icon-sell"></span> 賣出訊號
+      <span class="icon-buy"></span> 買入訊號 (RSI &uarr; 30)
+    </div>
+    <div class="legend-item">
+      <span class="icon-sell"></span> 賣出訊號 (RSI &darr; 70)
     </div>
   </div>
 </div>
@@ -240,50 +241,79 @@ function initDateInputs() {
 }
 
 // ============================================
-//  數學邏輯區 (保持不變)
+//  數學邏輯區 (RSI 算法)
 // ============================================
 
-function calculateEMA(data, period) {
-    let k = 2 / (period + 1);
-    let emaData = [];
-    if (data.length > 0) {
-        let ema = data[0].close; 
-        for (let i = 0; i < data.length; i++) {
-            let close = data[i].close;
-            ema = close * k + ema * (1 - k);
-            emaData.push({
-                date: data[i].date,
-                value: ema,
-                close: close 
-            });
-        }
+/**
+ * 計算 RSI
+ * @param {Array} data - K線數據
+ * @param {Number} period - 週期 (預設14)
+ */
+function calculateRSI(data, period = 14) {
+    if (data.length < period + 1) return [];
+
+    let rsiData = [];
+    let gains = [];
+    let losses = [];
+
+    // 1. 計算漲跌幅
+    for (let i = 1; i < data.length; i++) {
+        let change = data[i].close - data[i - 1].close;
+        gains.push(change > 0 ? change : 0);
+        losses.push(change < 0 ? Math.abs(change) : 0);
     }
-    return emaData;
+
+    // 2. 計算初始平均
+    let avgGain = gains.slice(0, period).reduce((a, b) => a + b, 0) / period;
+    let avgLoss = losses.slice(0, period).reduce((a, b) => a + b, 0) / period;
+
+    // 3. 推算後續 RSI (Wilder's Smoothing)
+    // 初始 RSI 點位對應的是 data[period]
+    for (let i = period; i < data.length; i++) {
+        let currentGain = gains[i - 1]; // 因為 gains 索引比 data 少 1
+        let currentLoss = losses[i - 1];
+
+        // Wilder 平滑公式
+        avgGain = ((avgGain * (period - 1)) + currentGain) / period;
+        avgLoss = ((avgLoss * (period - 1)) + currentLoss) / period;
+
+        let rs = avgLoss === 0 ? 100 : avgGain / avgLoss;
+        let rsi = 100 - (100 / (1 + rs));
+
+        rsiData.push({
+            date: data[i].date,
+            value: rsi,
+            close: data[i].close // 保留收盤價以便後續畫訊號
+        });
+    }
+    return rsiData;
 }
 
-function calculateCrossovers(shortEmaData, longEmaData) {
+/**
+ * 計算 RSI 買賣訊號 (穿越策略)
+ */
+function calculateRSISignals(rsiData, overbought=70, oversold=30) {
     let signals = [];
-    let len = Math.min(shortEmaData.length, longEmaData.length);
-    for (let i = 1; i < len; i++) {
-        let prevShort = shortEmaData[i-1].value;
-        let prevLong = longEmaData[i-1].value;
-        let currShort = shortEmaData[i].value;
-        let currLong = longEmaData[i].value;
-        
-        if (prevShort <= prevLong && currShort > currLong) {
+    for (let i = 1; i < rsiData.length; i++) {
+        let prevRsi = rsiData[i-1].value;
+        let currRsi = rsiData[i].value;
+
+        // 黃金交叉：RSI 從下方穿越 30 (買點)
+        if (prevRsi < oversold && currRsi >= oversold) {
             signals.push({
-                date: shortEmaData[i].date,
-                value: shortEmaData[i].close,
+                date: rsiData[i].date,
+                value: rsiData[i].close, // 訊號畫在價格上
                 signalType: "buy",
-                description: "黃金交叉 (買入)"
+                description: `RSI 上穿 ${oversold} (買入)`
             });
         }
-        else if (prevShort >= prevLong && currShort < currLong) {
+        // 死亡交叉：RSI 從上方穿越 70 (賣點)
+        else if (prevRsi > overbought && currRsi <= overbought) {
             signals.push({
-                date: shortEmaData[i].date,
-                value: shortEmaData[i].close,
+                date: rsiData[i].date,
+                value: rsiData[i].close, // 訊號畫在價格上
                 signalType: "sell",
-                description: "死亡交叉 (賣出)"
+                description: `RSI 下穿 ${overbought} (賣入)`
             });
         }
     }
@@ -297,10 +327,11 @@ am5.ready(function() {
 
   var stockChart = root.container.children.push(am5stock.StockChart.new(root, {}));
 
+  // === 1. 主面板 (K線 + 訊號) ===
   var mainPanel = stockChart.panels.push(am5stock.StockPanel.new(root, {
     wheelX: "panX",
     wheelY: "zoomX",
-    height: am5.percent(70),
+    height: am5.percent(60), // 主圖佔 60%
     layout: root.verticalLayout
   }));
 
@@ -327,35 +358,10 @@ am5.ready(function() {
     yAxis: valueAxis
   }));
 
-  // === 修改 2: 補回拉桿 (Scrollbar) ===
-  // 在主面板下方加入水平捲動軸
-  mainPanel.set("scrollbarX", am5.Scrollbar.new(root, {
-    orientation: "horizontal"
-  }));
+  // 設定卷軸
+  mainPanel.set("scrollbarX", am5.Scrollbar.new(root, { orientation: "horizontal" }));
 
-  // EMA 20
-  var emaShortSeries = mainPanel.series.push(am5xy.LineSeries.new(root, {
-      name: "EMA 20",
-      valueYField: "value",
-      valueXField: "date",
-      xAxis: dateAxisMain,
-      yAxis: valueAxis,
-      stroke: am5.color(0xff9900), // 改稍微深一點的橘黃，白底較清楚
-      strokeWidth: 2
-  }));
-
-  // EMA 50
-  var emaLongSeries = mainPanel.series.push(am5xy.LineSeries.new(root, {
-      name: "EMA 50",
-      valueYField: "value",
-      valueXField: "date",
-      xAxis: dateAxisMain,
-      yAxis: valueAxis,
-      stroke: am5.color(0x2962FF), // 改深藍色，白底較清楚
-      strokeWidth: 2
-  }));
-
-  // 策略訊號
+  // 策略訊號 Series (畫箭頭)
   var signalSeries = mainPanel.series.push(am5xy.LineSeries.new(root, {
       name: "策略訊號",
       valueYField: "value",
@@ -365,51 +371,90 @@ am5.ready(function() {
       stroke: undefined 
   }));
 
-  // ▼▼▼▼▼▼ 修改開始 ▼▼▼▼▼▼
+  // 訊號樣式 (箭頭)
   signalSeries.bullets.push(function (root, series, dataItem) {
       var context = dataItem.dataContext;
-      
-      // 設定共用的樣式變數，方便調整
-      var arrowSize = 30; // 尺寸：從 15 改為 30，非常大且明顯
-      var strokeColor = am5.color(0xffffff); // 邊框：白色
-      var strokeWidth = 2; // 邊框粗細
+      var arrowSize = 30; 
+      var strokeColor = am5.color(0xffffff);
+      var strokeWidth = 2;
 
       if (context.signalType === "buy") {
           return am5.Bullet.new(root, {
               sprite: am5.Triangle.new(root, {
-                  fill: am5.color(0x00E676), // 亮綠色 (更螢光一點)
+                  fill: am5.color(0x00E676),
                   stroke: strokeColor,
                   strokeWidth: strokeWidth,
-                  width: arrowSize, 
-                  height: arrowSize,
+                  width: arrowSize, height: arrowSize,
                   rotation: 0,
-                  centerY: am5.p50, 
-                  centerX: am5.p50,
-                  tooltipText: "買入訊號" // 滑鼠移上去顯示文字
+                  centerY: am5.p50, centerX: am5.p50,
+                  tooltipText: context.description
               })
           });
       } else if (context.signalType === "sell") {
           return am5.Bullet.new(root, {
               sprite: am5.Triangle.new(root, {
-                  fill: am5.color(0xFF1744), // 亮紅色 (更螢光一點)
+                  fill: am5.color(0xFF1744),
                   stroke: strokeColor,
                   strokeWidth: strokeWidth,
-                  width: arrowSize, 
-                  height: arrowSize,
+                  width: arrowSize, height: arrowSize,
                   rotation: 180,
-                  centerY: am5.p50, 
-                  centerX: am5.p50,
-                  tooltipText: "賣出訊號" // 滑鼠移上去顯示文字
+                  centerY: am5.p50, centerX: am5.p50,
+                  tooltipText: context.description
               })
           });
       }
   });
-  // ▲▲▲▲▲▲ 修改結束 ▲▲▲▲▲▲
 
-  // 成交量部分
+  // === 2. RSI 面板 (新增) ===
+  var rsiPanel = stockChart.panels.push(am5stock.StockPanel.new(root, {
+      wheelX: "panX",
+      height: am5.percent(20), // RSI 佔 20%
+      layout: root.verticalLayout,
+      paddingTop: 5
+  }));
+
+  var rsiValueAxis = rsiPanel.yAxes.push(am5xy.ValueAxis.new(root, {
+      renderer: am5xy.AxisRendererY.new(root, { pan: "zoom" }),
+      min: 0,
+      max: 100, // RSI 固定 0-100
+      strictMinMax: true
+  }));
+
+  var rsiDateAxis = rsiPanel.xAxes.push(am5xy.DateAxis.new(root, {
+      baseInterval: { timeUnit: "minute", count: 1 },
+      renderer: am5xy.AxisRendererX.new(root, { visible: false }), // 隱藏時間軸文字
+      tooltip: am5.Tooltip.new(root, {})
+  }));
+  
+  // 連結 X 軸連動縮放
+  rsiDateAxis.groupData = true; 
+  // 同步縮放
+  // Note: amCharts 5 Stock Chart 自動處理 Panel 同步，只需確保都在 stockChart.panels 中
+
+  var rsiSeries = rsiPanel.series.push(am5xy.LineSeries.new(root, {
+      name: "RSI",
+      valueYField: "value",
+      valueXField: "date",
+      xAxis: rsiDateAxis,
+      yAxis: rsiValueAxis,
+      stroke: am5.color(0x673AB7), // 紫色線
+      strokeWidth: 2
+  }));
+
+  // 加入 RSI 70/30 參考線
+  var rangeOverbought = rsiValueAxis.createAxisRange(rsiValueAxis.makeDataItem({ value: 70 }));
+  rangeOverbought.get("grid").setAll({ stroke: am5.color(0xFF1744), strokeOpacity: 0.5, strokeDasharray: [5, 5] });
+  rangeOverbought.get("label").setAll({ text: "70", fill: am5.color(0xFF1744), visible: true });
+
+  var rangeOversold = rsiValueAxis.createAxisRange(rsiValueAxis.makeDataItem({ value: 30 }));
+  rangeOversold.get("grid").setAll({ stroke: am5.color(0x00E676), strokeOpacity: 0.5, strokeDasharray: [5, 5] });
+  rangeOversold.get("label").setAll({ text: "30", fill: am5.color(0x00E676), visible: true });
+
+
+  // === 3. 成交量面板 (保持) ===
   var volumePanel = stockChart.panels.push(am5stock.StockPanel.new(root, {
     wheelX: "panX",
-    height: am5.percent(30),
+    height: am5.percent(20), // 成交量佔 20%
     layout: root.verticalLayout
   }));
   var volumeAxis = volumePanel.yAxes.push(am5xy.ValueAxis.new(root, { renderer: am5xy.AxisRendererY.new(root, { inside: true }) }));
@@ -418,30 +463,29 @@ am5.ready(function() {
     valueXField: "date", valueYField: "volume", xAxis: dateAxisVolume, yAxis: volumeAxis
   }));
   
-  // 確保 K 線跌時成交量也是綠色/紅色正確對應
   volumeSeries.columns.template.adapters.add("fill", function(fill, target) {
     var dataItem = target.dataItem;
     if (dataItem) { 
-        // 漲紅跌綠 (台灣習慣)，若要國際版 (漲綠跌紅) 請自行交換顏色
         return dataItem.dataContext.close > dataItem.dataContext.open ? am5.color(0xff0000) : am5.color(0x00aa00); 
     }
     return fill;
   });
 
-  // 資料更新函數
+  // === 資料更新函數 ===
   function updateChartData(data) {
       if (!data || data.length === 0) { alert("無資料"); return; }
       
+      // 1. 設定 K 線與成交量
       candleSeries.data.setAll(data);
       volumeSeries.data.setAll(data);
 
-      let emaShortData = calculateEMA(data, 20);
-      let emaLongData = calculateEMA(data, 50);
+      // 2. 計算 RSI
+      let rsiData = calculateRSI(data, 14);
+      rsiSeries.data.setAll(rsiData);
 
-      emaShortSeries.data.setAll(emaShortData);
-      emaLongSeries.data.setAll(emaLongData);
-
-      let signals = calculateCrossovers(emaShortData, emaLongData);
+      // 3. 計算並設定訊號
+      // 注意：rsiData 包含 'close' 價格，我們用它來定位箭頭高度
+      let signals = calculateRSISignals(rsiData, 70, 30);
       signalSeries.data.setAll(signals);
   }
 
