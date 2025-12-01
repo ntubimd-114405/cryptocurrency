@@ -14,5 +14,7 @@ urlpatterns = [
     path("ask/", views.knowledge_chat_view, name="knowledge_chat"),
     path("invest/", views.invest_view, name="invest_view"),
     path("ema_detail/", views.ema_detail, name="ema_detail"),
+    path("rsi_detail/", views.rsi_detail, name="rsi_detail"),
+    path("macd_detail/", views.macd_detail, name="macd_detail"),
 ]
 

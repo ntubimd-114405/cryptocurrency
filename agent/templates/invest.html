@@ -74,7 +74,7 @@
         /* 文字內容區 */
         .card-body { padding: 16px; display: flex; flex-direction: column; flex-grow: 1; }
         
-        .card-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .card-header { display: flex; justify-content: space-between; margin-left: -15px;}
         .strategy-title { font-size: 1.1rem; font-weight: 600; margin: 0; color: #EAECEF;}
         
         .tags { display: flex; gap: 5px; margin-bottom: 10px; }
@@ -100,9 +100,12 @@
 
     <h1>指標和策略</h1>
 
-    <a href="{% url 'agent:ema_detail' %}">
-        <div class="grid-container">
-            {% for strategy in strategies %}
+    <div class="grid-container">
+        
+        {% for strategy in strategies %}
+        
+        <a href="{% url strategy.url_name %}" class="card-link">
+            
             <div class="card">
                 <div class="chart-area" id="chart-{{ strategy.id }}">
                     <div class="image">
@@ -120,13 +123,13 @@
                         {% endfor %}
                     </div>
                     <p class="desc">{{ strategy.description }}</p>
-                    
-                    
                 </div>
             </div>
-            {% endfor %}
-        </div>
-    </a>
+            
+        </a>
+        {% endfor %}
+
+    </div>
 
 </body>
 </html>
