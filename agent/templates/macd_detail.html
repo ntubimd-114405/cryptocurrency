@@ -154,14 +154,61 @@
       text-align: left;
     }
     
-    .ai-insight-box h3 {
-      margin-top: 0;
-      color: #2c3e50;
-      font-size: 1.3rem;
-    }
     .ai-insight-box strong {
       color: #673AB7; 
     }
+
+    /* === 新增: 回測表格樣式 === */
+    .performance-panel {
+        background: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        margin-bottom: 20px;
+        margin-top: 20px;
+    }
+    .summary-cards {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+    .card {
+        flex: 1;
+        min-width: 150px;
+        background: #f9f9f9;
+        padding: 15px;
+        border-radius: 6px;
+        text-align: center;
+        border: 1px solid #eee;
+    }
+    .card h4 { margin: 0 0 5px 0; color: #666; font-size: 0.9rem; }
+    .card .value { font-size: 1.5rem; font-weight: bold; color: #333; }
+
+    table.trade-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.95rem;
+    }
+    table.trade-table th, table.trade-table td {
+        padding: 12px;
+        text-align: right;
+        border-bottom: 1px solid #eee;
+    }
+    table.trade-table th {
+        text-align: right;
+        background-color: #fafafa;
+        color: #555;
+        font-weight: 600;
+    }
+    /* 第一欄日期靠左 */
+    table.trade-table th:first-child, table.trade-table td:first-child {
+        text-align: left;
+    }
+
+    /* 盈虧顏色 */
+    .profit-pos { color: #00C853; font-weight: bold; } /* 賺錢綠 */
+    .profit-neg { color: #D50000; font-weight: bold; } /* 賠錢紅 */
   </style>
   <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
   <script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
@@ -226,8 +273,55 @@
 
 <div id="chartdiv"></div>
 
+<div class="performance-panel">
+    <h3>📊 MACD 策略回測績效報告 (依據當前時間區間)</h3>
+    
+    <div class="summary-cards">
+        <div class="card">
+            <h4>總交易次數</h4>
+            <div class="value" id="totalTrades">0</div>
+        </div>
+        <div class="card">
+            <h4>勝率</h4>
+            <div class="value" id="winRate">0%</div>
+        </div>
+        <div class="card">
+            <h4>總報酬率 (不含複利)</h4>
+            <div class="value" id="totalReturn">0.00%</div>
+        </div>
+    </div>
+  
+    <table class="trade-table">
+        <thead>
+            <tr>
+                <th>買入時間</th>
+                <th>買入價格</th>
+                <th>賣出時間</th>
+                <th>賣出價格</th>
+                <th>每單損益 (%)</th>
+                <th>狀態</th>
+            </tr>
+        </thead>
+        <tbody id="tradeTableBody">
+            </tbody>
+    </table>
+  </div>
+
 <div class="ai-insight-box">
-    {{ ai_analysis|safe }}
+    <p>
+      <h2><strong>MACD 趨勢動能策略分析報告</strong></h2>
+      <strong>1. 策略深度解析：</strong><br>
+      MACD（指數平滑異同移動平均線）策略透過三條線的相互關係，能有效捕捉市場的「趨勢方向」與「動能強弱」。快速指數移動平均線（快線）與慢速指數移動平均線（慢線）之間的差距（DIF）反映了當前趨勢的強度，而它們與訊號線（DEM）之間的交叉則提供了進出場的訊號。
+
+      當DIF向上突破DEM時，形成黃金交叉，意味著趨勢可能轉為上升；相反，若DIF向下跌破DEM，則為死亡交叉，預示著下跌趨勢的形成。這讓投資者能夠不僅掌握趨勢的方向，還能判斷動能的強弱。
+
+      同時，柱狀圖（Histogram）的擴大與縮小對市場心理變化具有指示意義。當柱狀圖走由負轉正，顯示空頭力道的衰竭，而多頭動能開始增強；反之，柱狀圖縮小可能預示多頭動能的疲弱甚至轉向空頭。
+      <br>
+      <strong>2. 投資大師哲學連結：</strong><br>
+      MACD的發明者Gerald Appel強調技術分析應能有效幫助投資者識別市場動態。他所提倡的策略不僅僅是依賴單一指標，而是結合多個指標共同判斷市場趨勢，這也促進了MACD在實際交易中的應用。
+
+      此外，著名投資大師Alexander Elder在其著作《操作生涯不是夢》中介紹的「三重濾網系統」也提到，MACD可作為重要的動能指標來過濾市場雜訊，避免誤判趨勢。相比於單純的移動平均線，MACD結合了動能的變化，使得交易信號更加精確與可靠。
+    </p>
 </div>
 
 <script>
@@ -253,16 +347,12 @@ function initDateInputs() {
 // ============================================
 
 // 通用的 EMA 計算函數
-// data: 原始陣列
-// period: 週期
-// field: 要計算的欄位名稱 (例如 'close' 或 'dif')
 function calculateEMAGeneric(data, period, field) {
     let k = 2 / (period + 1);
-    let emaArray = []; // 儲存單純數值
-    let resultData = []; // 儲存完整物件
+    let emaArray = []; 
+    let resultData = []; 
     
     if (data.length > 0) {
-        // 初始值通常用 SMA 或第一筆數據，這裡簡化用第一筆
         let firstVal = data[0][field]; 
         if(firstVal === undefined) firstVal = 0;
 
@@ -296,8 +386,8 @@ function calculateMACD(data, fastPeriod=12, slowPeriod=26, signalPeriod=9) {
         let dif = fastEMA[i] - slowEMA[i];
         difData.push({
             date: data[i].date,
-            dif: dif,       // 給下一步計算 EMA 用
-            close: data[i].close // 保留收盤價供參考
+            dif: dif,       
+            close: data[i].close 
         });
     }
 
@@ -325,7 +415,6 @@ function calculateMACD(data, fastPeriod=12, slowPeriod=26, signalPeriod=9) {
 // 計算交叉訊號 (根據 MACD 結果)
 function calculateMACDCrossovers(macdData) {
     let signals = [];
-    // 從第 26 筆之後開始判斷較準確，避免初期 EMA 不穩，但這裡簡單從 1 開始
     for (let i = 1; i < macdData.length; i++) {
         let prevDif = macdData[i-1].dif;
         let prevDem = macdData[i-1].dem;
@@ -354,6 +443,85 @@ function calculateMACDCrossovers(macdData) {
     return signals;
 }
 
+// ============================================
+//  新增: 回測計算與表格渲染邏輯
+// ============================================
+function calculateAndRenderPerformance(signals) {
+    const tableBody = document.getElementById('tradeTableBody');
+    const elTotalTrades = document.getElementById('totalTrades');
+    const elWinRate = document.getElementById('winRate');
+    const elTotalReturn = document.getElementById('totalReturn');
+
+    tableBody.innerHTML = ""; // 清空表格
+
+    let trades = [];
+    let currentBuy = null;
+    let totalProfitPercent = 0;
+    let winCount = 0;
+
+    // 1. 遍歷訊號配對 (買入 -> 賣出)
+    signals.forEach(sig => {
+        if (sig.signalType === 'buy') {
+            // 如果已經有倉位，先忽略新的買入 (假設單向持倉)
+            if (!currentBuy) {
+                currentBuy = sig;
+            }
+        } else if (sig.signalType === 'sell') {
+            if (currentBuy) {
+                // 結算一筆交易
+                let entryPrice = currentBuy.value;
+                let exitPrice = sig.value;
+                let profitPercent = ((exitPrice - entryPrice) / entryPrice) * 100;
+
+                trades.push({
+                    entryDate: new Date(currentBuy.date), 
+                    entryPrice: entryPrice,
+                    exitDate: new Date(sig.date),
+                    exitPrice: exitPrice,
+                    profit: profitPercent
+                });
+
+                // 累加數據
+                totalProfitPercent += profitPercent;
+                if (profitPercent > 0) winCount++;
+
+                // 清空手上的單
+                currentBuy = null;
+            }
+        }
+    });
+
+    // 2. 更新總結卡片
+    let tradeCount = trades.length;
+    elTotalTrades.textContent = tradeCount;
+    elWinRate.textContent = tradeCount > 0 ? ((winCount / tradeCount) * 100).toFixed(1) + "%" : "0%";
+    
+    // 根據正負設定總報酬顏色
+    elTotalReturn.textContent = totalProfitPercent.toFixed(2) + "%";
+    elTotalReturn.className = "value " + (totalProfitPercent >= 0 ? "profit-pos" : "profit-neg");
+
+    // 3. 渲染表格 HTML (反轉陣列，讓最新的交易顯示在最上面)
+    trades.reverse().forEach(trade => {
+        let row = document.createElement('tr');
+        
+        // 格式化時間 (MM-DD HH:mm)
+        const fmtDate = (d) => `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+        
+        let profitClass = trade.profit >= 0 ? "profit-pos" : "profit-neg";
+        let profitSign = trade.profit >= 0 ? "+" : "";
+
+        row.innerHTML = `
+            <td>${fmtDate(trade.entryDate)}</td>
+            <td>${trade.entryPrice.toFixed(2)}</td>
+            <td>${fmtDate(trade.exitDate)}</td>
+            <td>${trade.exitPrice.toFixed(2)}</td>
+            <td class="${profitClass}">${profitSign}${trade.profit.toFixed(2)}%</td>
+            <td>${trade.profit >= 0 ? "✅ 獲利" : "❌ 虧損"}</td>
+        `;
+        tableBody.appendChild(row);
+    });
+}
+
 
 am5.ready(function() {
   var root = am5.Root.new("chartdiv");
@@ -367,7 +535,7 @@ am5.ready(function() {
   var mainPanel = stockChart.panels.push(am5stock.StockPanel.new(root, {
     wheelX: "panX",
     wheelY: "zoomX",
-    height: am5.percent(50), // 調整比例，留空間給 MACD
+    height: am5.percent(50), 
     layout: root.verticalLayout
   }));
 
@@ -462,7 +630,7 @@ am5.ready(function() {
 
   var dateAxisMacd = macdPanel.xAxes.push(am5xy.DateAxis.new(root, {
     baseInterval: { timeUnit: "minute", count: 1 },
-    renderer: am5xy.AxisRendererX.new(root, { visible: false }), // 隱藏 X 軸文字，共用主圖的時間軸
+    renderer: am5xy.AxisRendererX.new(root, { visible: false }), 
     tooltip: am5.Tooltip.new(root, {})
   }));
 
@@ -557,6 +725,9 @@ am5.ready(function() {
       // 4. 計算並設定交叉訊號
       let signals = calculateMACDCrossovers(macdData);
       signalSeries.data.setAll(signals);
+
+      // 5. 計算回測績效 (新增)
+      calculateAndRenderPerformance(signals);
   }
 
   async function fetchCoinHistory(coinId, start, end) {
