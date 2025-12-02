@@ -148,15 +148,58 @@
       text-align: left;
     }
     
-    /* 針對 AI 輸出的 HTML 標籤做簡單樣式 */
-    .ai-insight-box h3 {
-      margin-top: 0;
-      color: #2c3e50;
-      font-size: 1.3rem;
-    }
     .ai-insight-box strong {
       color: #d35400; /* 強調文字用深橘色 */
     }
+    /* === 新增: 回測表格樣式 === */
+    .performance-panel {
+        background: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        margin-bottom: 20px;
+        margin-top: 20px;
+    }
+    .summary-cards {
+        display: flex;
+        gap: 20px;
+        margin-bottom: 20px;
+    }
+    .card {
+        flex: 1;
+        background: #f9f9f9;
+        padding: 15px;
+        border-radius: 6px;
+        text-align: center;
+        border: 1px solid #eee;
+    }
+    .card h4 { margin: 0 0 5px 0; color: #666; font-size: 0.9rem; }
+    .card .value { font-size: 1.5rem; font-weight: bold; color: #333; }
+
+    table.trade-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.95rem;
+    }
+    table.trade-table th, table.trade-table td {
+        padding: 12px;
+        text-align: right; /* 數字靠右 */
+        border-bottom: 1px solid #eee;
+    }
+    table.trade-table th {
+        text-align: right;
+        background-color: #fafafa;
+        color: #555;
+        font-weight: 600;
+    }
+    /* 第一欄日期靠左 */
+    table.trade-table th:first-child, table.trade-table td:first-child {
+        text-align: left;
+    }
+
+    /* 盈虧顏色 */
+    .profit-pos { color: #00C853; font-weight: bold; } /* 賺錢綠 */
+    .profit-neg { color: #D50000; font-weight: bold; } /* 賠錢紅 */
   </style>
   <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
   <script src="https://cdn.amcharts.com/lib/5/xy.js"></script>
@@ -217,8 +260,53 @@
 
 <div id="chartdiv"></div>
 
+<div class="performance-panel">
+  <h3>📊 策略回測績效報告 (依據當前時間區間)</h3>
+  
+  <div class="summary-cards">
+      <div class="card">
+          <h4>總交易次數</h4>
+          <div class="value" id="totalTrades">0</div>
+      </div>
+      <div class="card">
+          <h4>勝率</h4>
+          <div class="value" id="winRate">0%</div>
+      </div>
+      <div class="card">
+          <h4>總報酬率 (不含複利)</h4>
+          <div class="value" id="totalReturn">0.00%</div>
+      </div>
+  </div>
+
+  <table class="trade-table">
+      <thead>
+          <tr>
+              <th>買入時間</th>
+              <th>買入價格</th>
+              <th>賣出時間</th>
+              <th>賣出價格</th>
+              <th>每單損益 (%)</th>
+              <th>狀態</th>
+          </tr>
+      </thead>
+      <tbody id="tradeTableBody">
+          </tbody>
+  </table>
+</div>
+
 <div class="ai-insight-box">
-    {{ ai_analysis|safe }}
+    <p>
+      <h2><strong>EMA 雙均線交叉策略分析報告</strong></h2>
+      <strong>1. 策略深度解析：</strong><br>
+      EMA (指數移動平均) 雙均線交叉策略的核心邏輯在於利用短期與長期均線之間的交互關係來判斷市場的趨勢動能。當短期均線 EMA 20 上穿長期均線 EMA 50 時，市場能量顯示出上漲趨勢，這被稱為「黃金交叉」，意味著多頭市場開始形成；相反，當短期均線下穿長期均線，產生「死亡交叉」，則顯示出抑制的賣壓，許多交易者會選擇賣出。
+
+      EMA 相較於 SMA (簡單移動平均) 的一大優勢在於其對近期價格變動的敏感度。EMA 更加重視最新的價格信息，使其能在迅速變化的市場環境中更快反應，提供更具前瞻性的交易信號。這對於捕捉快速發生的趨勢變化至關重要。
+      <br>
+      <strong>2. 投資大師哲學連結：</strong><br>
+      著名投資大師保羅·都鐸·瓊斯（Paul Tudor Jones）以其趨勢跟隨策略與強調市場行為的哲學而聞名。他曾說過：「我不關心去年的價格。」這句話強調了專注於當前市場趨勢的重要性。
+
+      都鐸的交易哲學與 EMA 雙均線交叉策略異曲同工，因為這一策略明確地透過追蹤市場趨勢來指導買賣決策。無論是驗證趨勢持續性還是判斷轉折點，EMA 策略都圍繞著基於市場實際走勢的決策，這與都鐸強調的有效應對市場動態的思路完美契合。
+  </p>
 </div>
 
 <script>
@@ -288,6 +376,83 @@ function calculateCrossovers(shortEmaData, longEmaData) {
         }
     }
     return signals;
+}
+
+function calculateAndRenderPerformance(signals) {
+    const tableBody = document.getElementById('tradeTableBody');
+    const elTotalTrades = document.getElementById('totalTrades');
+    const elWinRate = document.getElementById('winRate');
+    const elTotalReturn = document.getElementById('totalReturn');
+
+    tableBody.innerHTML = ""; // 清空表格
+
+    let trades = [];
+    let currentBuy = null;
+    let totalProfitPercent = 0;
+    let winCount = 0;
+
+    // 1. 遍歷訊號配對 (買入 -> 賣出)
+    signals.forEach(sig => {
+        if (sig.signalType === 'buy') {
+            // 如果已經有倉位，先忽略新的買入 (這裡假設單向持倉)
+            if (!currentBuy) {
+                currentBuy = sig;
+            }
+        } else if (sig.signalType === 'sell') {
+            if (currentBuy) {
+                // 結算一筆交易
+                let entryPrice = currentBuy.value;
+                let exitPrice = sig.value;
+                let profitPercent = ((exitPrice - entryPrice) / entryPrice) * 100;
+
+                trades.push({
+                    entryDate: new Date(currentBuy.date), // 轉成 Date 物件方便格式化
+                    entryPrice: entryPrice,
+                    exitDate: new Date(sig.date),
+                    exitPrice: exitPrice,
+                    profit: profitPercent
+                });
+
+                // 累加數據
+                totalProfitPercent += profitPercent;
+                if (profitPercent > 0) winCount++;
+
+                // 清空手上的單
+                currentBuy = null;
+            }
+        }
+    });
+
+    // 2. 更新總結卡片
+    let tradeCount = trades.length;
+    elTotalTrades.textContent = tradeCount;
+    elWinRate.textContent = tradeCount > 0 ? ((winCount / tradeCount) * 100).toFixed(1) + "%" : "0%";
+    
+    // 根據正負設定總報酬顏色
+    elTotalReturn.textContent = totalProfitPercent.toFixed(2) + "%";
+    elTotalReturn.className = "value " + (totalProfitPercent >= 0 ? "profit-pos" : "profit-neg");
+
+    // 3. 渲染表格 HTML
+    // 反轉陣列，讓最新的交易顯示在最上面
+    trades.reverse().forEach(trade => {
+        let row = document.createElement('tr');
+        
+        // 格式化時間 (MM-DD HH:mm)
+        const fmtDate = (d) => `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+        
+        let profitClass = trade.profit >= 0 ? "profit-pos" : "profit-neg";
+        let profitSign = trade.profit >= 0 ? "+" : "";
+
+        row.innerHTML = `
+            <td>${fmtDate(trade.entryDate)}</td>
+            <td>${trade.entryPrice.toFixed(2)}</td>
+            <td>${fmtDate(trade.exitDate)}</td>
+            <td>${trade.exitPrice.toFixed(2)}</td>
+            <td class="${profitClass}">${profitSign}${trade.profit.toFixed(2)}%</td>
+            <td>${trade.profit >= 0 ? "✅ 獲利" : "❌ 虧損"}</td>
+        `;
+        tableBody.appendChild(row);
+    });
 }
 
 
@@ -430,20 +595,25 @@ am5.ready(function() {
 
   // 資料更新函數
   function updateChartData(data) {
-      if (!data || data.length === 0) { alert("無資料"); return; }
-      
-      candleSeries.data.setAll(data);
-      volumeSeries.data.setAll(data);
+    if (!data || data.length === 0) { alert("無資料"); return; }
+    
+    // 1. 更新圖表數據 (K線、成交量)
+    candleSeries.data.setAll(data);
+    volumeSeries.data.setAll(data);
 
-      let emaShortData = calculateEMA(data, 20);
-      let emaLongData = calculateEMA(data, 50);
+    // 2. 計算 EMA
+    let emaShortData = calculateEMA(data, 20);
+    let emaLongData = calculateEMA(data, 50);
+    emaShortSeries.data.setAll(emaShortData);
+    emaLongSeries.data.setAll(emaLongData);
 
-      emaShortSeries.data.setAll(emaShortData);
-      emaLongSeries.data.setAll(emaLongData);
+    // 3. 計算訊號
+    let signals = calculateCrossovers(emaShortData, emaLongData);
+    signalSeries.data.setAll(signals);
 
-      let signals = calculateCrossovers(emaShortData, emaLongData);
-      signalSeries.data.setAll(signals);
-  }
+    // === 新增這行：計算並更新表格 ===
+    calculateAndRenderPerformance(signals);
+}
 
   async function fetchCoinHistory(coinId, start, end) {
     const url = new URL(`/coin-history/${coinId}/`, window.location.origin);
