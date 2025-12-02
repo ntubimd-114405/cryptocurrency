@@ -55,6 +55,12 @@
     <canvas id="wordcloud" width="1000" height="500"></canvas>
   </div>
 
+  <div class="text-block summary">
+  <h2>新聞熱詞和情緒分析</h2>
+  <div class="text-start" style="text-indent: 2em; padding: 5px 20px;">
+    {{ sentiment_trend_summary |safe }}
+  </div>
+</div>
   <script src="https://cdn.jsdelivr.net/npm/wordcloud@1.1.2/src/wordcloud2.min.js"></script>
   <script>
     const wordList = {{ word_freqs_json|safe }}.slice(0, 50);

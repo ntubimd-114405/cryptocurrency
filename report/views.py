@@ -710,6 +710,30 @@ def generate_weekly_report2(year, week):
     }
 
     sentiment_trend_json = json.dumps(sentiment_trend, ensure_ascii=False)
+    formatted_word_freqs = "\n".join([f"- {word}: {freq}" for word, freq in word_freqs])
+
+    # 組合所有資料
+    formatted = f"""
+    【新聞熱詞頻率 (Top 30)】:
+    {formatted_word_freqs}
+
+    ---
+
+    【每日新聞情緒趨勢 (JSON格式)】:
+    {sentiment_trend_json}
+    """
+
+    sentiment_trend_summary = call_chatgpt(
+        system="你是一位專業金融分析師，請用 HTML <div> 包裝你的技術分析評論。",
+        text=f"""請依據以下加密貨幣的新聞熱詞和情緒數據進行簡潔評論，描述目前市場趨勢與可能的變化，避免逐筆說明，只需總體分析與解釋。請輸出為一段 HTML <div>...</div>，不要額外文字：
+        
+        {formatted}
+        """
+    ).strip("```").strip("html").strip() # .strip() 用來移除多餘的空白或換行符
+
+    # 輸出結果 (僅為展示格式)
+    print(f"生成的分析結果 (對於 {coin}):")
+
     data = {
         "MA20": list(ma20_data[-7:]),
         "MA60": list(ma60_data[-7:]),
@@ -773,6 +797,9 @@ def generate_weekly_report2(year, week):
         
         4. 長期市場觀察：
         {long_term_analysis}
+
+        5. 新聞熱詞和情緒數據評論：
+        {sentiment_trend_summary}
         """
     ).strip("```").strip("html").strip()
 # -----------3. 週報產生與多模組數據整合
@@ -858,6 +885,7 @@ def generate_weekly_report2(year, week):
             'bitcoin_data_json': clean_indicator(bitcoin_json, {}),
             'long_term_analysis': long_term_analysis or "",
             'sentiment_counts_json': sentiment_trend_json,  # 新增欄位存JSON
+            'sentiment_trend_summary': sentiment_trend_summary or "",
         }
     )
 
@@ -921,6 +949,7 @@ def view_weekly_report_by_id(request, report_id):
         'end_date': report.end_date,
         'created_at': report.created_at,
         'watchlist': my_favorite_coins_view(request),  # <-- 加入這行
+        'sentiment_trend_summary':report.sentiment_trend_summary,
     }
 
     return render(request, 'weekly_report.html', context)

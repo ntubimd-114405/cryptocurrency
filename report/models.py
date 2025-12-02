@@ -24,6 +24,8 @@ class WeeklyReport(models.Model):
     long_term_analysis = models.TextField(null=True, blank=True)
     sentiment_counts_json = models.JSONField(null=True, blank=True)
 
+    sentiment_trend_summary = models.TextField(null=True, blank=True)
+
     class Meta:
         unique_together = ('year', 'week')
 
