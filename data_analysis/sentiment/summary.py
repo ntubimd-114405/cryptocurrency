@@ -1,10 +1,12 @@
-from transformers import pipeline
+from transformers import pipeline, AutoTokenizer, AutoModelForSeq2SeqLM
 
 # ✅ 使用中文摘要模型（如果內容是中文）
 # summarizer = pipeline("summarization", model="uer/t5-base-chinese-cluecorpussummary")
 # 若是英文內容，使用 BART 模型
-summarizer = pipeline("summarization", model="facebook/bart-large-cnn")
-
+MODEL_NAME = "facebook/bart-large-cnn"
+tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_NAME)
+summarizer = pipeline("summarization", model=model, tokenizer=tokenizer, device=0)
 # 5-2 文章摘要主函式
 # 將長文分段
 def chunk_text(text, chunk_size=800):
@@ -28,7 +30,22 @@ def summarize_long_text(text):
     if partial_summaries:
         combined = " ".join(partial_summaries)
         print(f"🧠 對 {len(partial_summaries)} 個段落摘要進行二次總結...")
-        final_summary = summarizer(combined, max_length=120, min_length=40, do_sample=False)
+
+        max_model_length = 1024
+        
+        inputs = tokenizer(
+            combined,
+            max_length=max_model_length, # 使用模型的最大長度
+            truncation=True,             # 進行截斷
+            return_tensors="pt"
+        )
+        
+        final_summary = summarizer(
+            tokenizer.decode(inputs['input_ids'][0], skip_special_tokens=True),
+            max_length=120, 
+            min_length=40, 
+            do_sample=False
+        )
         return final_summary[0]['summary_text']
     else:
         return None
