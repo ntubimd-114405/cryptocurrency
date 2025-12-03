@@ -11,7 +11,6 @@ import pandas as pd
 import ta
 from sklearn.feature_extraction.text import CountVectorizer,ENGLISH_STOP_WORDS
 
-
 from django.utils import timezone
 from django.conf import settings
 from django.shortcuts import render, get_object_or_404,redirect
@@ -19,7 +18,7 @@ from django.http import HttpResponse
 from django.contrib.auth.decorators import login_required
 from django.utils.timezone import now
 from django.utils.html import escape
-from django.db import IntegrityError
+from django.db import IntegrityError,transaction
 from django.db.models import Min, Max, Sum, DateField, F, Func, Count, Q, CharField
 from django.db.models.functions import Cast
 from django.urls import reverse
@@ -1269,20 +1268,30 @@ def parse_date_range_from_input(user_input):
     請只用 JSON 格式輸出，例如：{{"start_date": "2025-07-13", "end_date": "2025-08-13"}}
     """
     result = call_chatgpt("時間解析助理", prompt)
-    print(user_input, result)
     try:
-        data = json.loads(result)
+        print(result)
+        cleaned_result = re.sub(r'^\s*```json\s*', '', result, flags=re.IGNORECASE)
+        cleaned_result = re.sub(r'\s*```\s*$', '', cleaned_result)
+        # 2. 移除前後多餘的空格或換行
+        cleaned_result = cleaned_result.strip()
+        
+        data = json.loads(cleaned_result)
 
         # 把空字串轉成 None
         start_date = data.get("start_date") or None
         end_date = data.get("end_date") or None
-
+        print("time:",start_date,end_date)
         return start_date, end_date
     except:
         return None, None
     
 
-
+def remove_4byte_chars(text):
+    """移除所有四位元組的 UTF-8 字元（如 Emoji），適用於 MySQL utf8 編碼"""
+    if not isinstance(text, str):
+        text = str(text)
+    # 將字串編碼為 utf-8，並忽略錯誤（忽略掉 4 位元組字元）
+    return text.encode('utf-8', 'ignore').decode('utf-8')
 
 # 4. 智能對話/模組分類與多源數據SSE串流回覆-----------
 @csrf_exempt
@@ -1416,16 +1425,33 @@ def classify_question_api(request):
         # 最後一次推送（整合回覆）
         yield f"data: {json.dumps({'integrated_summary': integrated_summary}, ensure_ascii=False)}\n\n"
 
-        DialogEvaluation.objects.create(
-            user_input=user_input,
-            expected_intent="(人工)認為這句話應該屬於哪種意圖（標準答案）",  # 也可改成更精確的意圖
-            predicted_intent=", ".join(ordered_combined),
-            expected_response="(人工)認為合適的機器人回應",
-            generated_response=integrated_summary,
-            analyze_data=json.dumps([fa.get("analyze", "") for fa in final_answers], ensure_ascii=False),  # 這一行存所有 analyze
-            task_success=True  # 若有實際成功判斷條件可替換
-        )
-        # 可以再補一個完成訊號
+        try:
+ 
+            cleaned_generated_response = remove_4byte_chars(integrated_summary)
+
+
+            cleaned_analyze_parts = []
+            for fa in final_answers:
+                cleaned_analyze = remove_4byte_chars(fa.get("analyze", ""))
+                cleaned_analyze_parts.append(cleaned_analyze)
+                
+            cleaned_analyze_data = json.dumps(cleaned_analyze_parts, ensure_ascii=False)
+            
+            
+            with transaction.atomic():
+                DialogEvaluation.objects.create(
+                    user_input=user_input,
+                    expected_intent="(人工)認為這句話應該屬於哪種意圖（標準答案）",
+                    predicted_intent=", ".join(ordered_combined),
+                    expected_response="(人工)認為合適的機器人回應",
+                    generated_response=cleaned_generated_response, 
+                    analyze_data=cleaned_analyze_data, 
+                    task_success=True
+                )
+        except Exception as db_e:
+            # 處理資料庫寫入失敗的情況，可以記錄錯誤
+            print(f"⚠️ 資料庫寫入失敗: {db_e}")
+
         yield "event: end\ndata: done\n\n"
 
     # SSE 回應
