@@ -1,4 +1,0 @@
-celery -A cryptocurrency worker --loglevel=info -P gevent
-celery -A cryptocurrency beat --loglevel=info
-
-python manage.py collectstatic
